@@ -71,20 +71,31 @@ serve(async (req) => {
       `${FACEBOOK_GRAPH_API}/me/accounts?access_token=${ACCESS_TOKEN}`
     );
     
+    const pagesRawResponse = await pagesResponse.text();
+    console.log("Facebook Pages API raw response:", pagesRawResponse);
+    
     if (!pagesResponse.ok) {
-      const errorData = await pagesResponse.text();
-      console.error("Facebook Pages API error:", errorData);
+      console.error("Facebook Pages API error:", pagesRawResponse);
       return new Response(
         JSON.stringify({ 
           error: "Failed to fetch Facebook Pages", 
-          details: errorData,
+          details: pagesRawResponse,
           hint: "Make sure your token has 'pages_show_list' permission and is a valid User Access Token from Graph API Explorer"
         }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
     
-    const pagesData = await pagesResponse.json();
+    let pagesData;
+    try {
+      pagesData = JSON.parse(pagesRawResponse);
+    } catch (e) {
+      console.error("Failed to parse pages response:", e);
+      return new Response(
+        JSON.stringify({ error: "Invalid response from Facebook API", details: pagesRawResponse }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     console.log(`Found ${pagesData.data?.length || 0} Facebook Pages`);
 
     if (!pagesData.data || pagesData.data.length === 0) {
