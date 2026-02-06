@@ -60,7 +60,7 @@ const Auth = () => {
         const result = await signUp(email, password, fullName);
 
         if (result.error) {
-          if (result.error.includes("already exists")) {
+          if (result.error.includes("already registered") || result.error.includes("already exists")) {
             toast({
               title: "Account exists",
               description: "This email is already registered. Please sign in instead.",
@@ -75,16 +75,15 @@ const Auth = () => {
           }
         } else {
           toast({
-            title: "Account created!",
-            description: "Welcome to SocialPulse!",
+            title: "Check your email!",
+            description: "We sent you a confirmation link to verify your account.",
           });
-          navigate("/dashboard");
         }
       } else {
         const result = await signIn(email, password);
 
         if (result.error) {
-          if (result.error.includes("Invalid credentials")) {
+          if (result.error.includes("Invalid login credentials")) {
             toast({
               title: "Invalid credentials",
               description: "The email or password you entered is incorrect.",

@@ -1,4 +1,1 @@
 project_id = "pbgqkkcvkczlxexuifuc"
-
-[functions.mongodb-auth]
-verify_jwt = false

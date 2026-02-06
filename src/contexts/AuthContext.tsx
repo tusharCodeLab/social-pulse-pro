@@ -1,14 +1,10 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
-
-interface User {
-  id: string;
-  email: string;
-  fullName?: string;
-}
+import { User, Session } from "@supabase/supabase-js";
 
 interface AuthContextType {
   user: User | null;
+  session: Session | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signUp: (email: string, password: string, fullName?: string) => Promise<{ error?: string }>;
@@ -17,104 +13,81 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const TOKEN_KEY = "mongodb_auth_token";
-
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Check for existing session on mount
   useEffect(() => {
-    const checkSession = async () => {
-      const token = localStorage.getItem(TOKEN_KEY);
-      if (token) {
-        try {
-          const { data, error } = await supabase.functions.invoke("mongodb-auth/me", {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-
-          if (error || data?.error) {
-            console.log("Session invalid, clearing token");
-            localStorage.removeItem(TOKEN_KEY);
-          } else if (data?.user) {
-            setUser(data.user);
-          }
-        } catch (err) {
-          console.error("Session check error:", err);
-          localStorage.removeItem(TOKEN_KEY);
-        }
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
       }
-      setLoading(false);
-    };
+    );
 
-    checkSession();
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const signIn = async (email: string, password: string): Promise<{ error?: string }> => {
     try {
-      const { data, error } = await supabase.functions.invoke("mongodb-auth/login", {
-        body: { email, password },
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
 
       if (error) {
-        console.error("Sign in error:", error);
-        return { error: error.message || "Failed to sign in" };
+        return { error: error.message };
       }
 
-      if (data?.error) {
-        return { error: data.error };
-      }
-
-      if (data?.token && data?.user) {
-        localStorage.setItem(TOKEN_KEY, data.token);
-        setUser(data.user);
-        return {};
-      }
-
-      return { error: "Unknown error occurred" };
+      return {};
     } catch (err) {
       console.error("Sign in error:", err);
-      return { error: "Failed to connect to authentication service" };
+      return { error: "Failed to sign in" };
     }
   };
 
   const signUp = async (email: string, password: string, fullName?: string): Promise<{ error?: string }> => {
     try {
-      const { data, error } = await supabase.functions.invoke("mongodb-auth/register", {
-        body: { email, password, fullName },
+      const redirectUrl = `${window.location.origin}/`;
+      
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            full_name: fullName,
+          },
+        },
       });
 
       if (error) {
-        console.error("Sign up error:", error);
-        return { error: error.message || "Failed to sign up" };
+        return { error: error.message };
       }
 
-      if (data?.error) {
-        return { error: data.error };
-      }
-
-      if (data?.token && data?.user) {
-        localStorage.setItem(TOKEN_KEY, data.token);
-        setUser(data.user);
-        return {};
-      }
-
-      return { error: "Unknown error occurred" };
+      return {};
     } catch (err) {
       console.error("Sign up error:", err);
-      return { error: "Failed to connect to authentication service" };
+      return { error: "Failed to sign up" };
     }
   };
 
   const signOut = async () => {
-    localStorage.removeItem(TOKEN_KEY);
-    setUser(null);
+    await supabase.auth.signOut();
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );
