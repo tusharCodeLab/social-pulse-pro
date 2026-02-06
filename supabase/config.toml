@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.generate-insights]
 verify_jwt = false
+
+[functions.fetch-instagram]
+verify_jwt = false
