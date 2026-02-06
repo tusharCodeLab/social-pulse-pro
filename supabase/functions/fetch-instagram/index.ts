@@ -6,7 +6,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const INSTAGRAM_GRAPH_API = "https://graph.instagram.com";
+// Using Facebook Graph API to access Instagram Business/Creator accounts
+// This works with tokens that have pages_show_list, instagram_basic permissions
 const FACEBOOK_GRAPH_API = "https://graph.facebook.com/v18.0";
 
 interface InstagramMedia {
@@ -18,11 +19,6 @@ interface InstagramMedia {
   timestamp: string;
   like_count?: number;
   comments_count?: number;
-}
-
-interface InstagramInsight {
-  name: string;
-  values: { value: number }[];
 }
 
 serve(async (req) => {
@@ -40,6 +36,9 @@ serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // Log token length for debugging (not the actual token)
+    console.log(`Access token length: ${ACCESS_TOKEN.length} characters`);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -66,32 +65,80 @@ serve(async (req) => {
 
     console.log(`Fetching Instagram data for user: ${user.id}`);
 
-    // Step 1: Get Instagram account info
-    console.log("Fetching Instagram account info...");
-    const meResponse = await fetch(
-      `${INSTAGRAM_GRAPH_API}/me?fields=id,username,account_type,media_count&access_token=${ACCESS_TOKEN}`
+    // Step 1: Get Facebook Pages connected to this token
+    console.log("Fetching Facebook Pages...");
+    const pagesResponse = await fetch(
+      `${FACEBOOK_GRAPH_API}/me/accounts?access_token=${ACCESS_TOKEN}`
     );
     
-    if (!meResponse.ok) {
-      const errorData = await meResponse.text();
-      console.error("Instagram API error (me):", errorData);
+    if (!pagesResponse.ok) {
+      const errorData = await pagesResponse.text();
+      console.error("Facebook Pages API error:", errorData);
       return new Response(
-        JSON.stringify({ error: "Failed to fetch Instagram account", details: errorData }),
+        JSON.stringify({ 
+          error: "Failed to fetch Facebook Pages", 
+          details: errorData,
+          hint: "Make sure your token has 'pages_show_list' permission and is a valid User Access Token from Graph API Explorer"
+        }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
     
-    const instagramAccount = await meResponse.json();
-    console.log("Instagram account:", JSON.stringify(instagramAccount));
+    const pagesData = await pagesResponse.json();
+    console.log(`Found ${pagesData.data?.length || 0} Facebook Pages`);
 
-    // Step 2: Upsert social account in database
+    if (!pagesData.data || pagesData.data.length === 0) {
+      return new Response(
+        JSON.stringify({ 
+          error: "No Facebook Pages found", 
+          hint: "Make sure your Facebook account has a Page connected to an Instagram Business/Creator account"
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Step 2: Get Instagram Business Account for each page
+    let instagramAccountId: string | null = null;
+    let instagramUsername: string | null = null;
+    let pageAccessToken: string | null = null;
+
+    for (const page of pagesData.data) {
+      console.log(`Checking page: ${page.name} (${page.id})`);
+      
+      const igAccountResponse = await fetch(
+        `${FACEBOOK_GRAPH_API}/${page.id}?fields=instagram_business_account{id,username,followers_count,media_count}&access_token=${page.access_token || ACCESS_TOKEN}`
+      );
+      
+      if (igAccountResponse.ok) {
+        const igData = await igAccountResponse.json();
+        if (igData.instagram_business_account) {
+          instagramAccountId = igData.instagram_business_account.id;
+          instagramUsername = igData.instagram_business_account.username;
+          pageAccessToken = page.access_token || ACCESS_TOKEN;
+          console.log(`Found Instagram account: @${instagramUsername} (${instagramAccountId})`);
+          break;
+        }
+      }
+    }
+
+    if (!instagramAccountId) {
+      return new Response(
+        JSON.stringify({ 
+          error: "No Instagram Business Account found",
+          hint: "Your Facebook Page must be connected to an Instagram Business or Creator account. Go to your Facebook Page settings to connect Instagram."
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Step 3: Upsert social account in database
     const { data: socialAccount, error: accountError } = await supabase
       .from("social_accounts")
       .upsert({
         user_id: user.id,
         platform: "instagram",
-        account_name: instagramAccount.username || "Instagram Account",
-        account_handle: `@${instagramAccount.username}`,
+        account_name: instagramUsername || "Instagram Account",
+        account_handle: `@${instagramUsername}`,
         is_connected: true,
         updated_at: new Date().toISOString(),
       }, {
@@ -107,10 +154,10 @@ serve(async (req) => {
       console.log("Social account upserted:", socialAccount?.id);
     }
 
-    // Step 3: Fetch recent media
+    // Step 4: Fetch recent media from Instagram Business Account
     console.log("Fetching Instagram media...");
     const mediaResponse = await fetch(
-      `${INSTAGRAM_GRAPH_API}/me/media?fields=id,caption,media_type,media_url,permalink,timestamp,like_count,comments_count&limit=25&access_token=${ACCESS_TOKEN}`
+      `${FACEBOOK_GRAPH_API}/${instagramAccountId}/media?fields=id,caption,media_type,media_url,permalink,timestamp,like_count,comments_count&limit=25&access_token=${pageAccessToken}`
     );
     
     let mediaData: InstagramMedia[] = [];
@@ -119,17 +166,18 @@ serve(async (req) => {
       mediaData = mediaJson.data || [];
       console.log(`Fetched ${mediaData.length} media items`);
     } else {
-      console.error("Failed to fetch media:", await mediaResponse.text());
+      const mediaError = await mediaResponse.text();
+      console.error("Failed to fetch media:", mediaError);
     }
 
-    // Step 4: Save posts to database
+    // Step 5: Save posts to database
     const postsToUpsert = mediaData.map((media) => ({
       user_id: user.id,
       platform: "instagram" as const,
       external_post_id: media.id,
       content: media.caption || "",
       media_url: media.media_url || null,
-      post_type: media.media_type.toLowerCase(),
+      post_type: media.media_type?.toLowerCase() || "image",
       published_at: media.timestamp,
       likes_count: media.like_count || 0,
       comments_count: media.comments_count || 0,
@@ -152,12 +200,12 @@ serve(async (req) => {
       }
     }
 
-    // Step 5: Fetch comments for each post
+    // Step 6: Fetch comments for each post
     let totalComments = 0;
-    for (const media of mediaData.slice(0, 10)) { // Limit to 10 posts for comments
+    for (const media of mediaData.slice(0, 10)) {
       try {
         const commentsResponse = await fetch(
-          `${INSTAGRAM_GRAPH_API}/${media.id}/comments?fields=id,text,timestamp,username&limit=50&access_token=${ACCESS_TOKEN}`
+          `${FACEBOOK_GRAPH_API}/${media.id}/comments?fields=id,text,timestamp,username&limit=50&access_token=${pageAccessToken}`
         );
         
         if (commentsResponse.ok) {
@@ -165,20 +213,19 @@ serve(async (req) => {
           const comments = commentsJson.data || [];
           
           if (comments.length > 0) {
-            // Get the post ID from our database
             const { data: postData } = await supabase
               .from("posts")
               .select("id")
               .eq("user_id", user.id)
               .eq("external_post_id", media.id)
-              .single();
+              .maybeSingle();
 
             if (postData) {
-              const commentsToInsert = comments.map((c: { id: string; text: string; timestamp: string; username: string }) => ({
+              const commentsToInsert = comments.map((c: { id: string; text: string; timestamp: string; username?: string }) => ({
                 user_id: user.id,
                 post_id: postData.id,
                 content: c.text,
-                author_name: c.username,
+                author_name: c.username || "Anonymous",
                 created_at: c.timestamp,
               }));
 
@@ -201,20 +248,19 @@ serve(async (req) => {
     }
     console.log(`Saved ${totalComments} comments`);
 
-    // Step 6: Try to fetch insights (requires business/creator account)
-    let insights = null;
+    // Step 7: Try to fetch insights (requires instagram_manage_insights)
+    let hasInsights = false;
     try {
       const insightsResponse = await fetch(
-        `${INSTAGRAM_GRAPH_API}/me/insights?metric=impressions,reach,profile_views&period=day&access_token=${ACCESS_TOKEN}`
+        `${FACEBOOK_GRAPH_API}/${instagramAccountId}/insights?metric=impressions,reach,profile_views&period=day&access_token=${pageAccessToken}`
       );
       
       if (insightsResponse.ok) {
-        const insightsJson = await insightsResponse.json();
-        insights = insightsJson.data;
-        console.log("Fetched insights:", insights?.length || 0);
+        hasInsights = true;
+        console.log("Insights available");
       }
     } catch (e) {
-      console.log("Insights not available (may require business account)");
+      console.log("Insights not available");
     }
 
     // Return summary
@@ -222,13 +268,13 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         account: {
-          username: instagramAccount.username,
-          mediaCount: instagramAccount.media_count,
+          username: instagramUsername,
+          id: instagramAccountId,
         },
         imported: {
           posts: postsToUpsert.length,
           comments: totalComments,
-          hasInsights: !!insights,
+          hasInsights,
         },
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
