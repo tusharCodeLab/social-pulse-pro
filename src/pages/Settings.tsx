@@ -14,6 +14,9 @@ import {
   FileUp,
   AlertCircle,
   Sparkles,
+  Loader2,
+  Wifi,
+  WifiOff,
 } from 'lucide-react';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { ChartCard } from '@/components/dashboard/ChartCard';
@@ -24,21 +27,30 @@ import { Label } from '@/components/ui/label';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 const platforms = [
-  { id: 'twitter', name: 'Twitter', icon: Twitter, color: 'text-[#1DA1F2]' },
-  { id: 'instagram', name: 'Instagram', icon: Instagram, color: 'text-[#E4405F]' },
-  { id: 'facebook', name: 'Facebook', icon: Facebook, color: 'text-[#1877F2]' },
-  { id: 'linkedin', name: 'LinkedIn', icon: Linkedin, color: 'text-[#0A66C2]' },
-  { id: 'tiktok', name: 'TikTok', icon: Video, color: 'text-foreground' },
+  { id: 'twitter', name: 'Twitter', icon: Twitter, color: 'text-[#1DA1F2]', supported: false },
+  { id: 'instagram', name: 'Instagram', icon: Instagram, color: 'text-[#E4405F]', supported: true },
+  { id: 'facebook', name: 'Facebook', icon: Facebook, color: 'text-[#1877F2]', supported: false },
+  { id: 'linkedin', name: 'LinkedIn', icon: Linkedin, color: 'text-[#0A66C2]', supported: false },
+  { id: 'tiktok', name: 'TikTok', icon: Video, color: 'text-foreground', supported: false },
 ];
 
 export default function Settings() {
   const { demoMode, setDemoMode, connectedPlatforms, togglePlatform } = useSettingsStore();
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isConnectingInstagram, setIsConnectingInstagram] = useState(false);
+  const [instagramSyncResult, setInstagramSyncResult] = useState<{
+    posts: number;
+    comments: number;
+    username: string;
+  } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -92,6 +104,76 @@ export default function Settings() {
           description: `${file.name} has been processed for analytics.`,
         });
       }, 2000);
+    }
+  };
+
+  const handleConnectInstagram = async () => {
+    if (!user) {
+      toast({
+        title: 'Please sign in',
+        description: 'You need to be signed in to connect your Instagram account.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsConnectingInstagram(true);
+    setInstagramSyncResult(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('fetch-instagram');
+      
+      if (error) {
+        throw error;
+      }
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      setInstagramSyncResult({
+        posts: data.imported?.posts || 0,
+        comments: data.imported?.comments || 0,
+        username: data.account?.username || 'Unknown',
+      });
+
+      // Update the connected platforms store
+      if (!connectedPlatforms.includes('instagram')) {
+        togglePlatform('instagram');
+      }
+
+      // Turn off demo mode since we have real data
+      if (demoMode) {
+        setDemoMode(false);
+      }
+
+      toast({
+        title: 'Instagram connected!',
+        description: `Imported ${data.imported?.posts || 0} posts and ${data.imported?.comments || 0} comments from @${data.account?.username}`,
+      });
+
+    } catch (error) {
+      console.error('Instagram connection error:', error);
+      toast({
+        title: 'Connection failed',
+        description: error instanceof Error ? error.message : 'Failed to connect Instagram',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsConnectingInstagram(false);
+    }
+  };
+
+  const handlePlatformClick = (platformId: string, supported: boolean) => {
+    if (platformId === 'instagram' && supported) {
+      handleConnectInstagram();
+    } else if (!supported) {
+      toast({
+        title: 'Coming soon',
+        description: `${platformId.charAt(0).toUpperCase() + platformId.slice(1)} integration is coming soon!`,
+      });
+    } else {
+      togglePlatform(platformId);
     }
   };
 
@@ -206,6 +288,8 @@ export default function Settings() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mt-4">
             {platforms.map((platform, index) => {
               const isConnected = connectedPlatforms.includes(platform.id);
+              const isInstagramConnecting = platform.id === 'instagram' && isConnectingInstagram;
+              
               return (
                 <motion.div
                   key={platform.id}
@@ -213,32 +297,80 @@ export default function Settings() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.25 + index * 0.05 }}
                   whileHover={{ y: -4 }}
-                  onClick={() => togglePlatform(platform.id)}
+                  onClick={() => !isInstagramConnecting && handlePlatformClick(platform.id, platform.supported)}
                   className={cn(
-                    'p-4 rounded-xl border cursor-pointer transition-all',
+                    'p-4 rounded-xl border cursor-pointer transition-all relative',
                     isConnected
                       ? 'border-primary bg-primary/10'
-                      : 'border-border bg-muted/30 hover:border-muted-foreground'
+                      : platform.supported
+                        ? 'border-border bg-muted/30 hover:border-primary hover:bg-primary/5'
+                        : 'border-border bg-muted/30 hover:border-muted-foreground opacity-60',
+                    isInstagramConnecting && 'pointer-events-none'
                   )}
                 >
+                  {/* Loading overlay for Instagram */}
+                  {isInstagramConnecting && (
+                    <div className="absolute inset-0 bg-background/80 rounded-xl flex items-center justify-center z-10">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    </div>
+                  )}
+                  
                   <div className="flex flex-col items-center text-center">
                     <platform.icon className={cn('h-8 w-8 mb-2', isConnected ? platform.color : 'text-muted-foreground')} />
                     <span className={cn('text-sm font-medium', isConnected ? 'text-foreground' : 'text-muted-foreground')}>
                       {platform.name}
                     </span>
-                    <span className={cn(
-                      'text-xs mt-1 px-2 py-0.5 rounded-full',
-                      isConnected
-                        ? 'bg-chart-sentiment-positive/10 text-chart-sentiment-positive'
-                        : 'bg-muted text-muted-foreground'
-                    )}>
-                      {isConnected ? 'Connected' : 'Disconnected'}
-                    </span>
+                    
+                    {platform.supported ? (
+                      <span className={cn(
+                        'text-xs mt-1 px-2 py-0.5 rounded-full flex items-center gap-1',
+                        isConnected
+                          ? 'bg-chart-sentiment-positive/10 text-chart-sentiment-positive'
+                          : 'bg-primary/10 text-primary'
+                      )}>
+                        {isConnected ? (
+                          <>
+                            <Wifi className="h-3 w-3" />
+                            Connected
+                          </>
+                        ) : (
+                          'Click to connect'
+                        )}
+                      </span>
+                    ) : (
+                      <span className="text-xs mt-1 px-2 py-0.5 rounded-full bg-muted text-muted-foreground flex items-center gap-1">
+                        <WifiOff className="h-3 w-3" />
+                        Coming soon
+                      </span>
+                    )}
                   </div>
                 </motion.div>
               );
             })}
           </div>
+
+          {/* Instagram sync result */}
+          {instagramSyncResult && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-4 p-4 rounded-lg bg-chart-sentiment-positive/10 border border-chart-sentiment-positive/20"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-full bg-chart-sentiment-positive/20">
+                  <Check className="h-5 w-5 text-chart-sentiment-positive" />
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">
+                    Successfully synced @{instagramSyncResult.username}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Imported {instagramSyncResult.posts} posts and {instagramSyncResult.comments} comments
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
         </ChartCard>
 
         {/* Export Settings */}
