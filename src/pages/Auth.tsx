@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { LineChart, ArrowLeft, Mail, Lock, User, Loader2 } from "lucide-react";
 import { z } from "zod";
 
@@ -22,26 +22,14 @@ const Auth = () => {
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, signIn, signUp } = useAuth();
 
   useEffect(() => {
-    // Check if user is already logged in
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate("/dashboard");
-      }
-    };
-    checkAuth();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
-        navigate("/dashboard");
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+    // Redirect if already logged in
+    if (user) {
+      navigate("/dashboard");
+    }
+  }, [user, navigate]);
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -69,49 +57,45 @@ const Auth = () => {
 
     try {
       if (isSignUp) {
-        const redirectUrl = `${window.location.origin}/dashboard`;
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: redirectUrl,
-            data: {
-              full_name: fullName,
-            }
-          }
-        });
+        const result = await signUp(email, password, fullName);
 
-        if (error) {
-          if (error.message.includes("already registered")) {
+        if (result.error) {
+          if (result.error.includes("already exists")) {
             toast({
               title: "Account exists",
               description: "This email is already registered. Please sign in instead.",
               variant: "destructive",
             });
           } else {
-            throw error;
+            toast({
+              title: "Sign up failed",
+              description: result.error,
+              variant: "destructive",
+            });
           }
         } else {
           toast({
             title: "Account created!",
-            description: "Please check your email to verify your account.",
+            description: "Welcome to SocialPulse!",
           });
+          navigate("/dashboard");
         }
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+        const result = await signIn(email, password);
 
-        if (error) {
-          if (error.message.includes("Invalid login credentials")) {
+        if (result.error) {
+          if (result.error.includes("Invalid credentials")) {
             toast({
               title: "Invalid credentials",
               description: "The email or password you entered is incorrect.",
               variant: "destructive",
             });
           } else {
-            throw error;
+            toast({
+              title: "Sign in failed",
+              description: result.error,
+              variant: "destructive",
+            });
           }
         } else {
           toast({
@@ -121,10 +105,11 @@ const Auth = () => {
           navigate("/dashboard");
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
       toast({
         title: "Error",
-        description: error.message || "An unexpected error occurred",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
