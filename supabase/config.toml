@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.fetch-instagram]
 verify_jwt = false
+
+[functions.debug-instagram-token]
+verify_jwt = false
