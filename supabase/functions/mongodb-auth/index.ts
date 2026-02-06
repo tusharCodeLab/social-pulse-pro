@@ -48,14 +48,19 @@ serve(async (req) => {
       throw new Error("MONGODB_URI is not configured");
     }
 
+    // Log sanitized URI for debugging (hide password)
+    const sanitizedUri = mongoUri.replace(/:([^:@]+)@/, ':***@');
+    console.log("Connecting with URI pattern:", sanitizedUri);
+
     const client = new MongoClient();
     
     try {
       await client.connect(mongoUri);
-      console.log("Connected to MongoDB");
+      console.log("Connected to MongoDB successfully");
     } catch (connError) {
-      console.error("MongoDB connection error:", connError);
-      throw new Error("Failed to connect to MongoDB database");
+      console.error("MongoDB connection error details:", JSON.stringify(connError, null, 2));
+      console.error("MongoDB connection error message:", connError instanceof Error ? connError.message : connError);
+      throw new Error("Failed to connect to MongoDB database. Please check your MONGODB_URI secret.");
     }
 
     const db = client.database("social-media-analytics");
@@ -68,6 +73,7 @@ serve(async (req) => {
         const { email, password, fullName } = await req.json();
         
         if (!email || !password) {
+          await client.close();
           return new Response(
             JSON.stringify({ error: "Email and password are required" }),
             { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -77,6 +83,7 @@ serve(async (req) => {
         // Check if user exists
         const existingUser = await users.findOne({ email });
         if (existingUser) {
+          await client.close();
           return new Response(
             JSON.stringify({ error: "User already exists" }),
             { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -119,6 +126,7 @@ serve(async (req) => {
         const { email, password } = await req.json();
         
         if (!email || !password) {
+          await client.close();
           return new Response(
             JSON.stringify({ error: "Email and password are required" }),
             { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -128,6 +136,7 @@ serve(async (req) => {
         // Find user
         const user = await users.findOne({ email });
         if (!user) {
+          await client.close();
           return new Response(
             JSON.stringify({ error: "Invalid credentials" }),
             { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -137,6 +146,7 @@ serve(async (req) => {
         // Verify password
         const validPassword = await bcrypt.compare(password, user.password);
         if (!validPassword) {
+          await client.close();
           return new Response(
             JSON.stringify({ error: "Invalid credentials" }),
             { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -167,6 +177,7 @@ serve(async (req) => {
       case "me": {
         const authHeader = req.headers.get("Authorization");
         if (!authHeader?.startsWith("Bearer ")) {
+          await client.close();
           return new Response(
             JSON.stringify({ error: "Unauthorized" }),
             { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -195,6 +206,7 @@ serve(async (req) => {
             }
           };
         } catch {
+          await client.close();
           return new Response(
             JSON.stringify({ error: "Invalid or expired token" }),
             { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -204,6 +216,7 @@ serve(async (req) => {
       }
 
       default:
+        await client.close();
         return new Response(
           JSON.stringify({ error: "Unknown action" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
