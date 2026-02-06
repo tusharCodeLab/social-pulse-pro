@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
@@ -11,12 +12,14 @@ import {
   ChevronRight,
   Sparkles,
   TrendingUp,
+  LogOut,
 } from 'lucide-react';
 import { SidebarNavLink } from './SidebarNavLink';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 const navItems = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/posts', icon: FileText, label: 'Posts Analysis' },
   { to: '/audience', icon: Users, label: 'Audience Insights' },
   { to: '/sentiment', icon: Heart, label: 'Sentiment' },
@@ -26,6 +29,13 @@ const navItems = [
 
 export function AppSidebar() {
   const [collapsed, setCollapsed] = useState(false);
+  const { signOut, user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   return (
     <motion.aside
@@ -93,8 +103,41 @@ export function AppSidebar() {
         ))}
       </nav>
 
-      {/* Collapse Toggle */}
-      <div className="p-3 border-t border-sidebar-border">
+      {/* User & Logout */}
+      <div className="p-3 border-t border-sidebar-border space-y-2">
+        {/* User Info */}
+        <AnimatePresence mode="wait">
+          {!collapsed && user && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="px-3 py-2"
+            >
+              <p className="text-xs text-muted-foreground truncate">
+                {user.email}
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Logout Button */}
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={handleSignOut}
+          className={cn(
+            'w-full flex items-center gap-2 px-3 py-2 rounded-lg',
+            'text-muted-foreground hover:text-destructive hover:bg-destructive/10',
+            'transition-colors duration-200',
+            collapsed && 'justify-center'
+          )}
+        >
+          <LogOut className="h-5 w-5" />
+          {!collapsed && <span className="text-sm">Sign Out</span>}
+        </motion.button>
+
+        {/* Collapse Toggle */}
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
