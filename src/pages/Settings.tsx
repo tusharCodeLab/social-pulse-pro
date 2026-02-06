@@ -131,8 +131,6 @@ export default function Settings() {
         throw new Error(data.error);
       }
 
-      const isDemo = data.demo === true;
-      
       setInstagramSyncResult({
         posts: data.imported?.posts || 0,
         comments: data.imported?.comments || 0,
@@ -144,16 +142,14 @@ export default function Settings() {
         togglePlatform('instagram');
       }
 
-      // Turn off demo mode since we have data (real or demo)
+      // Turn off demo mode since we have real data
       if (demoMode) {
         setDemoMode(false);
       }
 
       toast({
-        title: isDemo ? 'Demo data loaded!' : 'Instagram connected!',
-        description: isDemo 
-          ? `Loaded ${data.imported?.posts || 0} demo posts. To use real data, connect a Facebook Page to your Instagram Business account.`
-          : `Imported ${data.imported?.posts || 0} posts and ${data.imported?.comments || 0} comments from @${data.account?.username}`,
+        title: 'Instagram connected!',
+        description: `Imported ${data.imported?.posts || 0} posts and ${data.imported?.comments || 0} comments from @${data.account?.username}`,
       });
 
     } catch (error) {

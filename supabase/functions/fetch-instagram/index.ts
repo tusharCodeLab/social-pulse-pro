@@ -99,125 +99,12 @@ serve(async (req) => {
     console.log(`Found ${pagesData.data?.length || 0} Facebook Pages`);
 
     if (!pagesData.data || pagesData.data.length === 0) {
-      console.log("No Facebook Pages found - returning demo data");
-      
-      // Return demo data when no real Instagram connection is available
-      const demoUsername = "demo_account";
-      
-      // Upsert demo social account
-      const { data: socialAccount } = await supabase
-        .from("social_accounts")
-        .upsert({
-          user_id: user.id,
-          platform: "instagram",
-          account_name: "Demo Instagram Account",
-          account_handle: `@${demoUsername}`,
-          is_connected: true,
-          followers_count: 12500,
-          following_count: 850,
-          updated_at: new Date().toISOString(),
-        }, {
-          onConflict: "user_id,platform",
-          ignoreDuplicates: false,
-        })
-        .select()
-        .single();
-
-      // Create demo posts
-      const demoPosts = [
-        { content: "Excited to share our latest product update! 🚀", likes: 245, comments: 18, type: "image", daysAgo: 1 },
-        { content: "Behind the scenes of our team retreat. Amazing energy! 🌟", likes: 189, comments: 24, type: "carousel", daysAgo: 3 },
-        { content: "Thank you for 10K followers! Your support means everything 🙏", likes: 892, comments: 156, type: "image", daysAgo: 5 },
-        { content: "New collection dropping next week. Stay tuned! 👀", likes: 567, comments: 43, type: "image", daysAgo: 7 },
-        { content: "Monday motivation: Dream big, work hard 💪", likes: 324, comments: 31, type: "reel", daysAgo: 10 },
-        { content: "Customer spotlight: Amazing feedback from @happy_customer 🎉", likes: 156, comments: 12, type: "image", daysAgo: 12 },
-        { content: "Tips for growing your social presence - link in bio!", likes: 423, comments: 67, type: "carousel", daysAgo: 14 },
-        { content: "Weekend vibes only ☀️", likes: 278, comments: 19, type: "reel", daysAgo: 16 },
-      ];
-
-      const postsToInsert = demoPosts.map((post, index) => ({
-        user_id: user.id,
-        platform: "instagram" as const,
-        external_post_id: `demo_post_${index + 1}`,
-        content: post.content,
-        post_type: post.type,
-        published_at: new Date(Date.now() - post.daysAgo * 24 * 60 * 60 * 1000).toISOString(),
-        likes_count: post.likes,
-        comments_count: post.comments,
-        social_account_id: socialAccount?.id || null,
-        impressions: Math.floor(post.likes * 8.5),
-        reach: Math.floor(post.likes * 6.2),
-        engagement_rate: ((post.likes + post.comments) / 12500 * 100).toFixed(2),
-        updated_at: new Date().toISOString(),
-      }));
-
-      const { error: postsError } = await supabase
-        .from("posts")
-        .upsert(postsToInsert, {
-          onConflict: "user_id,external_post_id",
-          ignoreDuplicates: false,
-        });
-
-      if (postsError) {
-        console.error("Error inserting demo posts:", postsError);
-      }
-
-      // Create demo comments
-      const demoComments = [
-        { postIndex: 0, content: "This looks amazing! 🔥", author: "tech_enthusiast" },
-        { postIndex: 0, content: "Can't wait to try this!", author: "early_adopter" },
-        { postIndex: 2, content: "Congratulations on 10K! 🎉", author: "supporter123" },
-        { postIndex: 2, content: "Well deserved!", author: "loyal_follower" },
-        { postIndex: 4, content: "So inspiring!", author: "motivated_user" },
-        { postIndex: 6, content: "Great tips, thanks for sharing!", author: "learning_daily" },
-      ];
-
-      // Get inserted posts to link comments
-      const { data: insertedPosts } = await supabase
-        .from("posts")
-        .select("id, external_post_id")
-        .eq("user_id", user.id)
-        .like("external_post_id", "demo_post_%");
-
-      if (insertedPosts) {
-        const commentsToInsert = demoComments.map(comment => {
-          const post = insertedPosts.find(p => p.external_post_id === `demo_post_${comment.postIndex + 1}`);
-          return {
-            user_id: user.id,
-            post_id: post?.id,
-            content: comment.content,
-            author_name: comment.author,
-            sentiment: ["positive", "positive", "positive", "neutral", "positive", "positive"][Math.floor(Math.random() * 6)] as "positive" | "neutral" | "negative",
-            created_at: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
-          };
-        }).filter(c => c.post_id);
-
-        await supabase
-          .from("post_comments")
-          .upsert(commentsToInsert, {
-            onConflict: "user_id,post_id,content",
-            ignoreDuplicates: true,
-          });
-      }
-
-      console.log("Demo data created successfully");
-
       return new Response(
-        JSON.stringify({
-          success: true,
-          demo: true,
-          account: {
-            username: demoUsername,
-            id: "demo",
-          },
-          imported: {
-            posts: demoPosts.length,
-            comments: demoComments.length,
-            hasInsights: false,
-          },
-          message: "Demo data loaded. To use real Instagram data, create a Facebook Page and link your Instagram Business account to it.",
+        JSON.stringify({ 
+          error: "No Facebook Pages found", 
+          hint: "Make sure your Facebook account has a Page connected to an Instagram Business/Creator account"
         }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
