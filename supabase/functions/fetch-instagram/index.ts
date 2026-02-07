@@ -280,6 +280,83 @@ serve(async (req) => {
       console.log("Insights not available");
     }
 
+    // Step 8: Save audience metrics for growth tracking
+    const today = new Date().toISOString().split('T')[0];
+    console.log(`Saving audience metrics for ${today}...`);
+    
+    const { error: metricsError } = await supabase
+      .from("audience_metrics")
+      .upsert({
+        user_id: user.id,
+        platform: "instagram",
+        date: today,
+        followers_count: instagramFollowersCount,
+        following_count: 0, // Not available from this endpoint
+        social_account_id: socialAccount?.id || null,
+        engagement_rate: postsToUpsert.length > 0 
+          ? postsToUpsert.reduce((sum, p) => sum + (p.likes_count + p.comments_count), 0) / postsToUpsert.length 
+          : 0,
+      }, {
+        onConflict: "user_id,platform,date",
+        ignoreDuplicates: false,
+      });
+
+    if (metricsError) {
+      console.error("Error saving audience metrics:", metricsError);
+    } else {
+      console.log("Audience metrics saved for", today);
+    }
+
+    // Step 9: Calculate and save best posting times based on post performance
+    console.log("Calculating best posting times...");
+    const postsByDayHour: Record<string, { total: number; engagement: number; count: number }> = {};
+    
+    for (const post of postsToUpsert) {
+      if (post.published_at) {
+        const date = new Date(post.published_at);
+        const dayOfWeek = date.getUTCDay(); // 0-6
+        const hourOfDay = date.getUTCHours(); // 0-23
+        const key = `${dayOfWeek}-${hourOfDay}`;
+        
+        if (!postsByDayHour[key]) {
+          postsByDayHour[key] = { total: 0, engagement: 0, count: 0 };
+        }
+        
+        const engagement = (post.likes_count || 0) + (post.comments_count || 0);
+        postsByDayHour[key].engagement += engagement;
+        postsByDayHour[key].count += 1;
+      }
+    }
+
+    // Save best posting times
+    const bestTimesToUpsert = Object.entries(postsByDayHour).map(([key, data]) => {
+      const [day, hour] = key.split('-').map(Number);
+      return {
+        user_id: user.id,
+        platform: "instagram" as const,
+        day_of_week: day,
+        hour_of_day: hour,
+        engagement_score: data.count > 0 ? data.engagement / data.count : 0,
+        sample_size: data.count,
+        last_calculated_at: new Date().toISOString(),
+      };
+    });
+
+    if (bestTimesToUpsert.length > 0) {
+      const { error: timesError } = await supabase
+        .from("best_posting_times")
+        .upsert(bestTimesToUpsert, {
+          onConflict: "user_id,platform,day_of_week,hour_of_day",
+          ignoreDuplicates: false,
+        });
+
+      if (timesError) {
+        console.error("Error saving best posting times:", timesError);
+      } else {
+        console.log(`Saved ${bestTimesToUpsert.length} best posting time records`);
+      }
+    }
+
     // Return summary
     return new Response(
       JSON.stringify({
