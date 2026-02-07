@@ -2,7 +2,6 @@
 // This file provides easy access to all API modules
 
 export * from './types';
-export * from './mockData';
 export { 
   socialApi,
   accountsApi,
