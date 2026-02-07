@@ -39,6 +39,7 @@ import {
   useTrendingTopicsApi,
   useGenerateInsightsApi,
 } from '@/hooks/useSocialApi';
+import { useQueryClient } from '@tanstack/react-query';
 
 const COLORS = {
   engagement: 'hsl(173, 80%, 45%)',
@@ -67,6 +68,7 @@ const staggerItem = {
 export default function Dashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   // API hooks
   const { data: summary, isLoading: loadingSummary } = useDashboardSummaryApi();
@@ -162,32 +164,22 @@ export default function Dashboard() {
             transition={{ delay: 0.3 }}
             className="flex items-center gap-3"
           >
-            <Button variant="outline" size="sm" className="gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="gap-2"
+              onClick={() => {
+                queryClient.invalidateQueries();
+                toast({
+                  title: "Refreshing data",
+                  description: "Fetching latest analytics...",
+                });
+              }}
+            >
               <RefreshCw className="h-4 w-4" />
               Refresh
             </Button>
           </motion.div>
-        </motion.div>
-
-        {/* Live Data Indicator */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.4 }}
-          className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary/10 to-chart-reach/10 border border-primary/20 backdrop-blur-sm"
-        >
-          <motion.div 
-            animate={{ scale: [1, 1.2, 1] }}
-            transition={{ duration: 2, repeat: Infinity }}
-            className="w-2 h-2 rounded-full bg-chart-sentiment-positive"
-          />
-          <span className="text-xs font-medium text-primary">
-            Live Analytics
-          </span>
-          <span className="text-xs text-muted-foreground">•</span>
-          <span className="text-xs text-muted-foreground">
-            Auto-refreshing
-          </span>
         </motion.div>
       </div>
 

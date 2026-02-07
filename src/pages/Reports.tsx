@@ -1,86 +1,49 @@
-import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Download,
   FileText,
-  Calendar,
-  Filter,
   BarChart3,
   PieChart,
   TrendingUp,
   Users,
   Clock,
+  Sparkles,
 } from 'lucide-react';
 import { DashboardLayout } from '@/components/DashboardLayout';
-import { ChartCard } from '@/components/dashboard/ChartCard';
-import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { cn } from '@/lib/utils';
 
-interface ReportTemplate {
-  id: string;
-  name: string;
-  description: string;
-  icon: typeof BarChart3;
-  metrics: string[];
-  lastGenerated?: string;
-}
-
-const reportTemplates: ReportTemplate[] = [
+const upcomingFeatures = [
   {
-    id: 'engagement',
-    name: 'Engagement Report',
-    description: 'Comprehensive analysis of likes, comments, shares, and saves across all platforms.',
     icon: TrendingUp,
-    metrics: ['Likes', 'Comments', 'Shares', 'Saves', 'Engagement Rate'],
-    lastGenerated: '2 days ago',
+    name: 'Engagement Reports',
+    description: 'Comprehensive analysis of likes, comments, shares, and saves across all platforms.',
   },
   {
-    id: 'audience',
-    name: 'Audience Report',
-    description: 'Demographic breakdown including age, gender, location, and growth trends.',
     icon: Users,
-    metrics: ['Demographics', 'Growth Rate', 'Active Hours', 'Top Locations'],
-    lastGenerated: '1 week ago',
+    name: 'Audience Reports',
+    description: 'Demographic breakdown including age, gender, location, and growth trends.',
   },
   {
-    id: 'content',
+    icon: BarChart3,
     name: 'Content Performance',
     description: 'Analysis of top-performing content with recommendations for optimization.',
-    icon: BarChart3,
-    metrics: ['Top Posts', 'Best Times', 'Content Types', 'Platform Comparison'],
-    lastGenerated: '3 days ago',
   },
   {
-    id: 'sentiment',
-    name: 'Sentiment Report',
-    description: 'AI-powered sentiment analysis with topic breakdown and trend detection.',
     icon: PieChart,
-    metrics: ['Sentiment Score', 'Topic Analysis', 'Trend Detection', 'Keywords'],
-    lastGenerated: 'Never',
+    name: 'Sentiment Reports',
+    description: 'AI-powered sentiment analysis with topic breakdown and trend detection.',
   },
-];
-
-const scheduledReports = [
-  { id: '1', name: 'Weekly Engagement Summary', frequency: 'Weekly', nextRun: 'Jan 20, 2024' },
-  { id: '2', name: 'Monthly Performance Report', frequency: 'Monthly', nextRun: 'Feb 1, 2024' },
-  { id: '3', name: 'Daily Sentiment Digest', frequency: 'Daily', nextRun: 'Tomorrow' },
+  {
+    icon: Clock,
+    name: 'Scheduled Reports',
+    description: 'Automated report delivery on your preferred schedule.',
+  },
+  {
+    icon: FileText,
+    name: 'Custom Reports',
+    description: 'Create custom reports with specific metrics and date ranges.',
+  },
 ];
 
 export default function Reports() {
-  const [selectedPeriod, setSelectedPeriod] = useState('30days');
-  const [selectedFormat, setSelectedFormat] = useState('pdf');
-
-  const handleGenerateReport = (templateId: string) => {
-    console.log(`Generating ${templateId} report for ${selectedPeriod} in ${selectedFormat} format`);
-  };
-
   return (
     <DashboardLayout>
       {/* Header */}
@@ -97,156 +60,79 @@ export default function Reports() {
         </motion.div>
       </div>
 
-      {/* Filters */}
+      {/* Coming Soon Hero */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.1 }}
-        className="flex flex-wrap gap-4 mb-8"
+        className="text-center py-16 px-8 rounded-2xl bg-gradient-to-br from-primary/5 via-background to-chart-reach/5 border border-border mb-8"
       >
-        <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-          <SelectTrigger className="w-[180px] bg-card border-border">
-            <Calendar className="h-4 w-4 mr-2" />
-            <SelectValue placeholder="Time Period" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="7days">Last 7 Days</SelectItem>
-            <SelectItem value="30days">Last 30 Days</SelectItem>
-            <SelectItem value="90days">Last 90 Days</SelectItem>
-            <SelectItem value="year">This Year</SelectItem>
-            <SelectItem value="custom">Custom Range</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={selectedFormat} onValueChange={setSelectedFormat}>
-          <SelectTrigger className="w-[140px] bg-card border-border">
-            <FileText className="h-4 w-4 mr-2" />
-            <SelectValue placeholder="Format" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="pdf">PDF</SelectItem>
-            <SelectItem value="csv">CSV</SelectItem>
-            <SelectItem value="excel">Excel</SelectItem>
-          </SelectContent>
-        </Select>
-      </motion.div>
-
-      {/* Report Templates */}
-      <div className="mb-8">
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+          className="inline-flex items-center justify-center p-4 rounded-2xl bg-primary/10 mb-6"
+        >
+          <Sparkles className="h-10 w-10 text-primary" />
+        </motion.div>
+        
         <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="text-2xl lg:text-3xl font-bold text-foreground mb-3"
+        >
+          Reports Coming Soon
+        </motion.h2>
+        
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="text-muted-foreground max-w-lg mx-auto mb-6"
+        >
+          We're building powerful reporting features to help you generate insights, 
+          track performance, and share results with your team.
+        </motion.p>
+
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.15 }}
-          className="text-lg font-semibold text-foreground mb-4"
+          transition={{ delay: 0.5 }}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20"
         >
-          Report Templates
-        </motion.h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {reportTemplates.map((template, index) => (
+          <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+          <span className="text-sm font-medium text-primary">In Development</span>
+        </motion.div>
+      </motion.div>
+
+      {/* Upcoming Features Grid */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.5 }}
+      >
+        <h3 className="text-lg font-semibold text-foreground mb-4">Upcoming Features</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {upcomingFeatures.map((feature, index) => (
             <motion.div
-              key={template.id}
+              key={feature.name}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 + index * 0.05 }}
-              whileHover={{ y: -4 }}
-              className="metric-card rounded-xl p-6 border border-border"
+              transition={{ delay: 0.6 + index * 0.05 }}
+              className="p-5 rounded-xl border border-border bg-card/50 hover:bg-card transition-colors"
             >
-              <div className="flex items-start justify-between mb-4">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <template.icon className="h-5 w-5 text-primary" />
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                  onClick={() => handleGenerateReport(template.id)}
-                >
-                  <Download className="h-4 w-4" />
-                  Generate
-                </Button>
-              </div>
-              <h3 className="font-semibold text-foreground mb-2">{template.name}</h3>
-              <p className="text-sm text-muted-foreground mb-4">{template.description}</p>
-              <div className="flex flex-wrap gap-2 mb-3">
-                {template.metrics.map((metric) => (
-                  <span
-                    key={metric}
-                    className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground"
-                  >
-                    {metric}
-                  </span>
-                ))}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Last generated: {template.lastGenerated}
-              </p>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-
-      {/* Scheduled Reports */}
-      <ChartCard
-        title="Scheduled Reports"
-        subtitle="Automated report delivery schedule"
-        delay={0.4}
-        action={
-          <Button variant="outline" size="sm" className="gap-2">
-            <Clock className="h-4 w-4" />
-            Schedule New
-          </Button>
-        }
-      >
-        <div className="space-y-3 mt-4">
-          {scheduledReports.map((report, index) => (
-            <motion.div
-              key={report.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.45 + index * 0.05 }}
-              className="flex items-center justify-between p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
-            >
-              <div className="flex items-center gap-4">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <FileText className="h-5 w-5 text-primary" />
+              <div className="flex items-start gap-4">
+                <div className="p-2 rounded-lg bg-muted">
+                  <feature.icon className="h-5 w-5 text-muted-foreground" />
                 </div>
                 <div>
-                  <h4 className="font-medium text-foreground">{report.name}</h4>
-                  <p className="text-sm text-muted-foreground">{report.frequency}</p>
+                  <h4 className="font-medium text-foreground mb-1">{feature.name}</h4>
+                  <p className="text-sm text-muted-foreground">{feature.description}</p>
                 </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="text-right">
-                  <p className="text-sm text-muted-foreground">Next run</p>
-                  <p className="text-sm font-medium text-foreground">{report.nextRun}</p>
-                </div>
-                <Button variant="ghost" size="sm">
-                  Edit
-                </Button>
               </div>
             </motion.div>
           ))}
-        </div>
-      </ChartCard>
-
-      {/* Quick Actions */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6 }}
-        className="mt-8 p-6 rounded-xl border border-dashed border-border bg-muted/20"
-      >
-        <div className="text-center">
-          <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-foreground mb-2">
-            Need a Custom Report?
-          </h3>
-          <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
-            Create a custom report with specific metrics, date ranges, and visualization preferences.
-          </p>
-          <Button className="gap-2">
-            <BarChart3 className="h-4 w-4" />
-            Create Custom Report
-          </Button>
         </div>
       </motion.div>
     </DashboardLayout>
