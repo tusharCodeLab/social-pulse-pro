@@ -112,13 +112,15 @@ serve(async (req) => {
     // Step 2: Get Instagram Business Account for each page
     let instagramAccountId: string | null = null;
     let instagramUsername: string | null = null;
+    let instagramFollowersCount: number = 0;
+    let instagramMediaCount: number = 0;
     let pageAccessToken: string | null = null;
 
     for (const page of pagesData.data) {
       console.log(`Checking page: ${page.name} (${page.id})`);
       
       const igAccountResponse = await fetch(
-        `${FACEBOOK_GRAPH_API}/${page.id}?fields=instagram_business_account{id,username,followers_count,media_count}&access_token=${page.access_token || ACCESS_TOKEN}`
+        `${FACEBOOK_GRAPH_API}/${page.id}?fields=instagram_business_account{id,username,followers_count,follows_count,media_count}&access_token=${page.access_token || ACCESS_TOKEN}`
       );
       
       if (igAccountResponse.ok) {
@@ -126,8 +128,10 @@ serve(async (req) => {
         if (igData.instagram_business_account) {
           instagramAccountId = igData.instagram_business_account.id;
           instagramUsername = igData.instagram_business_account.username;
+          instagramFollowersCount = igData.instagram_business_account.followers_count || 0;
+          instagramMediaCount = igData.instagram_business_account.media_count || 0;
           pageAccessToken = page.access_token || ACCESS_TOKEN;
-          console.log(`Found Instagram account: @${instagramUsername} (${instagramAccountId})`);
+          console.log(`Found Instagram account: @${instagramUsername} (${instagramAccountId}), Followers: ${instagramFollowersCount}, Posts: ${instagramMediaCount}`);
           break;
         }
       }
@@ -143,7 +147,7 @@ serve(async (req) => {
       );
     }
 
-    // Step 3: Upsert social account in database
+    // Step 3: Upsert social account in database WITH follower count
     const { data: socialAccount, error: accountError } = await supabase
       .from("social_accounts")
       .upsert({
@@ -151,6 +155,7 @@ serve(async (req) => {
         platform: "instagram",
         account_name: instagramUsername || "Instagram Account",
         account_handle: `@${instagramUsername}`,
+        followers_count: instagramFollowersCount,
         is_connected: true,
         updated_at: new Date().toISOString(),
       }, {
@@ -163,7 +168,7 @@ serve(async (req) => {
     if (accountError) {
       console.error("Error upserting social account:", accountError);
     } else {
-      console.log("Social account upserted:", socialAccount?.id);
+      console.log("Social account upserted:", socialAccount?.id, "with followers:", instagramFollowersCount);
     }
 
     // Step 4: Fetch recent media from Instagram Business Account
@@ -282,6 +287,8 @@ serve(async (req) => {
         account: {
           username: instagramUsername,
           id: instagramAccountId,
+          followers_count: instagramFollowersCount,
+          media_count: instagramMediaCount,
         },
         imported: {
           posts: postsToUpsert.length,
