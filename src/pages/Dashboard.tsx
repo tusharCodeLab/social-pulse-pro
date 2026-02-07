@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   AreaChart,
@@ -30,13 +29,6 @@ import { InsightCard } from '@/components/dashboard/InsightCard';
 import { ChartCard } from '@/components/dashboard/ChartCard';
 import { Button } from '@/components/ui/button';
 import { PremiumSkeleton } from '@/components/ui/premium-skeleton';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -46,7 +38,6 @@ import {
   useAIInsightsApi,
   useTrendingTopicsApi,
   useGenerateInsightsApi,
-  useEngagementAnalyticsApi,
 } from '@/hooks/useSocialApi';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -74,13 +65,10 @@ const staggerItem = {
   show: { opacity: 1, y: 0 },
 };
 
-type DateRange = '7' | '14' | '30' | '90';
-
 export default function Dashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [dateRange, setDateRange] = useState<DateRange>('30');
   
   // API hooks
   const { data: summary, isLoading: loadingSummary } = useDashboardSummaryApi();
@@ -88,18 +76,12 @@ export default function Dashboard() {
   const { data: sentimentStats, isLoading: loadingSentiment } = useSentimentStatsApi();
   const { data: insights, isLoading: loadingInsights } = useAIInsightsApi();
   const { data: trendingTopics } = useTrendingTopicsApi();
-  const { data: engagementTrend } = useEngagementAnalyticsApi(Number(dateRange));
   const generateInsights = useGenerateInsightsApi();
 
   const isLoading = loadingSummary || loadingPosts || loadingSentiment || loadingInsights;
 
-  // Transform engagement trend to chart data (uses date range)
-  const engagementData = engagementTrend?.map(e => ({
-    date: new Date(e.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    likes: e.likes,
-    comments: e.comments,
-    shares: e.shares,
-  })) || posts?.slice(0, 7).map(p => ({
+  // Transform posts to engagement chart data
+  const engagementData = posts?.slice(0, 7).map(p => ({
     date: new Date(p.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
     likes: p.metrics.likes,
     comments: p.metrics.comments,
@@ -182,18 +164,6 @@ export default function Dashboard() {
             transition={{ delay: 0.3 }}
             className="flex items-center gap-3"
           >
-            <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRange)}>
-              <SelectTrigger className="w-[130px]">
-                <Calendar className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Date range" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7">Last 7 days</SelectItem>
-                <SelectItem value="14">Last 14 days</SelectItem>
-                <SelectItem value="30">Last 30 days</SelectItem>
-                <SelectItem value="90">Last 90 days</SelectItem>
-              </SelectContent>
-            </Select>
             <Button 
               variant="outline" 
               size="sm" 

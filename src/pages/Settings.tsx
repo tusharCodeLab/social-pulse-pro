@@ -6,45 +6,29 @@ import {
   Loader2,
   Wifi,
   WifiOff,
-  RefreshCw,
-  LogOut,
-  AlertTriangle,
-  Clock,
 } from 'lucide-react';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { ChartCard } from '@/components/dashboard/ChartCard';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useInstagramOAuth } from '@/hooks/useInstagramOAuth';
-import { Button } from '@/components/ui/button';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+
+const platforms = [
+  { id: 'instagram', name: 'Instagram', icon: Instagram, color: 'text-[#E4405F]', supported: true },
+];
 
 export default function Settings() {
-  const { user } = useAuth();
+  const { connectedPlatforms, togglePlatform } = useSettingsStore();
+  const [isConnectingInstagram, setIsConnectingInstagram] = useState(false);
+  const [instagramSyncResult, setInstagramSyncResult] = useState<{
+    posts: number;
+    comments: number;
+    username: string;
+  } | null>(null);
   const { toast } = useToast();
-  const {
-    connectionStatus,
-    isLoading,
-    isConnecting,
-    isSyncing,
-    isDisconnecting,
-    error,
-    startOAuthFlow,
-    disconnectInstagram,
-    syncInstagramData,
-    refreshToken,
-  } = useInstagramOAuth();
+  const { user } = useAuth();
 
   const handleConnectInstagram = async () => {
     if (!user) {
@@ -56,45 +40,60 @@ export default function Settings() {
       return;
     }
 
-    await startOAuthFlow();
-  };
+    setIsConnectingInstagram(true);
+    setInstagramSyncResult(null);
 
-  const handleSyncData = async () => {
-    const result = await syncInstagramData();
-    if (result.success) {
-      toast({
-        title: 'Sync complete!',
-        description: `Imported ${result.posts} posts and ${result.comments} comments.`,
+    try {
+      const { data, error } = await supabase.functions.invoke('fetch-instagram');
+      
+      if (error) {
+        throw error;
+      }
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      setInstagramSyncResult({
+        posts: data.imported?.posts || 0,
+        comments: data.imported?.comments || 0,
+        username: data.account?.username || 'Unknown',
       });
-    } else {
+
+      // Update the connected platforms store
+      if (!connectedPlatforms.includes('instagram')) {
+        togglePlatform('instagram');
+      }
+
       toast({
-        title: 'Sync failed',
-        description: error || 'Failed to sync Instagram data',
+        title: 'Instagram connected!',
+        description: `Imported ${data.imported?.posts || 0} posts and ${data.imported?.comments || 0} comments from @${data.account?.username}`,
+      });
+
+    } catch (error) {
+      console.error('Instagram connection error:', error);
+      toast({
+        title: 'Connection failed',
+        description: error instanceof Error ? error.message : 'Failed to connect Instagram',
         variant: 'destructive',
       });
+    } finally {
+      setIsConnectingInstagram(false);
     }
   };
 
-  const handleDisconnect = async () => {
-    await disconnectInstagram();
-    toast({
-      title: 'Disconnected',
-      description: 'Your Instagram account has been disconnected.',
-    });
+  const handlePlatformClick = (platformId: string, supported: boolean) => {
+    if (platformId === 'instagram' && supported) {
+      handleConnectInstagram();
+    } else if (!supported) {
+      toast({
+        title: 'Coming soon',
+        description: `${platformId.charAt(0).toUpperCase() + platformId.slice(1)} integration is coming soon!`,
+      });
+    } else {
+      togglePlatform(platformId);
+    }
   };
-
-  const handleRefreshToken = async () => {
-    await refreshToken();
-    toast({
-      title: 'Token refreshed',
-      description: 'Your Instagram connection has been refreshed.',
-    });
-  };
-
-  const isConnected = connectionStatus?.connected ?? false;
-  const isExpiringSoon = connectionStatus?.days_until_expiry !== undefined && 
-    connectionStatus.days_until_expiry <= 7 && 
-    connectionStatus.days_until_expiry > 0;
 
   return (
     <DashboardLayout>
@@ -127,7 +126,7 @@ export default function Settings() {
         </motion.div>
       </div>
 
-      <div className="max-w-2xl space-y-6">
+      <div className="max-w-2xl">
         {/* Connected Platforms */}
         <ChartCard
           title="Connected Platforms"
@@ -135,175 +134,93 @@ export default function Settings() {
           delay={0.2}
         >
           <div className="mt-4">
-            {/* Instagram Connection Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 }}
-              className={cn(
-                'p-6 rounded-xl border transition-all relative',
-                isConnected
-                  ? 'border-primary bg-primary/10'
-                  : 'border-border bg-muted/30'
-              )}
-            >
-              {/* Loading overlay */}
-              {(isConnecting || isLoading) && (
-                <div className="absolute inset-0 bg-background/80 rounded-xl flex items-center justify-center z-10">
-                  <div className="flex items-center gap-3">
-                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                    <span className="text-sm text-muted-foreground">
-                      {isConnecting ? 'Connecting to Instagram...' : 'Loading...'}
-                    </span>
-                  </div>
-                </div>
-              )}
+            {platforms.map((platform, index) => {
+              const isConnected = connectedPlatforms.includes(platform.id);
+              const isInstagramConnecting = platform.id === 'instagram' && isConnectingInstagram;
               
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className={cn(
-                    'p-3 rounded-xl',
-                    isConnected ? 'bg-primary/20' : 'bg-muted'
-                  )}>
-                    <Instagram className={cn('h-8 w-8', isConnected ? 'text-[#E4405F]' : 'text-muted-foreground')} />
-                  </div>
-                  <div>
-                    <h3 className={cn('text-lg font-semibold', isConnected ? 'text-foreground' : 'text-muted-foreground')}>
-                      Instagram
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      {isConnected 
-                        ? `Connected as @${connectionStatus?.instagram_username}`
-                        : 'Click to connect your account'
-                      }
-                    </p>
-                  </div>
-                </div>
-                
-                {!isConnected ? (
-                  <Button
-                    onClick={handleConnectInstagram}
-                    disabled={isConnecting || !user}
-                    className="gap-2"
-                  >
-                    Connect
-                  </Button>
-                ) : (
-                  <span className="px-3 py-1.5 rounded-full text-sm font-medium flex items-center gap-2 bg-chart-sentiment-positive/10 text-chart-sentiment-positive">
-                    <Wifi className="h-4 w-4" />
-                    Connected
-                  </span>
-                )}
-              </div>
-
-              {/* Connected account actions */}
-              {isConnected && (
+              return (
                 <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  className="mt-4 pt-4 border-t border-border"
+                  key={platform.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.25 + index * 0.05 }}
+                  whileHover={{ scale: 1.02 }}
+                  onClick={() => !isInstagramConnecting && handlePlatformClick(platform.id, platform.supported)}
+                  className={cn(
+                    'p-6 rounded-xl border cursor-pointer transition-all relative',
+                    isConnected
+                      ? 'border-primary bg-primary/10'
+                      : 'border-border bg-muted/30 hover:border-primary hover:bg-primary/5',
+                    isInstagramConnecting && 'pointer-events-none'
+                  )}
                 >
-                  {/* Token expiry warning */}
-                  {connectionStatus?.is_expired && (
-                    <div className="mb-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20 flex items-center gap-3">
-                      <AlertTriangle className="h-5 w-5 text-destructive" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-destructive">Token expired</p>
-                        <p className="text-xs text-muted-foreground">Please reconnect your Instagram account</p>
+                  {/* Loading overlay */}
+                  {isInstagramConnecting && (
+                    <div className="absolute inset-0 bg-background/80 rounded-xl flex items-center justify-center z-10">
+                      <div className="flex items-center gap-3">
+                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                        <span className="text-sm text-muted-foreground">Connecting to Instagram...</span>
                       </div>
-                      <Button size="sm" variant="destructive" onClick={handleConnectInstagram}>
-                        Reconnect
-                      </Button>
                     </div>
                   )}
-
-                  {isExpiringSoon && !connectionStatus?.is_expired && (
-                    <div className="mb-4 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 flex items-center gap-3">
-                      <Clock className="h-5 w-5 text-yellow-600" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-yellow-600">Token expiring soon</p>
-                        <p className="text-xs text-muted-foreground">
-                          Expires in {connectionStatus?.days_until_expiry} days
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className={cn(
+                        'p-3 rounded-xl',
+                        isConnected ? 'bg-primary/20' : 'bg-muted'
+                      )}>
+                        <platform.icon className={cn('h-8 w-8', isConnected ? platform.color : 'text-muted-foreground')} />
+                      </div>
+                      <div>
+                        <h3 className={cn('text-lg font-semibold', isConnected ? 'text-foreground' : 'text-muted-foreground')}>
+                          {platform.name}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          {isConnected ? 'Connected and syncing data' : 'Click to connect your account'}
                         </p>
                       </div>
-                      <Button size="sm" variant="outline" onClick={handleRefreshToken}>
-                        Refresh
-                      </Button>
                     </div>
-                  )}
-
-                  <div className="flex flex-wrap gap-3">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleSyncData}
-                      disabled={isSyncing}
-                      className="gap-2"
-                    >
-                      {isSyncing ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                    
+                    <span className={cn(
+                      'px-3 py-1.5 rounded-full text-sm font-medium flex items-center gap-2',
+                      isConnected
+                        ? 'bg-chart-sentiment-positive/10 text-chart-sentiment-positive'
+                        : 'bg-primary/10 text-primary'
+                    )}>
+                      {isConnected ? (
+                        <>
+                          <Wifi className="h-4 w-4" />
+                          Connected
+                        </>
                       ) : (
-                        <RefreshCw className="h-4 w-4" />
+                        'Connect'
                       )}
-                      {isSyncing ? 'Syncing...' : 'Sync Data'}
-                    </Button>
-
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={isDisconnecting}
-                          className="gap-2 text-destructive hover:text-destructive"
-                        >
-                          {isDisconnecting ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <LogOut className="h-4 w-4" />
-                          )}
-                          Disconnect
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Disconnect Instagram?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will remove your Instagram connection. Your existing data will remain, but you won't receive new updates until you reconnect.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleDisconnect}>
-                            Disconnect
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                    </span>
                   </div>
-
-                  {/* Last sync info */}
-                  {connectionStatus?.last_updated && (
-                    <p className="mt-3 text-xs text-muted-foreground">
-                      Last updated: {new Date(connectionStatus.last_updated).toLocaleString()}
-                    </p>
-                  )}
                 </motion.div>
-              )}
-            </motion.div>
+              );
+            })}
           </div>
 
-          {/* Error display */}
-          {error && (
+          {/* Instagram sync result */}
+          {instagramSyncResult && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-4 p-4 rounded-lg bg-destructive/10 border border-destructive/20"
+              className="mt-4 p-4 rounded-lg bg-chart-sentiment-positive/10 border border-chart-sentiment-positive/20"
             >
               <div className="flex items-center gap-3">
-                <AlertTriangle className="h-5 w-5 text-destructive" />
+                <div className="p-2 rounded-full bg-chart-sentiment-positive/20">
+                  <Check className="h-5 w-5 text-chart-sentiment-positive" />
+                </div>
                 <div>
-                  <p className="font-medium text-destructive">Connection Error</p>
-                  <p className="text-sm text-muted-foreground">{error}</p>
+                  <p className="font-medium text-foreground">
+                    Successfully synced @{instagramSyncResult.username}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Imported {instagramSyncResult.posts} posts and {instagramSyncResult.comments} comments
+                  </p>
                 </div>
               </div>
             </motion.div>
@@ -326,35 +243,6 @@ export default function Settings() {
               </div>
             </div>
           </motion.div>
-        </ChartCard>
-
-        {/* OAuth Info Card */}
-        <ChartCard
-          title="How it works"
-          subtitle="Secure Instagram connection using OAuth"
-          delay={0.3}
-        >
-          <div className="mt-4 space-y-3 text-sm text-muted-foreground">
-            <div className="flex gap-3">
-              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium text-primary">1</div>
-              <p>Click "Connect" to securely log in with your Facebook account</p>
-            </div>
-            <div className="flex gap-3">
-              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium text-primary">2</div>
-              <p>Grant permission to access your Instagram Business/Creator account</p>
-            </div>
-            <div className="flex gap-3">
-              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium text-primary">3</div>
-              <p>Your data syncs automatically and tokens refresh every 60 days</p>
-            </div>
-          </div>
-          
-          <div className="mt-4 p-3 rounded-lg bg-muted/50 border border-border">
-            <p className="text-xs text-muted-foreground">
-              <strong>Note:</strong> Instagram integration requires a Business or Creator account linked to a Facebook Page. 
-              Personal Instagram accounts are not supported by the Instagram API.
-            </p>
-          </div>
         </ChartCard>
       </div>
     </DashboardLayout>

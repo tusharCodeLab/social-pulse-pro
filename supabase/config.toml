@@ -11,6 +11,3 @@ verify_jwt = false
 
 [functions.debug-instagram-token]
 verify_jwt = false
-
-[functions.instagram-auth]
-verify_jwt = false
