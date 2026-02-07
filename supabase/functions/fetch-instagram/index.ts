@@ -99,98 +99,13 @@ serve(async (req) => {
     console.log(`Found ${pagesData.data?.length || 0} Facebook Pages`);
 
     if (!pagesData.data || pagesData.data.length === 0) {
-      console.log("No Facebook Pages found - creating demo data for user");
-      
-      // Create demo social account
-      const { data: demoAccount } = await supabase
-        .from("social_accounts")
-        .upsert({
-          user_id: user.id,
-          platform: "instagram",
-          account_name: "Demo Instagram Account",
-          account_handle: "@demo_account",
-          is_connected: true,
-          followers_count: 12500,
-          following_count: 850,
-          updated_at: new Date().toISOString(),
-        }, {
-          onConflict: "user_id,platform",
-          ignoreDuplicates: false,
-        })
-        .select()
-        .single();
-
-      // Create demo posts
-      const demoPosts = [
-        { content: "Excited to share our latest product launch! 🚀", likes: 342, comments: 28, type: "image" },
-        { content: "Behind the scenes at our team retreat 🏔️", likes: 521, comments: 45, type: "carousel" },
-        { content: "Thank you for 10K followers! 🎉", likes: 892, comments: 156, type: "image" },
-        { content: "New tutorial video is live! Check it out 📹", likes: 267, comments: 34, type: "video" },
-        { content: "Monday motivation 💪 #StartupLife", likes: 445, comments: 23, type: "image" },
-      ];
-
-      const postsToInsert = demoPosts.map((post, i) => ({
-        user_id: user.id,
-        platform: "instagram" as const,
-        external_post_id: `demo_post_${i + 1}`,
-        content: post.content,
-        post_type: post.type,
-        published_at: new Date(Date.now() - i * 86400000 * 2).toISOString(),
-        likes_count: post.likes,
-        comments_count: post.comments,
-        social_account_id: demoAccount?.id || null,
-        impressions: Math.floor(post.likes * 15),
-        reach: Math.floor(post.likes * 10),
-        engagement_rate: Number(((post.likes + post.comments) / 12500 * 100).toFixed(2)),
-      }));
-
-      await supabase.from("posts").upsert(postsToInsert, {
-        onConflict: "user_id,external_post_id",
-        ignoreDuplicates: false,
-      });
-
-      // Create demo comments
-      const demoComments = [
-        { content: "This is amazing! 🔥", author: "user_fan1", sentiment: "positive" },
-        { content: "Love your content!", author: "happy_customer", sentiment: "positive" },
-        { content: "Not sure about this one...", author: "skeptic123", sentiment: "negative" },
-        { content: "Interesting perspective", author: "neutral_viewer", sentiment: "neutral" },
-        { content: "Can't wait for more!", author: "excited_follower", sentiment: "positive" },
-      ];
-
-      const { data: firstPost } = await supabase
-        .from("posts")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("external_post_id", "demo_post_1")
-        .maybeSingle();
-
-      if (firstPost) {
-        await supabase.from("post_comments").upsert(
-          demoComments.map((c, i) => ({
-            user_id: user.id,
-            post_id: firstPost.id,
-            content: c.content,
-            author_name: c.author,
-            sentiment: c.sentiment as "positive" | "negative" | "neutral",
-            sentiment_score: c.sentiment === "positive" ? 0.8 : c.sentiment === "negative" ? 0.2 : 0.5,
-            created_at: new Date(Date.now() - i * 3600000).toISOString(),
-          })),
-          { onConflict: "user_id,post_id,content", ignoreDuplicates: true }
-        );
-      }
-
-      console.log("Demo data created successfully");
-      
+      console.log("No Facebook Pages found");
       return new Response(
-        JSON.stringify({
-          success: true,
-          demo: true,
-          account: { username: "demo_account", id: "demo" },
-          imported: { posts: demoPosts.length, comments: demoComments.length, hasInsights: false },
-          message: "No Facebook Pages found. Created demo data so you can explore the app. To use real data, create a Facebook Page and connect your Instagram Business account.",
+        JSON.stringify({ 
+          error: "No Facebook Pages found", 
+          hint: "Make sure your Facebook account has a Page connected to an Instagram Business/Creator account"
         }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
