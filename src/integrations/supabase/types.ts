@@ -133,6 +133,48 @@ export type Database = {
         }
         Relationships: []
       }
+      instagram_tokens: {
+        Row: {
+          access_token: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          instagram_user_id: string | null
+          instagram_username: string | null
+          page_access_token: string | null
+          page_id: string | null
+          token_type: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          instagram_user_id?: string | null
+          instagram_username?: string | null
+          page_access_token?: string | null
+          page_id?: string | null
+          token_type?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          instagram_user_id?: string | null
+          instagram_username?: string | null
+          page_access_token?: string | null
+          page_id?: string | null
+          token_type?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       post_comments: {
         Row: {
           analyzed_at: string | null
