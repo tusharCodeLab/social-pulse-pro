@@ -7,7 +7,6 @@ const corsHeaders = {
 };
 
 // Using Facebook Graph API to access Instagram Business/Creator accounts
-// This works with tokens that have pages_show_list, instagram_basic permissions
 const FACEBOOK_GRAPH_API = "https://graph.facebook.com/v18.0";
 
 interface InstagramMedia {
@@ -28,18 +27,6 @@ serve(async (req) => {
   }
 
   try {
-    const ACCESS_TOKEN = Deno.env.get("INSTAGRAM_ACCESS_TOKEN");
-    if (!ACCESS_TOKEN) {
-      console.error("INSTAGRAM_ACCESS_TOKEN not configured");
-      return new Response(
-        JSON.stringify({ error: "Instagram access token not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Log token length for debugging (not the actual token)
-    console.log(`Access token length: ${ACCESS_TOKEN.length} characters`);
-
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -65,90 +52,63 @@ serve(async (req) => {
 
     console.log(`Fetching Instagram data for user: ${user.id}`);
 
-    // Step 1: Get Facebook Pages connected to this token
-    console.log("Fetching Facebook Pages...");
-    const pagesResponse = await fetch(
-      `${FACEBOOK_GRAPH_API}/me/accounts?access_token=${ACCESS_TOKEN}`
+    // Get user's Instagram token from database
+    const { data: tokenData, error: tokenError } = await supabase
+      .from("instagram_tokens")
+      .select("*")
+      .eq("user_id", user.id)
+      .single();
+
+    if (tokenError || !tokenData) {
+      console.error("No Instagram token found for user");
+      return new Response(
+        JSON.stringify({ 
+          error: "Instagram not connected",
+          hint: "Please connect your Instagram account in Settings"
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Check if token is expired
+    if (tokenData.expires_at && new Date(tokenData.expires_at) < new Date()) {
+      console.error("Instagram token has expired");
+      return new Response(
+        JSON.stringify({ 
+          error: "Instagram token has expired",
+          hint: "Please reconnect your Instagram account in Settings"
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const ACCESS_TOKEN = tokenData.page_access_token || tokenData.access_token;
+    const instagramAccountId = tokenData.instagram_user_id;
+    const instagramUsername = tokenData.instagram_username;
+
+    console.log(`Using token for @${instagramUsername} (${instagramAccountId})`);
+
+    // Fetch Instagram account details (followers, media count)
+    console.log("Fetching Instagram account details...");
+    const accountResponse = await fetch(
+      `${FACEBOOK_GRAPH_API}/${instagramAccountId}?fields=username,followers_count,follows_count,media_count&access_token=${ACCESS_TOKEN}`
     );
     
-    const pagesRawResponse = await pagesResponse.text();
-    console.log("Facebook Pages API raw response:", pagesRawResponse);
+    let instagramFollowersCount = 0;
+    let instagramMediaCount = 0;
     
-    if (!pagesResponse.ok) {
-      console.error("Facebook Pages API error:", pagesRawResponse);
-      return new Response(
-        JSON.stringify({ 
-          error: "Failed to fetch Facebook Pages", 
-          details: pagesRawResponse,
-          hint: "Make sure your token has 'pages_show_list' permission and is a valid User Access Token from Graph API Explorer"
-        }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-    
-    let pagesData;
-    try {
-      pagesData = JSON.parse(pagesRawResponse);
-    } catch (e) {
-      console.error("Failed to parse pages response:", e);
-      return new Response(
-        JSON.stringify({ error: "Invalid response from Facebook API", details: pagesRawResponse }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-    console.log(`Found ${pagesData.data?.length || 0} Facebook Pages`);
-
-    if (!pagesData.data || pagesData.data.length === 0) {
-      console.log("No Facebook Pages found");
-      return new Response(
-        JSON.stringify({ 
-          error: "No Facebook Pages found", 
-          hint: "Make sure your Facebook account has a Page connected to an Instagram Business/Creator account"
-        }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    if (accountResponse.ok) {
+      const accountData = await accountResponse.json();
+      instagramFollowersCount = accountData.followers_count || 0;
+      instagramMediaCount = accountData.media_count || 0;
+      console.log(`Account stats: ${instagramFollowersCount} followers, ${instagramMediaCount} posts`);
+    } else {
+      const errorText = await accountResponse.text();
+      console.error("Failed to fetch account details:", errorText);
     }
 
-    // Step 2: Get Instagram Business Account for each page
-    let instagramAccountId: string | null = null;
-    let instagramUsername: string | null = null;
-    let instagramFollowersCount: number = 0;
-    let instagramMediaCount: number = 0;
-    let pageAccessToken: string | null = null;
-
-    for (const page of pagesData.data) {
-      console.log(`Checking page: ${page.name} (${page.id})`);
-      
-      const igAccountResponse = await fetch(
-        `${FACEBOOK_GRAPH_API}/${page.id}?fields=instagram_business_account{id,username,followers_count,follows_count,media_count}&access_token=${page.access_token || ACCESS_TOKEN}`
-      );
-      
-      if (igAccountResponse.ok) {
-        const igData = await igAccountResponse.json();
-        if (igData.instagram_business_account) {
-          instagramAccountId = igData.instagram_business_account.id;
-          instagramUsername = igData.instagram_business_account.username;
-          instagramFollowersCount = igData.instagram_business_account.followers_count || 0;
-          instagramMediaCount = igData.instagram_business_account.media_count || 0;
-          pageAccessToken = page.access_token || ACCESS_TOKEN;
-          console.log(`Found Instagram account: @${instagramUsername} (${instagramAccountId}), Followers: ${instagramFollowersCount}, Posts: ${instagramMediaCount}`);
-          break;
-        }
-      }
-    }
-
-    if (!instagramAccountId) {
-      return new Response(
-        JSON.stringify({ 
-          error: "No Instagram Business Account found",
-          hint: "Your Facebook Page must be connected to an Instagram Business or Creator account. Go to your Facebook Page settings to connect Instagram."
-        }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Step 3: Upsert social account in database WITH follower count
-    const { data: socialAccount, error: accountError } = await supabase
+    // Upsert social account in database
+    const { data: socialAccount, error: socialAccountError } = await supabase
       .from("social_accounts")
       .upsert({
         user_id: user.id,
@@ -165,16 +125,16 @@ serve(async (req) => {
       .select()
       .single();
 
-    if (accountError) {
-      console.error("Error upserting social account:", accountError);
+    if (socialAccountError) {
+      console.error("Error upserting social account:", socialAccountError);
     } else {
       console.log("Social account upserted:", socialAccount?.id, "with followers:", instagramFollowersCount);
     }
 
-    // Step 4: Fetch recent media from Instagram Business Account
+    // Fetch recent media from Instagram Business Account
     console.log("Fetching Instagram media...");
     const mediaResponse = await fetch(
-      `${FACEBOOK_GRAPH_API}/${instagramAccountId}/media?fields=id,caption,media_type,media_url,permalink,timestamp,like_count,comments_count&limit=25&access_token=${pageAccessToken}`
+      `${FACEBOOK_GRAPH_API}/${instagramAccountId}/media?fields=id,caption,media_type,media_url,permalink,timestamp,like_count,comments_count&limit=25&access_token=${ACCESS_TOKEN}`
     );
     
     let mediaData: InstagramMedia[] = [];
@@ -187,7 +147,7 @@ serve(async (req) => {
       console.error("Failed to fetch media:", mediaError);
     }
 
-    // Step 5: Save posts to database
+    // Save posts to database
     const postsToUpsert = mediaData.map((media) => ({
       user_id: user.id,
       platform: "instagram" as const,
@@ -217,12 +177,12 @@ serve(async (req) => {
       }
     }
 
-    // Step 6: Fetch comments for each post
+    // Fetch comments for each post
     let totalComments = 0;
     for (const media of mediaData.slice(0, 10)) {
       try {
         const commentsResponse = await fetch(
-          `${FACEBOOK_GRAPH_API}/${media.id}/comments?fields=id,text,timestamp,username&limit=50&access_token=${pageAccessToken}`
+          `${FACEBOOK_GRAPH_API}/${media.id}/comments?fields=id,text,timestamp,username&limit=50&access_token=${ACCESS_TOKEN}`
         );
         
         if (commentsResponse.ok) {
@@ -265,11 +225,11 @@ serve(async (req) => {
     }
     console.log(`Saved ${totalComments} comments`);
 
-    // Step 7: Try to fetch insights (requires instagram_manage_insights)
+    // Try to fetch insights (requires instagram_manage_insights)
     let hasInsights = false;
     try {
       const insightsResponse = await fetch(
-        `${FACEBOOK_GRAPH_API}/${instagramAccountId}/insights?metric=impressions,reach,profile_views&period=day&access_token=${pageAccessToken}`
+        `${FACEBOOK_GRAPH_API}/${instagramAccountId}/insights?metric=impressions,reach,profile_views&period=day&access_token=${ACCESS_TOKEN}`
       );
       
       if (insightsResponse.ok) {
@@ -280,7 +240,7 @@ serve(async (req) => {
       console.log("Insights not available");
     }
 
-    // Step 8: Save audience metrics for growth tracking
+    // Save audience metrics for growth tracking
     const today = new Date().toISOString().split('T')[0];
     console.log(`Saving audience metrics for ${today}...`);
     
@@ -307,7 +267,7 @@ serve(async (req) => {
       console.log("Audience metrics saved for", today);
     }
 
-    // Step 9: Calculate and save best posting times based on post performance
+    // Calculate and save best posting times based on post performance
     console.log("Calculating best posting times...");
     const postsByDayHour: Record<string, { total: number; engagement: number; count: number }> = {};
     

@@ -1,25 +1,59 @@
 // Hook for automatic Instagram data synchronization
 // Uses Supabase Realtime + Background polling to keep data fresh
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { queryKeys } from './useSocialApi';
 import { toast } from 'sonner';
 
-const SYNC_INTERVAL_MS = 15000; // Poll every 15 seconds for new Instagram data
-const MIN_SYNC_INTERVAL_MS = 10000; // Minimum 10 seconds between syncs
+const SYNC_INTERVAL_MS = 60000; // Poll every 60 seconds (reduced from 15s since we now rely on user-initiated syncs)
+const MIN_SYNC_INTERVAL_MS = 30000; // Minimum 30 seconds between syncs
 
 export function useInstagramSync() {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const lastSyncRef = useRef<number>(0);
   const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
+
+  // Check if Instagram is connected
+  const checkConnection = useCallback(async () => {
+    if (!user || !session) {
+      setIsConnected(false);
+      return false;
+    }
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/instagram-auth?action=status`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({}),
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setIsConnected(data.connected === true);
+        return data.connected === true;
+      }
+    } catch (err) {
+      console.log('[InstagramSync] Connection check failed:', err);
+    }
+    
+    setIsConnected(false);
+    return false;
+  }, [user, session]);
 
   // Trigger Instagram data fetch from the edge function
   const syncInstagramData = useCallback(async (showToast = false) => {
-    if (!user) return;
+    if (!user || !session) return;
 
     // Prevent too frequent syncs
     const now = Date.now();
@@ -27,6 +61,14 @@ export function useInstagramSync() {
       console.log('[InstagramSync] Skipping sync - too soon since last sync');
       return;
     }
+
+    // Check if connected before syncing
+    const connected = await checkConnection();
+    if (!connected) {
+      console.log('[InstagramSync] Skipping sync - Instagram not connected');
+      return;
+    }
+
     lastSyncRef.current = now;
 
     try {
@@ -37,7 +79,7 @@ export function useInstagramSync() {
       });
 
       if (error) {
-        console.error('[InstagramSync] Sync error:', error);
+        console.log('[InstagramSync] Sync skipped:', error.message);
         return;
       }
 
@@ -57,9 +99,9 @@ export function useInstagramSync() {
         toast.success(`Synced ${data.imported.posts} posts from Instagram`);
       }
     } catch (err) {
-      console.error('[InstagramSync] Failed to sync:', err);
+      console.log('[InstagramSync] Failed to sync:', err);
     }
-  }, [user, queryClient]);
+  }, [user, session, queryClient, checkConnection]);
 
   // Set up Realtime subscriptions for instant UI updates
   useEffect(() => {
@@ -138,29 +180,29 @@ export function useInstagramSync() {
     };
   }, [user, queryClient]);
 
-  // Set up background polling interval
+  // Check connection on mount and periodically
   useEffect(() => {
     if (!user) return;
 
-    console.log('[InstagramSync] Starting background polling...');
+    // Initial connection check
+    checkConnection();
 
-    // Initial sync when user logs in
-    syncInstagramData(false);
-
-    // Set up recurring sync
-    syncIntervalRef.current = setInterval(() => {
-      syncInstagramData(false);
+    // Set up recurring sync (only if connected)
+    const interval = setInterval(async () => {
+      const connected = await checkConnection();
+      if (connected) {
+        syncInstagramData(false);
+      }
     }, SYNC_INTERVAL_MS);
 
     return () => {
-      if (syncIntervalRef.current) {
-        clearInterval(syncIntervalRef.current);
-        syncIntervalRef.current = null;
-      }
+      clearInterval(interval);
     };
-  }, [user, syncInstagramData]);
+  }, [user, checkConnection, syncInstagramData]);
 
   return {
     syncNow: () => syncInstagramData(true),
+    isConnected,
+    checkConnection,
   };
 }
