@@ -142,23 +142,35 @@ export default function AudienceInsights() {
               delay={0.3}
             >
               <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={ageData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(222, 30%, 15%)" />
-                    <XAxis dataKey="ageGroup" stroke="hsl(215, 20%, 55%)" fontSize={12} />
-                    <YAxis stroke="hsl(215, 20%, 55%)" fontSize={12} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: 'hsl(222, 47%, 10%)',
-                        border: '1px solid hsl(222, 30%, 15%)',
-                        borderRadius: '8px',
-                        color: 'hsl(210, 40%, 98%)',
-                      }}
-                      formatter={(value: number) => [`${value}%`, 'Percentage']}
-                    />
-                    <Bar dataKey="percentage" fill={COLORS.primary} radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                {ageData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={ageData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(222, 30%, 15%)" />
+                      <XAxis dataKey="ageGroup" stroke="hsl(215, 20%, 55%)" fontSize={12} />
+                      <YAxis stroke="hsl(215, 20%, 55%)" fontSize={12} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'hsl(222, 47%, 10%)',
+                          border: '1px solid hsl(222, 30%, 15%)',
+                          borderRadius: '8px',
+                          color: 'hsl(210, 40%, 98%)',
+                        }}
+                        formatter={(value: number) => [`${value}%`, 'Percentage']}
+                      />
+                      <Bar dataKey="percentage" fill={COLORS.primary} radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full">
+                    <Users className="h-12 w-12 text-muted-foreground/40 mb-3" />
+                    <p className="text-sm text-muted-foreground text-center">
+                      Age data requires Instagram Insights
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1 text-center">
+                      Available with Professional accounts
+                    </p>
+                  </div>
+                )}
               </div>
             </ChartCard>
 
@@ -169,46 +181,60 @@ export default function AudienceInsights() {
               delay={0.35}
             >
               <div className="h-[300px] flex items-center justify-center relative">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={genderData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
-                      paddingAngle={4}
-                      dataKey="percentage"
-                    >
-                      {genderData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={genderColors[index % genderColors.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: 'hsl(222, 47%, 10%)',
-                        border: '1px solid hsl(222, 30%, 15%)',
-                        borderRadius: '8px',
-                        color: 'hsl(210, 40%, 98%)',
-                      }}
-                      formatter={(value: number) => [`${value}%`, 'Percentage']}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="flex justify-center gap-6 mt-4">
-                {genderData.map((item, index) => (
-                  <div key={item.gender} className="flex items-center gap-2">
-                    <div
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: genderColors[index % genderColors.length] }}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {item.gender} ({item.percentage}%)
-                    </span>
+                {genderData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={genderData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={100}
+                        paddingAngle={4}
+                        dataKey="percentage"
+                      >
+                        {genderData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={genderColors[index % genderColors.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'hsl(222, 47%, 10%)',
+                          border: '1px solid hsl(222, 30%, 15%)',
+                          borderRadius: '8px',
+                          color: 'hsl(210, 40%, 98%)',
+                        }}
+                        formatter={(value: number) => [`${value}%`, 'Percentage']}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex flex-col items-center justify-center">
+                    <Users className="h-12 w-12 text-muted-foreground/40 mb-3" />
+                    <p className="text-sm text-muted-foreground text-center">
+                      Gender data requires Instagram Insights
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1 text-center">
+                      Available with Professional accounts
+                    </p>
                   </div>
-                ))}
+                )}
               </div>
+              {genderData.length > 0 && (
+                <div className="flex justify-center gap-6 mt-4">
+                  {genderData.map((item, index) => (
+                    <div key={item.gender} className="flex items-center gap-2">
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: genderColors[index % genderColors.length] }}
+                      />
+                      <span className="text-sm text-muted-foreground">
+                        {item.gender} ({item.percentage}%)
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </ChartCard>
           </div>
 
@@ -222,34 +248,46 @@ export default function AudienceInsights() {
                 delay={0.4}
               >
                 <div className="h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={growthData}>
-                      <defs>
-                        <linearGradient id="colorFollowers" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor={COLORS.primary} stopOpacity={0.3} />
-                          <stop offset="95%" stopColor={COLORS.primary} stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(222, 30%, 15%)" />
-                      <XAxis dataKey="date" stroke="hsl(215, 20%, 55%)" fontSize={12} />
-                      <YAxis stroke="hsl(215, 20%, 55%)" fontSize={12} />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: 'hsl(222, 47%, 10%)',
-                          border: '1px solid hsl(222, 30%, 15%)',
-                          borderRadius: '8px',
-                          color: 'hsl(210, 40%, 98%)',
-                        }}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="followers"
-                        stroke={COLORS.primary}
-                        fill="url(#colorFollowers)"
-                        strokeWidth={2}
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
+                  {growthData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={growthData}>
+                        <defs>
+                          <linearGradient id="colorFollowers" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor={COLORS.primary} stopOpacity={0.3} />
+                            <stop offset="95%" stopColor={COLORS.primary} stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(222, 30%, 15%)" />
+                        <XAxis dataKey="date" stroke="hsl(215, 20%, 55%)" fontSize={12} />
+                        <YAxis stroke="hsl(215, 20%, 55%)" fontSize={12} />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: 'hsl(222, 47%, 10%)',
+                            border: '1px solid hsl(222, 30%, 15%)',
+                            borderRadius: '8px',
+                            color: 'hsl(210, 40%, 98%)',
+                          }}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="followers"
+                          stroke={COLORS.primary}
+                          fill="url(#colorFollowers)"
+                          strokeWidth={2}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full">
+                      <TrendingUp className="h-12 w-12 text-muted-foreground/40 mb-3" />
+                      <p className="text-sm text-muted-foreground text-center">
+                        Follower growth data is being collected
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1 text-center">
+                        Check back after a few days of syncing
+                      </p>
+                    </div>
+                  )}
                 </div>
               </ChartCard>
             </div>
@@ -261,33 +299,45 @@ export default function AudienceInsights() {
               delay={0.45}
             >
               <div className="space-y-3">
-                {demographics?.topCountries.slice(0, 6).map((location, index) => (
-                  <motion.div
-                    key={location.name}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.5 + index * 0.1 }}
-                    className="flex items-center justify-between"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Globe className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm text-foreground">{location.name}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${location.percentage}%` }}
-                          transition={{ delay: 0.6 + index * 0.1, duration: 0.5 }}
-                          className="h-full bg-primary rounded-full"
-                        />
+                {demographics?.topCountries && demographics.topCountries.length > 0 ? (
+                  demographics.topCountries.slice(0, 6).map((location, index) => (
+                    <motion.div
+                      key={location.name}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.5 + index * 0.1 }}
+                      className="flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Globe className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm text-foreground">{location.name}</span>
                       </div>
-                      <span className="text-sm font-medium text-muted-foreground w-12 text-right">
-                        {location.percentage}%
-                      </span>
-                    </div>
-                  </motion.div>
-                ))}
+                      <div className="flex items-center gap-3">
+                        <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${location.percentage}%` }}
+                            transition={{ delay: 0.6 + index * 0.1, duration: 0.5 }}
+                            className="h-full bg-primary rounded-full"
+                          />
+                        </div>
+                        <span className="text-sm font-medium text-muted-foreground w-12 text-right">
+                          {location.percentage}%
+                        </span>
+                      </div>
+                    </motion.div>
+                  ))
+                ) : (
+                  <div className="text-center py-8">
+                    <Globe className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
+                    <p className="text-sm text-muted-foreground">
+                      Location data requires Instagram Insights permissions
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Connect a Professional account to see demographics
+                    </p>
+                  </div>
+                )}
               </div>
             </ChartCard>
           </div>
