@@ -43,16 +43,19 @@
     --chart-sentiment-negative: 0 72% 51%;
     --chart-sentiment-neutral: 215 20% 55%;
 
-    /* Gradients */
+    /* Premium Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(173 80% 45%), hsl(173 80% 35%));
     --gradient-card: linear-gradient(135deg, hsl(222 47% 10%), hsl(222 47% 8%));
     --gradient-glass: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
     --gradient-accent: linear-gradient(135deg, hsl(173 80% 45% / 0.2), hsl(262 83% 58% / 0.1));
+    --gradient-premium: linear-gradient(135deg, hsl(173 80% 45%), hsl(262 83% 58%));
+    --gradient-warm: linear-gradient(135deg, hsl(38 92% 50%), hsl(0 72% 51%));
 
-    /* Shadows */
+    /* Premium Shadows */
     --shadow-glow: 0 0 40px -10px hsl(173 80% 45% / 0.3);
     --shadow-card: 0 4px 24px -4px hsl(222 47% 4% / 0.5);
     --shadow-elevated: 0 8px 32px -8px hsl(222 47% 4% / 0.6);
+    --shadow-premium: 0 20px 50px -15px hsl(173 80% 45% / 0.2);
 
     /* Sidebar */
     --sidebar-background: 222 47% 7%;

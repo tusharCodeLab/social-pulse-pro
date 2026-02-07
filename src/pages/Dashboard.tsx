@@ -20,12 +20,15 @@ import {
   Zap,
   Sparkles,
   Loader2,
+  RefreshCw,
+  Calendar,
 } from 'lucide-react';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { MetricCard } from '@/components/dashboard/MetricCard';
 import { InsightCard } from '@/components/dashboard/InsightCard';
 import { ChartCard } from '@/components/dashboard/ChartCard';
 import { Button } from '@/components/ui/button';
+import { PremiumSkeleton } from '@/components/ui/premium-skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -44,6 +47,21 @@ const COLORS = {
   positive: 'hsl(142, 71%, 45%)',
   negative: 'hsl(0, 72%, 51%)',
   neutral: 'hsl(215, 20%, 55%)',
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const staggerItem = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0 },
 };
 
 export default function Dashboard() {
@@ -102,6 +120,13 @@ export default function Dashboard() {
     }
   };
 
+  const currentDate = new Date().toLocaleDateString('en-US', { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
+
   return (
     <DashboardLayout>
       {/* Header */}
@@ -109,39 +134,90 @@ export default function Dashboard() {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
           className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
         >
           <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">
+            <motion.h1 
+              className="text-3xl lg:text-4xl font-bold text-foreground mb-2"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 }}
+            >
               Welcome back, <span className="gradient-text">{user?.email?.split('@')[0] || 'Analyst'}</span>
-            </h1>
-            <p className="text-muted-foreground">
-              Here's what's happening with your social media presence today.
-            </p>
+            </motion.h1>
+            <motion.p 
+              className="text-muted-foreground flex items-center gap-2"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+            >
+              <Calendar className="h-4 w-4" />
+              {currentDate}
+            </motion.p>
           </div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.3 }}
+            className="flex items-center gap-3"
+          >
+            <Button variant="outline" size="sm" className="gap-2">
+              <RefreshCw className="h-4 w-4" />
+              Refresh
+            </Button>
+          </motion.div>
         </motion.div>
 
         {/* Live Data Indicator */}
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.3 }}
-          className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20"
+          transition={{ delay: 0.4 }}
+          className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary/10 to-chart-reach/10 border border-primary/20 backdrop-blur-sm"
         >
-          <div className="w-2 h-2 rounded-full bg-chart-sentiment-positive pulse-live" />
+          <motion.div 
+            animate={{ scale: [1, 1.2, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="w-2 h-2 rounded-full bg-chart-sentiment-positive"
+          />
           <span className="text-xs font-medium text-primary">
-            Live Analytics - Data refreshes automatically
+            Live Analytics
+          </span>
+          <span className="text-xs text-muted-foreground">•</span>
+          <span className="text-xs text-muted-foreground">
+            Auto-refreshing
           </span>
         </motion.div>
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
+        <motion.div
+          variants={staggerContainer}
+          initial="hidden"
+          animate="show"
+          className="space-y-8"
+        >
+          {/* Skeleton metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+            {[...Array(6)].map((_, i) => (
+              <motion.div key={i} variants={staggerItem}>
+                <PremiumSkeleton variant="metric" />
+              </motion.div>
+            ))}
+          </div>
+          {/* Skeleton charts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <PremiumSkeleton variant="chart" />
+            <PremiumSkeleton variant="chart" />
+          </div>
+        </motion.div>
       ) : (
-        <>
+        <motion.div
+          variants={staggerContainer}
+          initial="hidden"
+          animate="show"
+        >
           {/* Metrics Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
             <MetricCard
@@ -367,7 +443,7 @@ export default function Dashboard() {
               </div>
             </ChartCard>
           </div>
-        </>
+        </motion.div>
       )}
     </DashboardLayout>
   );
