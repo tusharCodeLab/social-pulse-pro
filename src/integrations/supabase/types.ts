@@ -181,6 +181,7 @@ export type Database = {
           author_name: string | null
           content: string
           created_at: string | null
+          external_comment_id: string | null
           id: string
           post_id: string | null
           sentiment: Database["public"]["Enums"]["sentiment_type"] | null
@@ -192,6 +193,7 @@ export type Database = {
           author_name?: string | null
           content: string
           created_at?: string | null
+          external_comment_id?: string | null
           id?: string
           post_id?: string | null
           sentiment?: Database["public"]["Enums"]["sentiment_type"] | null
@@ -203,6 +205,7 @@ export type Database = {
           author_name?: string | null
           content?: string
           created_at?: string | null
+          external_comment_id?: string | null
           id?: string
           post_id?: string | null
           sentiment?: Database["public"]["Enums"]["sentiment_type"] | null

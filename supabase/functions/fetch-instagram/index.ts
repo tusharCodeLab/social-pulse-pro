@@ -228,6 +228,7 @@ serve(async (req) => {
         if (commentsResponse.ok) {
           const commentsJson = await commentsResponse.json();
           const comments = commentsJson.data || [];
+          console.log(`Fetched ${comments.length} comments for media ${media.id}`);
           
           if (comments.length > 0) {
             const { data: postData } = await supabase
@@ -244,26 +245,35 @@ serve(async (req) => {
                 content: c.text,
                 author_name: c.username || "Anonymous",
                 created_at: c.timestamp,
+                external_comment_id: c.id, // Use Instagram's comment ID for deduplication
               }));
 
-              const { error: commentsError } = await supabase
-                .from("post_comments")
-                .upsert(commentsToInsert, {
-                  onConflict: "user_id,post_id,content",
-                  ignoreDuplicates: true,
-                });
-
-              if (!commentsError) {
-                totalComments += comments.length;
+              // Use insert with proper conflict handling on external_comment_id
+              for (const comment of commentsToInsert) {
+                const { error: insertError } = await supabase
+                  .from("post_comments")
+                  .upsert(comment, {
+                    onConflict: "user_id,external_comment_id",
+                    ignoreDuplicates: true,
+                  });
+                
+                if (!insertError) {
+                  totalComments++;
+                } else {
+                  console.error(`Error inserting comment:`, insertError.message);
+                }
               }
             }
           }
+        } else {
+          const errorText = await commentsResponse.text();
+          console.log(`No comments available for media ${media.id}: ${commentsResponse.status}`);
         }
       } catch (e) {
         console.error(`Error fetching comments for ${media.id}:`, e);
       }
     }
-    console.log(`Saved ${totalComments} comments`);
+    console.log(`Saved ${totalComments} comments total`);
 
     // Step 7: Try to fetch insights (requires instagram_manage_insights)
     let hasInsights = false;
