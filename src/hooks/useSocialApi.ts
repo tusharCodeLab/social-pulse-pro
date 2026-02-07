@@ -143,6 +143,22 @@ export function useSentimentStatsApi() {
   });
 }
 
+export function useAnalyzeSentimentApi() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const response = await socialApi.comments.analyzeSentiment();
+      return response.data;
+    },
+    onSuccess: () => {
+      // Invalidate all sentiment-related queries to refresh UI
+      queryClient.invalidateQueries({ queryKey: queryKeys.sentimentStats });
+      queryClient.invalidateQueries({ queryKey: queryKeys.comments() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.sentimentTrend() });
+    },
+  });
+}
+
 // ============================================================================
 // Audience Hooks
 // ============================================================================

@@ -297,6 +297,36 @@ export const commentsApi = {
     };
   },
 
+  async analyzeSentiment(): Promise<APIResponse<{ analyzed: number }>> {
+    // Get unanalyzed comments
+    const { data: comments, error: fetchError } = await supabase
+      .from('post_comments')
+      .select('id, content')
+      .is('sentiment', null)
+      .limit(50);
+
+    if (fetchError) throw fetchError;
+
+    if (!comments || comments.length === 0) {
+      return {
+        data: { analyzed: 0 },
+        meta: { requestId: crypto.randomUUID(), timestamp: new Date().toISOString() },
+      };
+    }
+
+    // Call the analyze-sentiment edge function
+    const { data, error } = await supabase.functions.invoke('analyze-sentiment', {
+      body: { comments },
+    });
+
+    if (error) throw error;
+
+    return {
+      data: { analyzed: data?.analyzed || 0 },
+      meta: { requestId: crypto.randomUUID(), timestamp: new Date().toISOString() },
+    };
+  },
+
   async getSentimentStats(): Promise<APIResponse<{
     total: number;
     positive: number;

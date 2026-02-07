@@ -29,7 +29,7 @@ import {
   useSentimentStatsApi,
   useSentimentTrendApi,
   useCommentsApi,
-  useGenerateInsightsApi,
+  useAnalyzeSentimentApi,
 } from '@/hooks/useSocialApi';
 
 const COLORS = {
@@ -41,10 +41,10 @@ const COLORS = {
 export default function Sentiment() {
   const { toast } = useToast();
   
-  const { data: stats, isLoading: loadingStats } = useSentimentStatsApi();
+  const { data: stats, isLoading: loadingStats, refetch: refetchStats } = useSentimentStatsApi();
   const { data: trend, isLoading: loadingTrend } = useSentimentTrendApi(14);
-  const { data: comments, isLoading: loadingComments } = useCommentsApi();
-  const analyzeSentiment = useGenerateInsightsApi();
+  const { data: comments, isLoading: loadingComments, refetch: refetchComments } = useCommentsApi();
+  const analyzeSentiment = useAnalyzeSentimentApi();
 
   const isLoading = loadingStats || loadingTrend || loadingComments;
 
@@ -65,15 +65,22 @@ export default function Sentiment() {
 
   const handleAnalyze = async () => {
     try {
-      await analyzeSentiment.mutateAsync();
+      const result = await analyzeSentiment.mutateAsync();
+      
+      // Refetch data to update UI
+      await Promise.all([refetchStats(), refetchComments()]);
+      
       toast({
         title: "Analysis complete!",
-        description: "Sentiment analysis has been updated.",
+        description: result.analyzed > 0 
+          ? `Analyzed ${result.analyzed} comments with AI sentiment detection.`
+          : "All comments have already been analyzed.",
       });
     } catch (error) {
+      console.error('Sentiment analysis error:', error);
       toast({
         title: "Error",
-        description: "Failed to analyze sentiment. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to analyze sentiment. Please try again.",
         variant: "destructive",
       });
     }
