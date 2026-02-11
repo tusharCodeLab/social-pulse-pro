@@ -6,8 +6,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
-
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -15,9 +13,9 @@ serve(async (req) => {
   }
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const GOOGLE_GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
+    if (!GOOGLE_GEMINI_API_KEY) {
+      throw new Error("GOOGLE_GEMINI_API_KEY is not configured");
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -70,30 +68,27 @@ Respond in JSON format only with this exact structure:
   ]
 }`;
 
-    // Call Lovable AI Gateway
-    const aiResponse = await fetch(AI_GATEWAY_URL, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "user", content: prompt }
-        ],
-        temperature: 0.3,
-      }),
-    });
+    // Call Google Gemini API
+    const aiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GOOGLE_GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.3 },
+        }),
+      }
+    );
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      console.error("AI Gateway error:", errorText);
-      throw new Error(`AI Gateway error: ${aiResponse.status}`);
+      console.error("Gemini API error:", errorText);
+      throw new Error(`Gemini API error: ${aiResponse.status}`);
     }
 
     const aiData = await aiResponse.json();
-    const responseContent = aiData.choices?.[0]?.message?.content;
+    const responseContent = aiData.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!responseContent) {
       throw new Error("No response from AI");
