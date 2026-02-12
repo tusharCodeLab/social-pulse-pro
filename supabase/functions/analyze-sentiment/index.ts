@@ -3,19 +3,18 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    const GOOGLE_GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
-    if (!GOOGLE_GEMINI_API_KEY) {
-      throw new Error("GOOGLE_GEMINI_API_KEY is not configured");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY is not configured");
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -53,61 +52,84 @@ serve(async (req) => {
     console.log(`Analyzing sentiment for ${comments.length} comments`);
 
     // Prepare comments for analysis
-    const commentsText = comments.map((c, i) => `${i + 1}. "${c.content}"`).join("\n");
+    const commentsText = comments.map((c: any, i: number) => `${i + 1}. "${c.content}"`).join("\n");
 
-    const prompt = `Analyze the sentiment of the following social media comments. For each comment, determine if it's positive, negative, or neutral, and provide a confidence score from 0 to 1.
+    const prompt = `Analyze the sentiment of each social media comment below. For each, classify as positive, negative, or neutral with a confidence score 0-1.\n\nComments:\n${commentsText}`;
 
-Comments:
-${commentsText}
-
-Respond in JSON format only with this exact structure:
-{
-  "results": [
-    {"index": 1, "sentiment": "positive|negative|neutral", "score": 0.85},
-    ...
-  ]
-}`;
-
-    // Call Google Gemini API
-    const aiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GOOGLE_GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.3 },
-        }),
-      }
-    );
+    // Call Lovable AI Gateway
+    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-3-flash-preview",
+        messages: [
+          { role: "system", content: "You are a sentiment analysis tool. Classify social media comments accurately." },
+          { role: "user", content: prompt },
+        ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "classify_sentiments",
+              description: "Return sentiment classifications for comments",
+              parameters: {
+                type: "object",
+                properties: {
+                  results: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        index: { type: "number", description: "1-based comment index" },
+                        sentiment: { type: "string", enum: ["positive", "negative", "neutral"] },
+                        score: { type: "number", description: "Confidence score 0-1" },
+                      },
+                      required: ["index", "sentiment", "score"],
+                      additionalProperties: false,
+                    },
+                  },
+                },
+                required: ["results"],
+                additionalProperties: false,
+              },
+            },
+          },
+        ],
+        tool_choice: { type: "function", function: { name: "classify_sentiments" } },
+      }),
+    });
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      console.error("Gemini API error:", errorText);
-      throw new Error(`Gemini API error: ${aiResponse.status}`);
+      console.error("Lovable AI error:", aiResponse.status, errorText);
+      
+      if (aiResponse.status === 429) {
+        return new Response(
+          JSON.stringify({ error: "AI rate limit reached. Please try again in a moment." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (aiResponse.status === 402) {
+        return new Response(
+          JSON.stringify({ error: "AI credits exhausted. Please add credits to your workspace." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      throw new Error(`AI API error: ${aiResponse.status}`);
     }
 
     const aiData = await aiResponse.json();
-    const responseContent = aiData.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!responseContent) {
-      throw new Error("No response from AI");
+    
+    // Extract tool call result
+    const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
+    if (!toolCall) {
+      throw new Error("No tool call response from AI");
     }
 
-    // Parse the JSON response
-    let analysisResults;
-    try {
-      // Extract JSON from response (handle markdown code blocks)
-      const jsonMatch = responseContent.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        analysisResults = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error("Could not parse AI response");
-      }
-    } catch (parseError) {
-      console.error("Parse error:", parseError, "Response:", responseContent);
-      throw new Error("Failed to parse AI response");
-    }
+    const analysisResults = JSON.parse(toolCall.function.arguments);
 
     // Update comments in database
     const updates = [];
