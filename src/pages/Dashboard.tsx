@@ -1,10 +1,8 @@
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   Users, Heart, Eye, FileText, Sparkles, RefreshCw,
   TrendingUp, MessageCircle, Shield, Brain, Clock, Smile,
-  ArrowUp, ArrowDown, Minus, Loader2, Wand2, Hash, Lightbulb,
-  Target, Zap, ChevronRight,
+  ArrowUp, ArrowDown, Minus,
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { DashboardLayout } from '@/components/DashboardLayout';
@@ -18,7 +16,7 @@ import {
   useDashboardSummaryApi, usePostStatsApi, useAudienceSummaryApi,
   useSentimentStatsApi, useAIInsightsApi, useBestPostingTimesApi,
 } from '@/hooks/useSocialApi';
-import { useSpamComments, usePersonalTrends, useAIPostCoach, PostCoaching } from '@/hooks/useAIFeatures';
+import { useSpamComments, usePersonalTrends } from '@/hooks/useAIFeatures';
 import { cn } from '@/lib/utils';
 
 const COLORS = {
@@ -47,8 +45,6 @@ export default function Dashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [coaching, setCoaching] = useState<PostCoaching | null>(null);
-  const aiCoach = useAIPostCoach();
 
   const { data: summary, isLoading } = useDashboardSummaryApi();
   const { data: postStats } = usePostStatsApi();
@@ -59,18 +55,6 @@ export default function Dashboard() {
   const { data: spamComments } = useSpamComments();
   const { data: trends } = usePersonalTrends();
 
-  const handleCoach = async () => {
-    try {
-      const result = await aiCoach.mutateAsync();
-      if (result.coaching) {
-        setCoaching(result.coaching);
-      } else {
-        toast({ title: 'No data', description: result.message || 'No posts to analyze.' });
-      }
-    } catch (error) {
-      toast({ title: 'Error', description: error instanceof Error ? error.message : 'Failed to get coaching.', variant: 'destructive' });
-    }
-  };
 
   const pieData = sentiment ? [
     { name: 'Positive', value: sentiment.positive, color: COLORS.positive },
@@ -135,136 +119,6 @@ export default function Dashboard() {
         <MiniStat label="Positive" value={`${Math.round(summary?.positiveSentimentPercent || 0)}%`} icon={Smile} />
       </motion.div>
 
-      {/* AI Post Coach — Premium Card */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.08 }}
-        className="mb-5 rounded-xl border border-primary/20 bg-gradient-to-r from-card via-card to-primary/5 overflow-hidden"
-        style={{ boxShadow: '0 4px 30px -8px hsl(173 80% 45% / 0.15)' }}
-      >
-        <div className="p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-lg bg-gradient-to-br from-primary/20 to-chart-reach/20 border border-primary/30">
-                <Wand2 className="h-4 w-4 text-primary" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-foreground">AI Post Coach</h3>
-                <p className="text-[10px] text-muted-foreground">Gemini-powered growth analysis</p>
-              </div>
-            </div>
-            <Button
-              size="sm"
-              onClick={handleCoach}
-              disabled={aiCoach.isPending}
-              className="gap-1.5 h-8 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground"
-            >
-              {aiCoach.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-              {coaching ? 'Re-analyze' : 'Analyze Posts'}
-            </Button>
-          </div>
-
-          {coaching ? (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                {/* Score + Prediction row */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/50">
-                    <div className="relative w-12 h-12 flex-shrink-0">
-                      <svg className="w-12 h-12 -rotate-90" viewBox="0 0 48 48">
-                        <circle cx="24" cy="24" r="20" fill="none" stroke="hsl(var(--muted))" strokeWidth="4" />
-                        <circle cx="24" cy="24" r="20" fill="none" stroke="hsl(var(--primary))" strokeWidth="4"
-                          strokeDasharray={`${(coaching.overallScore / 100) * 125.6} 125.6`}
-                          strokeLinecap="round"
-                        />
-                      </svg>
-                      <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-primary">{coaching.overallScore}</span>
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-foreground">{coaching.scoreLabel}</p>
-                      <p className="text-[10px] text-muted-foreground">Overall Score</p>
-                    </div>
-                  </div>
-                  <div className="p-3 rounded-lg bg-chart-sentiment-positive/5 border border-chart-sentiment-positive/20">
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <Target className="h-3 w-3 text-chart-sentiment-positive" />
-                      <span className="text-[10px] font-semibold text-chart-sentiment-positive uppercase">Strength</span>
-                    </div>
-                    <p className="text-xs text-foreground line-clamp-2">{coaching.topStrength}</p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-chart-impressions/5 border border-chart-impressions/20">
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <Zap className="h-3 w-3 text-chart-impressions" />
-                      <span className="text-[10px] font-semibold text-chart-impressions uppercase">Opportunity</span>
-                    </div>
-                    <p className="text-xs text-foreground line-clamp-2">{coaching.biggestOpportunity}</p>
-                  </div>
-                </div>
-                {/* Tips, Hashtags, Ideas */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <div className="p-3 rounded-lg bg-muted/20 border border-border/50">
-                    <div className="flex items-center gap-1.5 mb-2">
-                      <Lightbulb className="h-3.5 w-3.5 text-chart-impressions" />
-                      <span className="text-xs font-semibold text-foreground">Caption Tips</span>
-                    </div>
-                    <div className="space-y-1.5">
-                      {coaching.captionTips.map((tip, i) => (
-                        <div key={i} className="flex items-start gap-1.5">
-                          <ChevronRight className="h-3 w-3 text-primary mt-0.5 flex-shrink-0" />
-                          <p className="text-[11px] text-muted-foreground">{tip}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="p-3 rounded-lg bg-muted/20 border border-border/50">
-                    <div className="flex items-center gap-1.5 mb-2">
-                      <Hash className="h-3.5 w-3.5 text-chart-reach" />
-                      <span className="text-xs font-semibold text-foreground">Hashtag Ideas</span>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {coaching.hashtagSuggestions.map((tag, i) => (
-                        <Badge key={i} variant="secondary" className="text-[10px] bg-chart-reach/10 text-chart-reach border-chart-reach/20">{tag}</Badge>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="p-3 rounded-lg bg-muted/20 border border-border/50">
-                    <div className="flex items-center gap-1.5 mb-2">
-                      <Brain className="h-3.5 w-3.5 text-primary" />
-                      <span className="text-xs font-semibold text-foreground">Content Ideas</span>
-                    </div>
-                    <div className="space-y-1.5">
-                      {coaching.contentIdeas.map((idea, i) => (
-                        <div key={i} className="flex items-start gap-1.5">
-                          <ChevronRight className="h-3 w-3 text-chart-reach mt-0.5 flex-shrink-0" />
-                          <p className="text-[11px] text-muted-foreground">{idea}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                {/* Prediction */}
-                <div className="mt-3 p-2.5 rounded-lg bg-gradient-to-r from-primary/5 to-chart-reach/5 border border-primary/10">
-                  <p className="text-[11px] text-center text-muted-foreground">
-                    <Sparkles className="h-3 w-3 text-primary inline mr-1" />
-                    <span className="font-medium text-foreground">Prediction:</span> {coaching.performancePrediction}
-                  </p>
-                </div>
-              </motion.div>
-            ) : aiCoach.isPending ? (
-              <div className="flex items-center justify-center gap-2 py-4">
-                <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                <span className="text-xs text-muted-foreground">Analyzing your posts with Gemini AI...</span>
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground text-center py-2">
-                Click "Analyze Posts" to get AI-powered coaching with caption tips, hashtag ideas, and performance predictions.
-              </p>
-            )}
-        </div>
-      </motion.div>
 
       {/* Main Grid — 3 columns on desktop */}
       <motion.div

@@ -1,29 +1,21 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  AreaChart,
-  Area,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area,
 } from 'recharts';
 import {
-  FileText,
-  TrendingUp,
-  Eye,
-  Heart,
-  MessageCircle,
-  Share2,
-  Loader2,
+  FileText, TrendingUp, Eye, Heart, MessageCircle, Share2, Loader2,
+  Wand2, Sparkles, Hash, Lightbulb, Target, Zap, ChevronRight, Brain,
 } from 'lucide-react';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { MetricCard } from '@/components/dashboard/MetricCard';
 import { ChartCard } from '@/components/dashboard/ChartCard';
 import { PlatformBadge } from '@/components/dashboard/PlatformBadge';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { usePostsApi, usePostStatsApi, useEngagementAnalyticsApi } from '@/hooks/useSocialApi';
+import { useAIPostCoach, PostCoaching } from '@/hooks/useAIFeatures';
+import { useToast } from '@/hooks/use-toast';
 
 const COLORS = {
   likes: 'hsl(173, 80%, 45%)',
@@ -35,8 +27,24 @@ export default function PostsAnalysis() {
   const { data: posts, isLoading: loadingPosts } = usePostsApi();
   const { data: stats, isLoading: loadingStats } = usePostStatsApi();
   const { data: engagementTrend, isLoading: loadingTrend } = useEngagementAnalyticsApi(14);
+  const [coaching, setCoaching] = useState<PostCoaching | null>(null);
+  const aiCoach = useAIPostCoach();
+  const { toast } = useToast();
 
   const isLoading = loadingPosts || loadingStats || loadingTrend;
+
+  const handleCoach = async () => {
+    try {
+      const result = await aiCoach.mutateAsync();
+      if (result.coaching) {
+        setCoaching(result.coaching);
+      } else {
+        toast({ title: 'No data', description: result.message || 'No posts to analyze.' });
+      }
+    } catch (error) {
+      toast({ title: 'Error', description: error instanceof Error ? error.message : 'Failed to get coaching.', variant: 'destructive' });
+    }
+  };
 
   const trendData = engagementTrend?.map(e => ({
     date: new Date(e.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
@@ -69,6 +77,135 @@ export default function PostsAnalysis() {
             <MetricCard title="Avg Engagement" value={`${(stats?.avgEngagement || 0).toFixed(1)}%`} icon={TrendingUp} delay={0.25} />
           </div>
 
+          {/* AI Post Coach */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.28 }}
+            className="mb-8 rounded-xl border border-primary/20 bg-gradient-to-r from-card via-card to-primary/5 overflow-hidden"
+            style={{ boxShadow: '0 4px 30px -8px hsl(173 80% 45% / 0.15)' }}
+          >
+            <div className="p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-lg bg-gradient-to-br from-primary/20 to-chart-reach/20 border border-primary/30">
+                    <Wand2 className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-foreground">AI Post Coach</h3>
+                    <p className="text-xs text-muted-foreground">AI-powered growth analysis for your posts</p>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={handleCoach}
+                  disabled={aiCoach.isPending}
+                  className="gap-1.5 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground"
+                >
+                  {aiCoach.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  {coaching ? 'Re-analyze' : 'Analyze Posts'}
+                </Button>
+              </div>
+
+              {coaching ? (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                  {/* Score + Strength + Opportunity */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/30 border border-border/50">
+                      <div className="relative w-14 h-14 flex-shrink-0">
+                        <svg className="w-14 h-14 -rotate-90" viewBox="0 0 48 48">
+                          <circle cx="24" cy="24" r="20" fill="none" stroke="hsl(var(--muted))" strokeWidth="4" />
+                          <circle cx="24" cy="24" r="20" fill="none" stroke="hsl(var(--primary))" strokeWidth="4"
+                            strokeDasharray={`${(coaching.overallScore / 100) * 125.6} 125.6`}
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                        <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-primary">{coaching.overallScore}</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">{coaching.scoreLabel}</p>
+                        <p className="text-xs text-muted-foreground">Overall Score</p>
+                      </div>
+                    </div>
+                    <div className="p-4 rounded-lg bg-chart-sentiment-positive/5 border border-chart-sentiment-positive/20">
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <Target className="h-3.5 w-3.5 text-chart-sentiment-positive" />
+                        <span className="text-xs font-semibold text-chart-sentiment-positive uppercase">Top Strength</span>
+                      </div>
+                      <p className="text-sm text-foreground">{coaching.topStrength}</p>
+                    </div>
+                    <div className="p-4 rounded-lg bg-chart-impressions/5 border border-chart-impressions/20">
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <Zap className="h-3.5 w-3.5 text-chart-impressions" />
+                        <span className="text-xs font-semibold text-chart-impressions uppercase">Opportunity</span>
+                      </div>
+                      <p className="text-sm text-foreground">{coaching.biggestOpportunity}</p>
+                    </div>
+                  </div>
+                  {/* Tips, Hashtags, Ideas */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="p-4 rounded-lg bg-muted/20 border border-border/50">
+                      <div className="flex items-center gap-1.5 mb-3">
+                        <Lightbulb className="h-4 w-4 text-chart-impressions" />
+                        <span className="text-sm font-semibold text-foreground">Caption Tips</span>
+                      </div>
+                      <div className="space-y-2">
+                        {coaching.captionTips.map((tip, i) => (
+                          <div key={i} className="flex items-start gap-2">
+                            <ChevronRight className="h-3.5 w-3.5 text-primary mt-0.5 flex-shrink-0" />
+                            <p className="text-xs text-muted-foreground">{tip}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="p-4 rounded-lg bg-muted/20 border border-border/50">
+                      <div className="flex items-center gap-1.5 mb-3">
+                        <Hash className="h-4 w-4 text-chart-reach" />
+                        <span className="text-sm font-semibold text-foreground">Hashtag Ideas</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {coaching.hashtagSuggestions.map((tag, i) => (
+                          <Badge key={i} variant="secondary" className="text-xs bg-chart-reach/10 text-chart-reach border-chart-reach/20">{tag}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="p-4 rounded-lg bg-muted/20 border border-border/50">
+                      <div className="flex items-center gap-1.5 mb-3">
+                        <Brain className="h-4 w-4 text-primary" />
+                        <span className="text-sm font-semibold text-foreground">Content Ideas</span>
+                      </div>
+                      <div className="space-y-2">
+                        {coaching.contentIdeas.map((idea, i) => (
+                          <div key={i} className="flex items-start gap-2">
+                            <ChevronRight className="h-3.5 w-3.5 text-chart-reach mt-0.5 flex-shrink-0" />
+                            <p className="text-xs text-muted-foreground">{idea}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  {/* Prediction */}
+                  <div className="mt-4 p-3 rounded-lg bg-gradient-to-r from-primary/5 to-chart-reach/5 border border-primary/10">
+                    <p className="text-xs text-center text-muted-foreground">
+                      <Sparkles className="h-3.5 w-3.5 text-primary inline mr-1" />
+                      <span className="font-medium text-foreground">Prediction:</span> {coaching.performancePrediction}
+                    </p>
+                  </div>
+                </motion.div>
+              ) : aiCoach.isPending ? (
+                <div className="flex items-center justify-center gap-2 py-6">
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  <span className="text-sm text-muted-foreground">Analyzing your posts with AI...</span>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Click "Analyze Posts" to get AI-powered coaching with caption tips, hashtag ideas, and performance predictions.
+                </p>
+              )}
+            </div>
+          </motion.div>
+
+          {/* Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             <ChartCard title="Engagement Trend" subtitle="Daily engagement over the last 2 weeks" delay={0.3}>
               <div className="h-[300px]">
@@ -113,22 +250,17 @@ export default function PostsAnalysis() {
                 )}
               </div>
               <div className="flex justify-center gap-6 mt-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.likes }} />
-                  <span className="text-sm text-muted-foreground">Likes</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.comments }} />
-                  <span className="text-sm text-muted-foreground">Comments</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.shares }} />
-                  <span className="text-sm text-muted-foreground">Shares</span>
-                </div>
+                {[{ label: 'Likes', color: COLORS.likes }, { label: 'Comments', color: COLORS.comments }, { label: 'Shares', color: COLORS.shares }].map(l => (
+                  <div key={l.label} className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: l.color }} />
+                    <span className="text-sm text-muted-foreground">{l.label}</span>
+                  </div>
+                ))}
               </div>
             </ChartCard>
           </div>
 
+          {/* Top Posts Table */}
           <ChartCard title="Top Performing Posts" subtitle="Ranked by engagement rate" delay={0.4}>
             {topPosts.length > 0 ? (
               <div className="overflow-x-auto">
