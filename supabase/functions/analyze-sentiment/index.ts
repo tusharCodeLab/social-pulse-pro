@@ -49,6 +49,14 @@ serve(async (req) => {
       );
     }
 
+    // Limit batch size to prevent abuse
+    if (comments.length > 50) {
+      return new Response(
+        JSON.stringify({ error: "Maximum 50 comments per request" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     console.log(`Analyzing sentiment for ${comments.length} comments`);
 
     // Prepare comments for analysis

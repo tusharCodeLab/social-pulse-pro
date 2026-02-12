@@ -1,8 +1,9 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 const FACEBOOK_GRAPH_API = "https://graph.facebook.com/v18.0";
@@ -13,6 +14,28 @@ serve(async (req) => {
   }
 
   try {
+    // Authenticate user
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ error: "Invalid token" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Get the test token from request body (for testing) or use stored secret
     let testToken: string | null = null;
     
@@ -29,8 +52,6 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    console.log(`Testing token (${ACCESS_TOKEN.length} characters)`);
 
     // Step 1: Check token info
     const tokenInfoResponse = await fetch(
@@ -52,7 +73,7 @@ serve(async (req) => {
 
     // Step 2: Get user info
     const meResponse = await fetch(
-      `${FACEBOOK_GRAPH_API}/me?fields=id,name,email&access_token=${ACCESS_TOKEN}`
+      `${FACEBOOK_GRAPH_API}/me?fields=id,name&access_token=${ACCESS_TOKEN}`
     );
     
     let userInfo = null;
@@ -61,16 +82,14 @@ serve(async (req) => {
       userInfo = {
         id: meData.id,
         name: meData.name,
-        email: meData.email,
       };
     } else {
-      const meError = await meResponse.text();
-      userInfo = { error: meError };
+      userInfo = { error: "Failed to fetch user info" };
     }
 
     // Step 3: Get Facebook Pages
     const pagesResponse = await fetch(
-      `${FACEBOOK_GRAPH_API}/me/accounts?fields=id,name,category,access_token&access_token=${ACCESS_TOKEN}`
+      `${FACEBOOK_GRAPH_API}/me/accounts?fields=id,name,category&access_token=${ACCESS_TOKEN}`
     );
     
     let pages: { id: string; name: string; category: string; hasInstagram: boolean; instagramUsername?: string }[] = [];
@@ -78,10 +97,9 @@ serve(async (req) => {
     if (pagesResponse.ok) {
       const pagesData = await pagesResponse.json();
       
-      // For each page, check for Instagram Business Account
       for (const page of (pagesData.data || [])) {
         const igResponse = await fetch(
-          `${FACEBOOK_GRAPH_API}/${page.id}?fields=instagram_business_account{id,username}&access_token=${page.access_token || ACCESS_TOKEN}`
+          `${FACEBOOK_GRAPH_API}/${page.id}?fields=instagram_business_account{id,username}&access_token=${ACCESS_TOKEN}`
         );
         
         let hasInstagram = false;
@@ -104,11 +122,9 @@ serve(async (req) => {
         });
       }
     } else {
-      const pagesError = await pagesResponse.text();
       return new Response(
         JSON.stringify({ 
           error: "Failed to fetch pages",
-          details: pagesError,
           tokenInfo,
           userInfo,
         }),
@@ -116,7 +132,6 @@ serve(async (req) => {
       );
     }
 
-    // Return diagnostic info
     return new Response(
       JSON.stringify({
         success: true,
@@ -134,9 +149,8 @@ serve(async (req) => {
 
   } catch (error) {
     console.error("Debug error:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: "An internal error occurred" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

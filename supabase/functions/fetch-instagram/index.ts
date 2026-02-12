@@ -50,8 +50,7 @@ serve(async (req) => {
       );
     }
 
-    // Log token length for debugging (not the actual token)
-    console.log(`Access token length: ${ACCESS_TOKEN.length} characters`);
+    // Token validated - proceed with fetch
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
