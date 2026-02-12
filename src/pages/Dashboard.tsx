@@ -99,7 +99,10 @@ export default function Dashboard() {
         </div>
         <Button
           variant="outline" size="sm" className="gap-1.5 h-8 text-xs"
-          onClick={() => { queryClient.invalidateQueries(); toast({ title: 'Refreshing...' }); }}
+          onClick={async () => { 
+            await queryClient.invalidateQueries(); 
+            toast({ title: 'Data refreshed', description: 'All analytics have been updated.' }); 
+          }}
         >
           <RefreshCw className="h-3.5 w-3.5" /> Refresh
         </Button>

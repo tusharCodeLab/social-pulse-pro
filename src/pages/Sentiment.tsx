@@ -1,25 +1,9 @@
 import { motion } from 'framer-motion';
 import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
 } from 'recharts';
 import {
-  Smile,
-  Frown,
-  Meh,
-  MessageCircle,
-  Sparkles,
-  Loader2,
-  Shield,
-  AlertTriangle,
+  Smile, Frown, Meh, MessageCircle, Sparkles, Loader2, Shield, AlertTriangle, Clock,
 } from 'lucide-react';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { MetricCard } from '@/components/dashboard/MetricCard';
@@ -29,10 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import {
-  useSentimentStatsApi,
-  useSentimentTrendApi,
-  useCommentsApi,
-  useAnalyzeSentimentApi,
+  useSentimentStatsApi, useSentimentTrendApi, useCommentsApi, useAnalyzeSentimentApi,
 } from '@/hooks/useSocialApi';
 import { useSpamComments, useDetectSpam } from '@/hooks/useAIFeatures';
 
@@ -42,6 +23,17 @@ const COLORS = {
   neutral: 'hsl(215, 20%, 55%)',
 };
 
+function formatRelativeDate(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
 export default function Sentiment() {
   const { toast } = useToast();
   
@@ -50,14 +42,13 @@ export default function Sentiment() {
   const { data: comments, isLoading: loadingComments, refetch: refetchComments } = useCommentsApi();
   const analyzeSentiment = useAnalyzeSentimentApi();
 
-  // Spam detection
   const { data: spamComments, isLoading: loadingSpam } = useSpamComments();
   const detectSpam = useDetectSpam();
 
   const isLoading = loadingStats || loadingTrend || loadingComments;
 
   const trendData = trend?.map(t => ({
-    date: new Date(t.date).toLocaleDateString('en-US', { weekday: 'short' }),
+    date: new Date(t.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
     positive: t.positive,
     negative: t.negative,
     neutral: t.neutral,
@@ -69,27 +60,41 @@ export default function Sentiment() {
     { name: 'Negative', value: stats.negative, color: COLORS.negative },
   ] : [];
 
+  // Filter out spam comments from the recent comments list
+  const legitimateComments = (comments || []).filter(c => {
+    // Check if this comment appears in the spam list
+    const isSpam = spamComments?.some(s => s.id === c.id);
+    return !isSpam;
+  });
+
   const handleAnalyze = async () => {
     try {
       const result = await analyzeSentiment.mutateAsync();
       await Promise.all([refetchStats(), refetchComments()]);
       toast({
-        title: "Analysis complete!",
+        title: 'Analysis complete',
         description: result.analyzed > 0 
-          ? `Analyzed ${result.analyzed} comments with AI sentiment detection.`
-          : "All comments have already been analyzed.",
+          ? `Analyzed ${result.analyzed} new comment${result.analyzed !== 1 ? 's' : ''} with AI sentiment detection.`
+          : 'All comments have already been analyzed.',
       });
     } catch (error) {
-      toast({ title: "Error", description: error instanceof Error ? error.message : "Failed to analyze sentiment.", variant: "destructive" });
+      toast({ title: 'Analysis failed', description: error instanceof Error ? error.message : 'Failed to analyze sentiment.', variant: 'destructive' });
     }
   };
 
   const handleScanSpam = async () => {
     try {
-      await detectSpam.mutateAsync();
-      toast({ title: 'Success', description: `Scan complete! ${detectSpam.data?.spamFound || 0} spam found.` });
+      const result = await detectSpam.mutateAsync();
+      const spamFound = result?.spamFound || 0;
+      const scanned = result?.scanned || 0;
+      toast({ 
+        title: 'Spam scan complete', 
+        description: spamFound > 0 
+          ? `Found ${spamFound} spam comment${spamFound !== 1 ? 's' : ''} out of ${scanned} scanned.`
+          : `Scanned ${scanned} comments. No spam detected.`,
+      });
     } catch (error) {
-      toast({ title: 'Error', description: error instanceof Error ? error.message : 'Failed to scan', variant: 'destructive' });
+      toast({ title: 'Scan failed', description: error instanceof Error ? error.message : 'Failed to scan for spam.', variant: 'destructive' });
     }
   };
 
@@ -104,7 +109,12 @@ export default function Sentiment() {
         >
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2">Sentiment Analysis</h1>
-            <p className="text-muted-foreground">AI-powered analysis of audience reactions and feedback.</p>
+            <p className="text-muted-foreground">
+              AI-powered analysis of audience reactions and feedback.
+              {stats && stats.total > 0 && (
+                <span className="text-foreground font-medium"> {stats.total} comments analyzed.</span>
+              )}
+            </p>
           </div>
           <Button onClick={handleAnalyze} disabled={analyzeSentiment.isPending}>
             {analyzeSentiment.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
@@ -127,7 +137,7 @@ export default function Sentiment() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <ChartCard title="Sentiment Trend" subtitle="Daily sentiment distribution" delay={0.3}>
+            <ChartCard title="Sentiment Trend" subtitle="Daily sentiment distribution (14 days)" delay={0.3}>
               <div className="h-[300px]">
                 {trendData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
@@ -146,13 +156,14 @@ export default function Sentiment() {
                       <XAxis dataKey="date" stroke="hsl(215, 20%, 55%)" fontSize={12} />
                       <YAxis stroke="hsl(215, 20%, 55%)" fontSize={12} />
                       <Tooltip contentStyle={{ backgroundColor: 'hsl(222, 47%, 10%)', border: '1px solid hsl(222, 30%, 15%)', borderRadius: '8px', color: 'hsl(210, 40%, 98%)' }} />
-                      <Area type="monotone" dataKey="positive" stroke={COLORS.positive} fill="url(#colorPositiveSent)" strokeWidth={2} />
-                      <Area type="monotone" dataKey="negative" stroke={COLORS.negative} fill="url(#colorNegativeSent)" strokeWidth={2} />
+                      <Area type="monotone" dataKey="positive" stroke={COLORS.positive} fill="url(#colorPositiveSent)" strokeWidth={2} name="Positive" />
+                      <Area type="monotone" dataKey="negative" stroke={COLORS.negative} fill="url(#colorNegativeSent)" strokeWidth={2} name="Negative" />
                     </AreaChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="flex items-center justify-center h-full text-muted-foreground">
-                    No sentiment trend data. Analyze comments first.
+                  <div className="flex flex-col items-center justify-center h-full gap-2">
+                    <Sparkles className="h-8 w-8 text-muted-foreground/30" />
+                    <p className="text-sm text-muted-foreground">No sentiment trend data. Click "Analyze Comments" to start.</p>
                   </div>
                 )}
               </div>
@@ -178,7 +189,10 @@ export default function Sentiment() {
                     </div>
                   </>
                 ) : (
-                  <div className="text-muted-foreground">No data yet. Analyze comments to see distribution.</div>
+                  <div className="flex flex-col items-center gap-2">
+                    <MessageCircle className="h-8 w-8 text-muted-foreground/30" />
+                    <p className="text-sm text-muted-foreground">No data yet. Analyze comments to see distribution.</p>
+                  </div>
                 )}
               </div>
               {stats && stats.total > 0 && (
@@ -194,7 +208,12 @@ export default function Sentiment() {
             </ChartCard>
           </div>
 
-          <ChartCard title="AI Spam Comment Filter" subtitle="Detect bot, promotional, and phishing comments" delay={0.38}>
+          {/* AI Spam Comment Filter */}
+          <ChartCard 
+            title={`AI Spam Comment Filter${spamComments && spamComments.length > 0 ? ` · ${spamComments.length} detected` : ''}`} 
+            subtitle="Detect bot, promotional, and phishing comments" 
+            delay={0.38}
+          >
             <div className="flex justify-end mb-4">
               <Button
                 size="sm"
@@ -226,8 +245,11 @@ export default function Sentiment() {
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground">{comment.author_name || 'Anonymous'}</p>
-                        <p className="text-xs text-muted-foreground truncate">{comment.content}</p>
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-sm font-medium text-foreground">{comment.author_name || 'Anonymous'}</p>
+                          <span className="text-[10px] text-muted-foreground">{formatRelativeDate(comment.created_at)}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{comment.content}</p>
                       </div>
                       <Badge variant="destructive" className="text-[10px] shrink-0">
                         <AlertTriangle className="h-3 w-3 mr-1" />
@@ -239,17 +261,23 @@ export default function Sentiment() {
               </div>
             ) : (
               <div className="text-center py-8">
-                <MessageCircle className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
-                <p className="text-muted-foreground">No spam detected. Click "Scan for Spam" to analyze comments.</p>
+                <Shield className="h-8 w-8 mx-auto mb-2 text-chart-sentiment-positive/50" />
+                <p className="text-sm font-medium text-foreground">No spam detected</p>
+                <p className="text-xs text-muted-foreground mt-1">Click "Scan for Spam" to analyze your comments for bot or promotional content.</p>
               </div>
             )}
           </ChartCard>
 
+          {/* Recent Comments — filtered to exclude spam */}
           <div className="mt-6">
-            <ChartCard title="Recent Comments" subtitle="Latest analyzed feedback" delay={0.4}>
-              {comments && comments.length > 0 ? (
+            <ChartCard 
+              title={`Recent Comments${legitimateComments.length > 0 ? ` · ${legitimateComments.length} legitimate` : ''}`} 
+              subtitle="Latest analyzed feedback (spam excluded)" 
+              delay={0.4}
+            >
+              {legitimateComments.length > 0 ? (
                 <div className="space-y-4">
-                  {comments.slice(0, 8).map((comment, index) => (
+                  {legitimateComments.slice(0, 10).map((comment, index) => (
                     <motion.div
                       key={comment.id}
                       initial={{ opacity: 0, y: 10 }}
@@ -261,17 +289,16 @@ export default function Sentiment() {
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
                             <span className="font-medium text-foreground">{comment.authorName}</span>
+                            <span className="text-xs text-muted-foreground">·</span>
+                            <span className="text-xs text-muted-foreground">{formatRelativeDate(comment.createdAt)}</span>
                           </div>
-                          <p className="text-sm text-muted-foreground mb-2">{comment.content}</p>
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(comment.createdAt).toLocaleDateString()}
-                          </span>
+                          <p className="text-sm text-muted-foreground">{comment.content}</p>
                         </div>
                         <div className="flex flex-col items-end gap-2">
                           {comment.sentiment && <SentimentBadge sentiment={comment.sentiment} />}
                           {comment.sentimentScore != null && (
                             <span className="text-xs text-muted-foreground">
-                              Score: {(comment.sentimentScore * 100).toFixed(0)}%
+                              {(comment.sentimentScore * 100).toFixed(0)}%
                             </span>
                           )}
                         </div>
@@ -280,8 +307,10 @@ export default function Sentiment() {
                   ))}
                 </div>
               ) : (
-                <div className="py-8 text-center text-muted-foreground">
-                  No comments data. Import comments by syncing Instagram in Settings.
+                <div className="py-12 text-center">
+                  <MessageCircle className="h-10 w-10 mx-auto mb-3 text-muted-foreground/30" />
+                  <p className="text-sm font-medium text-foreground">No comments data</p>
+                  <p className="text-xs text-muted-foreground mt-1">Import comments by syncing Instagram in Settings.</p>
                 </div>
               )}
             </ChartCard>

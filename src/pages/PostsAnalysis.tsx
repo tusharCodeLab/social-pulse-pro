@@ -6,6 +6,7 @@ import {
 import {
   FileText, TrendingUp, Eye, Heart, MessageCircle, Share2, Loader2,
   Wand2, Sparkles, Hash, Lightbulb, Target, Zap, ChevronRight, Brain,
+  Image, Video, Layers, Type,
 } from 'lucide-react';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { MetricCard } from '@/components/dashboard/MetricCard';
@@ -23,8 +24,41 @@ const COLORS = {
   shares: 'hsl(38, 92%, 50%)',
 };
 
+const POST_TYPE_LABELS: Record<string, { label: string; icon: typeof Image }> = {
+  image: { label: 'Image Post', icon: Image },
+  video: { label: 'Video Post', icon: Video },
+  reel: { label: 'Reel', icon: Video },
+  carousel: { label: 'Carousel', icon: Layers },
+  story: { label: 'Story', icon: Layers },
+  text: { label: 'Text Post', icon: Type },
+};
+
+function formatPostContent(content: string, type: string): string {
+  if (content && content.trim().length > 0) return content;
+  return POST_TYPE_LABELS[type]?.label || 'Untitled Post';
+}
+
+function formatRelativeDate(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays}d ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
+}
+
+function formatNumber(num: number): string {
+  if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
+  if (num >= 1_000) return `${(num / 1_000).toFixed(1)}K`;
+  return num.toLocaleString();
+}
+
 export default function PostsAnalysis() {
-  const { data: posts, isLoading: loadingPosts } = usePostsApi();
+  const { data: posts, isLoading: loadingPosts, error: postsError } = usePostsApi();
   const { data: stats, isLoading: loadingStats } = usePostStatsApi();
   const { data: engagementTrend, isLoading: loadingTrend } = useEngagementAnalyticsApi(14);
   const [coaching, setCoaching] = useState<PostCoaching | null>(null);
@@ -37,12 +71,32 @@ export default function PostsAnalysis() {
     try {
       const result = await aiCoach.mutateAsync();
       if (result.coaching) {
-        setCoaching(result.coaching);
+        // Validate required fields exist before setting
+        const c = result.coaching;
+        if (
+          typeof c.overallScore === 'number' &&
+          c.scoreLabel &&
+          Array.isArray(c.captionTips) &&
+          Array.isArray(c.hashtagSuggestions) &&
+          Array.isArray(c.contentIdeas) &&
+          c.performancePrediction &&
+          c.topStrength &&
+          c.biggestOpportunity
+        ) {
+          setCoaching(c);
+        } else {
+          toast({ title: 'Incomplete analysis', description: 'AI returned an incomplete response. Please try again.', variant: 'destructive' });
+        }
       } else {
-        toast({ title: 'No data', description: result.message || 'No posts to analyze.' });
+        toast({ title: 'No data', description: result.message || 'No posts to analyze. Import posts first via Settings.' });
       }
     } catch (error) {
-      toast({ title: 'Error', description: error instanceof Error ? error.message : 'Failed to get coaching.', variant: 'destructive' });
+      const message = error instanceof Error ? error.message : 'Failed to get coaching.';
+      if (message.includes('Rate limit')) {
+        toast({ title: 'Rate Limited', description: 'Too many requests. Please wait a minute before trying again.', variant: 'destructive' });
+      } else {
+        toast({ title: 'Analysis Failed', description: message, variant: 'destructive' });
+      }
     }
   };
 
@@ -53,18 +107,44 @@ export default function PostsAnalysis() {
     shares: e.shares,
   })) || [];
 
-  const topPosts = [...(posts || [])].sort((a, b) => b.metrics.engagementRate - a.metrics.engagementRate);
+  // Sort by engagement rate, then by total interactions as tiebreaker
+  const topPosts = [...(posts || [])].sort((a, b) => {
+    const engDiff = b.metrics.engagementRate - a.metrics.engagementRate;
+    if (Math.abs(engDiff) > 0.01) return engDiff;
+    const totalA = a.metrics.likes + a.metrics.comments + a.metrics.shares;
+    const totalB = b.metrics.likes + b.metrics.comments + b.metrics.shares;
+    return totalB - totalA;
+  });
+
+  // Calculate actual engagement if DB rate is 0
+  const getDisplayEngagement = (post: typeof topPosts[0]) => {
+    if (post.metrics.engagementRate > 0) return post.metrics.engagementRate;
+    // Fallback: calculate from interactions / reach (or followers)
+    const totalInteractions = post.metrics.likes + post.metrics.comments + post.metrics.shares;
+    if (post.metrics.reach > 0) return (totalInteractions / post.metrics.reach) * 100;
+    return 0;
+  };
 
   return (
     <DashboardLayout>
       <div className="mb-8">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <h1 className="text-3xl font-bold text-foreground mb-2">Posts Analysis</h1>
-          <p className="text-muted-foreground">Track and analyze the performance of your Instagram posts.</p>
+          <p className="text-muted-foreground">
+            Track and analyze the performance of your Instagram posts.
+            {stats && stats.totalPosts > 0 && (
+              <span className="text-foreground font-medium"> {stats.totalPosts} posts tracked.</span>
+            )}
+          </p>
         </motion.div>
       </div>
 
-      {isLoading ? (
+      {postsError ? (
+        <div className="flex flex-col items-center justify-center py-20 gap-3">
+          <p className="text-destructive font-medium">Failed to load posts data</p>
+          <p className="text-sm text-muted-foreground">{postsError instanceof Error ? postsError.message : 'An unexpected error occurred.'}</p>
+        </div>
+      ) : isLoading ? (
         <div className="flex items-center justify-center py-20">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -72,8 +152,8 @@ export default function PostsAnalysis() {
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <MetricCard title="Total Posts" value={stats?.totalPosts.toString() || '0'} icon={FileText} delay={0.1} />
-            <MetricCard title="Total Likes" value={stats?.totalLikes.toLocaleString() || '0'} icon={Heart} delay={0.15} />
-            <MetricCard title="Total Comments" value={stats?.totalComments.toLocaleString() || '0'} icon={MessageCircle} delay={0.2} />
+            <MetricCard title="Total Likes" value={formatNumber(stats?.totalLikes || 0)} icon={Heart} delay={0.15} />
+            <MetricCard title="Total Comments" value={formatNumber(stats?.totalComments || 0)} icon={MessageCircle} delay={0.2} />
             <MetricCard title="Avg Engagement" value={`${(stats?.avgEngagement || 0).toFixed(1)}%`} icon={TrendingUp} delay={0.25} />
           </div>
 
@@ -93,14 +173,17 @@ export default function PostsAnalysis() {
                   </div>
                   <div>
                     <h3 className="text-base font-bold text-foreground">AI Post Coach</h3>
-                    <p className="text-xs text-muted-foreground">AI-powered growth analysis for your posts</p>
+                    <p className="text-xs text-muted-foreground">
+                      {coaching ? `Score: ${coaching.overallScore}/100 · ${coaching.scoreLabel}` : 'AI-powered growth analysis for your posts'}
+                    </p>
                   </div>
                 </div>
                 <Button
                   size="sm"
                   onClick={handleCoach}
-                  disabled={aiCoach.isPending}
+                  disabled={aiCoach.isPending || (stats?.totalPosts || 0) === 0}
                   className="gap-1.5 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground"
+                  title={(stats?.totalPosts || 0) === 0 ? 'Import posts first via Settings' : undefined}
                 >
                   {aiCoach.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                   {coaching ? 'Re-analyze' : 'Analyze Posts'}
@@ -109,7 +192,6 @@ export default function PostsAnalysis() {
 
               {coaching ? (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-                  {/* Score + Strength + Opportunity */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/30 border border-border/50">
                       <div className="relative w-14 h-14 flex-shrink-0">
@@ -142,7 +224,6 @@ export default function PostsAnalysis() {
                       <p className="text-sm text-foreground">{coaching.biggestOpportunity}</p>
                     </div>
                   </div>
-                  {/* Tips, Hashtags, Ideas */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="p-4 rounded-lg bg-muted/20 border border-border/50">
                       <div className="flex items-center gap-1.5 mb-3">
@@ -150,7 +231,7 @@ export default function PostsAnalysis() {
                         <span className="text-sm font-semibold text-foreground">Caption Tips</span>
                       </div>
                       <div className="space-y-2">
-                        {coaching.captionTips.map((tip, i) => (
+                        {coaching.captionTips.slice(0, 5).map((tip, i) => (
                           <div key={i} className="flex items-start gap-2">
                             <ChevronRight className="h-3.5 w-3.5 text-primary mt-0.5 flex-shrink-0" />
                             <p className="text-xs text-muted-foreground">{tip}</p>
@@ -164,7 +245,7 @@ export default function PostsAnalysis() {
                         <span className="text-sm font-semibold text-foreground">Hashtag Ideas</span>
                       </div>
                       <div className="flex flex-wrap gap-2">
-                        {coaching.hashtagSuggestions.map((tag, i) => (
+                        {coaching.hashtagSuggestions.slice(0, 8).map((tag, i) => (
                           <Badge key={i} variant="secondary" className="text-xs bg-chart-reach/10 text-chart-reach border-chart-reach/20">{tag}</Badge>
                         ))}
                       </div>
@@ -175,7 +256,7 @@ export default function PostsAnalysis() {
                         <span className="text-sm font-semibold text-foreground">Content Ideas</span>
                       </div>
                       <div className="space-y-2">
-                        {coaching.contentIdeas.map((idea, i) => (
+                        {coaching.contentIdeas.slice(0, 5).map((idea, i) => (
                           <div key={i} className="flex items-start gap-2">
                             <ChevronRight className="h-3.5 w-3.5 text-chart-reach mt-0.5 flex-shrink-0" />
                             <p className="text-xs text-muted-foreground">{idea}</p>
@@ -184,7 +265,6 @@ export default function PostsAnalysis() {
                       </div>
                     </div>
                   </div>
-                  {/* Prediction */}
                   <div className="mt-4 p-3 rounded-lg bg-gradient-to-r from-primary/5 to-chart-reach/5 border border-primary/10">
                     <p className="text-xs text-center text-muted-foreground">
                       <Sparkles className="h-3.5 w-3.5 text-primary inline mr-1" />
@@ -199,7 +279,9 @@ export default function PostsAnalysis() {
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground text-center py-4">
-                  Click "Analyze Posts" to get AI-powered coaching with caption tips, hashtag ideas, and performance predictions.
+                  {(stats?.totalPosts || 0) === 0
+                    ? 'No posts available. Connect your Instagram account in Settings to import posts.'
+                    : 'Click "Analyze Posts" to get AI-powered coaching with caption tips, hashtag ideas, and performance predictions.'}
                 </p>
               )}
             </div>
@@ -226,12 +308,15 @@ export default function PostsAnalysis() {
                     </AreaChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="flex items-center justify-center h-full text-muted-foreground">No engagement data yet.</div>
+                  <div className="flex flex-col items-center justify-center h-full gap-2">
+                    <TrendingUp className="h-8 w-8 text-muted-foreground/30" />
+                    <p className="text-sm text-muted-foreground">No engagement data in the last 2 weeks.</p>
+                  </div>
                 )}
               </div>
             </ChartCard>
 
-            <ChartCard title="Engagement Distribution" subtitle="Breakdown by engagement type" delay={0.35}>
+            <ChartCard title="Engagement Distribution" subtitle="Breakdown by engagement type (last 7 days)" delay={0.35}>
               <div className="h-[300px]">
                 {trendData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
@@ -246,7 +331,10 @@ export default function PostsAnalysis() {
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="flex items-center justify-center h-full text-muted-foreground">No data available.</div>
+                  <div className="flex flex-col items-center justify-center h-full gap-2">
+                    <FileText className="h-8 w-8 text-muted-foreground/30" />
+                    <p className="text-sm text-muted-foreground">No data available for this period.</p>
+                  </div>
                 )}
               </div>
               <div className="flex justify-center gap-6 mt-4">
@@ -261,67 +349,82 @@ export default function PostsAnalysis() {
           </div>
 
           {/* Top Posts Table */}
-          <ChartCard title="Top Performing Posts" subtitle="Ranked by engagement rate" delay={0.4}>
+          <ChartCard title="Top Performing Posts" subtitle={`${topPosts.length} posts ranked by engagement`} delay={0.4}>
             {topPosts.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-border">
-                      <th className="text-left py-3 px-4 text-xs font-medium text-muted-foreground uppercase">Post</th>
-                      <th className="text-left py-3 px-4 text-xs font-medium text-muted-foreground uppercase">Platform</th>
-                      <th className="text-right py-3 px-4 text-xs font-medium text-muted-foreground uppercase">Likes</th>
-                      <th className="text-right py-3 px-4 text-xs font-medium text-muted-foreground uppercase">Comments</th>
-                      <th className="text-right py-3 px-4 text-xs font-medium text-muted-foreground uppercase">Reach</th>
-                      <th className="text-right py-3 px-4 text-xs font-medium text-muted-foreground uppercase">Eng. Rate</th>
+                      <th className="text-left py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">#</th>
+                      <th className="text-left py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">Post</th>
+                      <th className="text-left py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">Platform</th>
+                      <th className="text-right py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">Likes</th>
+                      <th className="text-right py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">Comments</th>
+                      <th className="text-right py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">Reach</th>
+                      <th className="text-right py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">Eng. Rate</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {topPosts.map((post, index) => (
-                      <motion.tr
-                        key={post.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.45 + index * 0.05 }}
-                        className="border-b border-border/50 hover:bg-muted/30 transition-colors"
-                      >
-                        <td className="py-3 px-4">
-                          <p className="text-sm text-foreground line-clamp-2 max-w-[300px]">{post.content}</p>
-                          <p className="text-xs text-muted-foreground mt-1">{new Date(post.publishedAt).toLocaleDateString()}</p>
-                        </td>
-                        <td className="py-3 px-4"><PlatformBadge platform={post.platform} /></td>
-                        <td className="py-3 px-4 text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <Heart className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-sm text-foreground">{post.metrics.likes.toLocaleString()}</span>
-                          </div>
-                        </td>
-                        <td className="py-3 px-4 text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <MessageCircle className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-sm text-foreground">{post.metrics.comments.toLocaleString()}</span>
-                          </div>
-                        </td>
-                        <td className="py-3 px-4 text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <Eye className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-sm text-foreground">
-                              {post.metrics.reach >= 1000 ? `${(post.metrics.reach / 1000).toFixed(1)}K` : post.metrics.reach}
+                    {topPosts.map((post, index) => {
+                      const displayEng = getDisplayEngagement(post);
+                      const PostIcon = POST_TYPE_LABELS[post.type]?.icon || FileText;
+                      return (
+                        <motion.tr
+                          key={post.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.45 + index * 0.05 }}
+                          className="border-b border-border/50 hover:bg-muted/30 transition-colors"
+                        >
+                          <td className="py-3 px-4 text-xs text-muted-foreground font-medium">{index + 1}</td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-start gap-2">
+                              <PostIcon className="h-3.5 w-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                              <div>
+                                <p className="text-sm text-foreground line-clamp-2 max-w-[280px]">
+                                  {formatPostContent(post.content, post.type)}
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-1">{formatRelativeDate(post.publishedAt)}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4"><PlatformBadge platform={post.platform} /></td>
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Heart className="h-3 w-3 text-muted-foreground" />
+                              <span className="text-sm text-foreground">{formatNumber(post.metrics.likes)}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <MessageCircle className="h-3 w-3 text-muted-foreground" />
+                              <span className="text-sm text-foreground">{formatNumber(post.metrics.comments)}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Eye className="h-3 w-3 text-muted-foreground" />
+                              <span className="text-sm text-foreground">{formatNumber(post.metrics.reach)}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <span className={`inline-flex items-center gap-1 text-sm font-medium ${displayEng > 0 ? 'text-chart-sentiment-positive' : 'text-muted-foreground'}`}>
+                              {displayEng > 0 && <TrendingUp className="h-3 w-3" />}
+                              {displayEng > 0 ? `${displayEng.toFixed(1)}%` : '—'}
                             </span>
-                          </div>
-                        </td>
-                        <td className="py-3 px-4 text-right">
-                          <span className="inline-flex items-center gap-1 text-sm font-medium text-chart-sentiment-positive">
-                            <TrendingUp className="h-3 w-3" />
-                            {post.metrics.engagementRate.toFixed(1)}%
-                          </span>
-                        </td>
-                      </motion.tr>
-                    ))}
+                          </td>
+                        </motion.tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
             ) : (
-              <div className="py-8 text-center text-muted-foreground">No posts data. Connect Instagram in Settings to import posts.</div>
+              <div className="py-12 text-center">
+                <FileText className="h-10 w-10 mx-auto mb-3 text-muted-foreground/30" />
+                <p className="text-muted-foreground font-medium">No posts data</p>
+                <p className="text-sm text-muted-foreground mt-1">Connect your Instagram account in Settings to import posts.</p>
+              </div>
             )}
           </ChartCard>
         </>
