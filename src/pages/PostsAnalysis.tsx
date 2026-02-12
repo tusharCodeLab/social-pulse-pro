@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   BarChart,
@@ -18,22 +17,13 @@ import {
   Heart,
   MessageCircle,
   Share2,
-  Filter,
   Loader2,
 } from 'lucide-react';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { MetricCard } from '@/components/dashboard/MetricCard';
 import { ChartCard } from '@/components/dashboard/ChartCard';
 import { PlatformBadge } from '@/components/dashboard/PlatformBadge';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { usePostsApi, usePostStatsApi, useEngagementAnalyticsApi } from '@/hooks/useSocialApi';
-import type { SocialPlatform } from '@/services/api/types';
 
 const COLORS = {
   likes: 'hsl(173, 80%, 45%)',
@@ -42,17 +32,12 @@ const COLORS = {
 };
 
 export default function PostsAnalysis() {
-  const [platformFilter, setPlatformFilter] = useState<SocialPlatform | 'all'>('all');
-  
-  const { data: posts, isLoading: loadingPosts } = usePostsApi(
-    platformFilter === 'all' ? undefined : platformFilter
-  );
+  const { data: posts, isLoading: loadingPosts } = usePostsApi();
   const { data: stats, isLoading: loadingStats } = usePostStatsApi();
   const { data: engagementTrend, isLoading: loadingTrend } = useEngagementAnalyticsApi(14);
 
   const isLoading = loadingPosts || loadingStats || loadingTrend;
 
-  // Transform engagement trend data for chart
   const trendData = engagementTrend?.map(e => ({
     date: new Date(e.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
     likes: e.likes,
@@ -60,43 +45,14 @@ export default function PostsAnalysis() {
     shares: e.shares,
   })) || [];
 
-  // Top performing posts
   const topPosts = [...(posts || [])].sort((a, b) => b.metrics.engagementRate - a.metrics.engagementRate);
 
   return (
     <DashboardLayout>
-      {/* Header */}
       <div className="mb-8">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
-        >
-          <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Posts Analysis</h1>
-            <p className="text-muted-foreground">
-              Track and analyze the performance of your social media posts.
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Select
-              value={platformFilter}
-              onValueChange={(v) => setPlatformFilter(v as SocialPlatform | 'all')}
-            >
-              <SelectTrigger className="w-[150px]">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Platform" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Platforms</SelectItem>
-                <SelectItem value="instagram">Instagram</SelectItem>
-                <SelectItem value="twitter">Twitter</SelectItem>
-                <SelectItem value="facebook">Facebook</SelectItem>
-                <SelectItem value="linkedin">LinkedIn</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Posts Analysis</h1>
+          <p className="text-muted-foreground">Track and analyze the performance of your Instagram posts.</p>
         </motion.div>
       </div>
 
@@ -106,103 +62,55 @@ export default function PostsAnalysis() {
         </div>
       ) : (
         <>
-          {/* Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <MetricCard
-              title="Total Posts"
-              value={stats?.totalPosts.toString() || '0'}
-              change={12}
-              icon={FileText}
-              delay={0.1}
-            />
-            <MetricCard
-              title="Total Likes"
-              value={stats?.totalLikes.toLocaleString() || '0'}
-              change={8.3}
-              icon={Heart}
-              delay={0.15}
-            />
-            <MetricCard
-              title="Total Comments"
-              value={stats?.totalComments.toLocaleString() || '0'}
-              change={15.2}
-              icon={MessageCircle}
-              delay={0.2}
-            />
-            <MetricCard
-              title="Avg Engagement"
-              value={`${(stats?.avgEngagement || 0).toFixed(1)}%`}
-              change={2.1}
-              icon={TrendingUp}
-              delay={0.25}
-            />
+            <MetricCard title="Total Posts" value={stats?.totalPosts.toString() || '0'} icon={FileText} delay={0.1} />
+            <MetricCard title="Total Likes" value={stats?.totalLikes.toLocaleString() || '0'} icon={Heart} delay={0.15} />
+            <MetricCard title="Total Comments" value={stats?.totalComments.toLocaleString() || '0'} icon={MessageCircle} delay={0.2} />
+            <MetricCard title="Avg Engagement" value={`${(stats?.avgEngagement || 0).toFixed(1)}%`} icon={TrendingUp} delay={0.25} />
           </div>
 
-          {/* Charts Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            {/* Engagement Trend */}
-            <ChartCard
-              title="Engagement Trend"
-              subtitle="Daily engagement over the last 2 weeks"
-              delay={0.3}
-            >
+            <ChartCard title="Engagement Trend" subtitle="Daily engagement over the last 2 weeks" delay={0.3}>
               <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={trendData}>
-                    <defs>
-                      <linearGradient id="colorLikesPost" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={COLORS.likes} stopOpacity={0.3} />
-                        <stop offset="95%" stopColor={COLORS.likes} stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(222, 30%, 15%)" />
-                    <XAxis dataKey="date" stroke="hsl(215, 20%, 55%)" fontSize={12} />
-                    <YAxis stroke="hsl(215, 20%, 55%)" fontSize={12} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: 'hsl(222, 47%, 10%)',
-                        border: '1px solid hsl(222, 30%, 15%)',
-                        borderRadius: '8px',
-                        color: 'hsl(210, 40%, 98%)',
-                      }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="likes"
-                      stroke={COLORS.likes}
-                      fill="url(#colorLikesPost)"
-                      strokeWidth={2}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
+                {trendData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={trendData}>
+                      <defs>
+                        <linearGradient id="colorLikesPost" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor={COLORS.likes} stopOpacity={0.3} />
+                          <stop offset="95%" stopColor={COLORS.likes} stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(222, 30%, 15%)" />
+                      <XAxis dataKey="date" stroke="hsl(215, 20%, 55%)" fontSize={12} />
+                      <YAxis stroke="hsl(215, 20%, 55%)" fontSize={12} />
+                      <Tooltip contentStyle={{ backgroundColor: 'hsl(222, 47%, 10%)', border: '1px solid hsl(222, 30%, 15%)', borderRadius: '8px', color: 'hsl(210, 40%, 98%)' }} />
+                      <Area type="monotone" dataKey="likes" stroke={COLORS.likes} fill="url(#colorLikesPost)" strokeWidth={2} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-muted-foreground">No engagement data yet.</div>
+                )}
               </div>
             </ChartCard>
 
-            {/* Engagement by Type */}
-            <ChartCard
-              title="Engagement Distribution"
-              subtitle="Breakdown by engagement type"
-              delay={0.35}
-            >
+            <ChartCard title="Engagement Distribution" subtitle="Breakdown by engagement type" delay={0.35}>
               <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={trendData.slice(-7)}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(222, 30%, 15%)" />
-                    <XAxis dataKey="date" stroke="hsl(215, 20%, 55%)" fontSize={12} />
-                    <YAxis stroke="hsl(215, 20%, 55%)" fontSize={12} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: 'hsl(222, 47%, 10%)',
-                        border: '1px solid hsl(222, 30%, 15%)',
-                        borderRadius: '8px',
-                        color: 'hsl(210, 40%, 98%)',
-                      }}
-                    />
-                    <Bar dataKey="likes" fill={COLORS.likes} radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="comments" fill={COLORS.comments} radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="shares" fill={COLORS.shares} radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                {trendData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={trendData.slice(-7)}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(222, 30%, 15%)" />
+                      <XAxis dataKey="date" stroke="hsl(215, 20%, 55%)" fontSize={12} />
+                      <YAxis stroke="hsl(215, 20%, 55%)" fontSize={12} />
+                      <Tooltip contentStyle={{ backgroundColor: 'hsl(222, 47%, 10%)', border: '1px solid hsl(222, 30%, 15%)', borderRadius: '8px', color: 'hsl(210, 40%, 98%)' }} />
+                      <Bar dataKey="likes" fill={COLORS.likes} radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="comments" fill={COLORS.comments} radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="shares" fill={COLORS.shares} radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-muted-foreground">No data available.</div>
+                )}
               </div>
               <div className="flex justify-center gap-6 mt-4">
                 <div className="flex items-center gap-2">
@@ -221,84 +129,68 @@ export default function PostsAnalysis() {
             </ChartCard>
           </div>
 
-          {/* Posts Table */}
-          <ChartCard
-            title="Top Performing Posts"
-            subtitle="Ranked by engagement rate"
-            delay={0.4}
-          >
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left py-3 px-4 text-xs font-medium text-muted-foreground uppercase">Post</th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-muted-foreground uppercase">Platform</th>
-                    <th className="text-right py-3 px-4 text-xs font-medium text-muted-foreground uppercase">Likes</th>
-                    <th className="text-right py-3 px-4 text-xs font-medium text-muted-foreground uppercase">Comments</th>
-                    <th className="text-right py-3 px-4 text-xs font-medium text-muted-foreground uppercase">Shares</th>
-                    <th className="text-right py-3 px-4 text-xs font-medium text-muted-foreground uppercase">Reach</th>
-                    <th className="text-right py-3 px-4 text-xs font-medium text-muted-foreground uppercase">Eng. Rate</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {topPosts.map((post, index) => (
-                    <motion.tr
-                      key={post.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.45 + index * 0.05 }}
-                      className="border-b border-border/50 hover:bg-muted/30 transition-colors"
-                    >
-                      <td className="py-3 px-4">
-                        <p className="text-sm text-foreground line-clamp-2 max-w-[300px]">
-                          {post.content}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {new Date(post.publishedAt).toLocaleDateString()}
-                        </p>
-                      </td>
-                      <td className="py-3 px-4">
-                        <PlatformBadge platform={post.platform} />
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Heart className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-sm text-foreground">{post.metrics.likes.toLocaleString()}</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <MessageCircle className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-sm text-foreground">{post.metrics.comments.toLocaleString()}</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Share2 className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-sm text-foreground">{post.metrics.shares.toLocaleString()}</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Eye className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-sm text-foreground">
-                            {post.metrics.reach >= 1000 
-                              ? `${(post.metrics.reach / 1000).toFixed(1)}K`
-                              : post.metrics.reach}
+          <ChartCard title="Top Performing Posts" subtitle="Ranked by engagement rate" delay={0.4}>
+            {topPosts.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="text-left py-3 px-4 text-xs font-medium text-muted-foreground uppercase">Post</th>
+                      <th className="text-left py-3 px-4 text-xs font-medium text-muted-foreground uppercase">Platform</th>
+                      <th className="text-right py-3 px-4 text-xs font-medium text-muted-foreground uppercase">Likes</th>
+                      <th className="text-right py-3 px-4 text-xs font-medium text-muted-foreground uppercase">Comments</th>
+                      <th className="text-right py-3 px-4 text-xs font-medium text-muted-foreground uppercase">Reach</th>
+                      <th className="text-right py-3 px-4 text-xs font-medium text-muted-foreground uppercase">Eng. Rate</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {topPosts.map((post, index) => (
+                      <motion.tr
+                        key={post.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.45 + index * 0.05 }}
+                        className="border-b border-border/50 hover:bg-muted/30 transition-colors"
+                      >
+                        <td className="py-3 px-4">
+                          <p className="text-sm text-foreground line-clamp-2 max-w-[300px]">{post.content}</p>
+                          <p className="text-xs text-muted-foreground mt-1">{new Date(post.publishedAt).toLocaleDateString()}</p>
+                        </td>
+                        <td className="py-3 px-4"><PlatformBadge platform={post.platform} /></td>
+                        <td className="py-3 px-4 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <Heart className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-sm text-foreground">{post.metrics.likes.toLocaleString()}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <MessageCircle className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-sm text-foreground">{post.metrics.comments.toLocaleString()}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <Eye className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-sm text-foreground">
+                              {post.metrics.reach >= 1000 ? `${(post.metrics.reach / 1000).toFixed(1)}K` : post.metrics.reach}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <span className="inline-flex items-center gap-1 text-sm font-medium text-chart-sentiment-positive">
+                            <TrendingUp className="h-3 w-3" />
+                            {post.metrics.engagementRate.toFixed(1)}%
                           </span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <span className="inline-flex items-center gap-1 text-sm font-medium text-chart-sentiment-positive">
-                          <TrendingUp className="h-3 w-3" />
-                          {post.metrics.engagementRate.toFixed(1)}%
-                        </span>
-                      </td>
-                    </motion.tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="py-8 text-center text-muted-foreground">No posts data. Connect Instagram in Settings to import posts.</div>
+            )}
           </ChartCard>
         </>
       )}

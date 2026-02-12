@@ -696,14 +696,13 @@ export const insightsApi = {
   },
 
   async getTrendingTopics(): Promise<APIResponse<TrendingTopic[]>> {
-    // Extract trending topics from posts and comments
+    // Extract hashtags from post content — counts only, no fake growth data
     const { data: posts } = await supabase
       .from('posts')
       .select('content')
       .order('published_at', { ascending: false })
       .limit(50);
 
-    // Extract hashtags from post content
     const hashtagCounts: Record<string, number> = {};
     (posts || []).forEach(p => {
       const hashtags = p.content?.match(/#\w+/g) || [];
@@ -719,8 +718,8 @@ export const insightsApi = {
         topic: tag.replace('#', ''),
         hashtag: tag,
         mentions: count,
-        growth: Math.floor(Math.random() * 50) + 10, // Would need historical data for real growth
-        sentiment: 'positive' as const,
+        growth: 0, // No historical data available to calculate real growth
+        sentiment: 'neutral' as const,
         relatedPosts: [],
       }));
 

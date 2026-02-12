@@ -1,13 +1,11 @@
 import { motion } from 'framer-motion';
-import { LucideIcon, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AnimatedCounter } from '@/components/ui/animated-counter';
 
 interface MetricCardProps {
   title: string;
   value: string | number;
-  change?: number;
-  changeLabel?: string;
   icon: LucideIcon;
   iconColor?: string;
   delay?: number;
@@ -17,15 +15,11 @@ interface MetricCardProps {
 export function MetricCard({
   title,
   value,
-  change,
-  changeLabel = 'vs last period',
   icon: Icon,
   iconColor = 'text-primary',
   delay = 0,
   accentColor = 'hsl(var(--primary))',
 }: MetricCardProps) {
-  const isPositive = change && change > 0;
-  const isNegative = change && change < 0;
   const numericValue = typeof value === 'string' ? parseFloat(value.replace(/[^0-9.-]/g, '')) : value;
   const suffix = typeof value === 'string' ? value.replace(/[0-9.,]/g, '') : '';
 
@@ -69,29 +63,6 @@ export function MetricCard({
           >
             <Icon className="h-5 w-5" />
           </motion.div>
-          {change !== undefined && (
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: delay + 0.2 }}
-              className={cn(
-                'flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full',
-                'backdrop-blur-sm',
-                isPositive && 'text-chart-sentiment-positive bg-chart-sentiment-positive/15',
-                isNegative && 'text-chart-sentiment-negative bg-chart-sentiment-negative/15',
-                !isPositive && !isNegative && 'text-muted-foreground bg-muted/50'
-              )}
-            >
-              {isPositive ? (
-                <TrendingUp className="h-3 w-3" />
-              ) : isNegative ? (
-                <TrendingDown className="h-3 w-3" />
-              ) : (
-                <Minus className="h-3 w-3" />
-              )}
-              <span>{isPositive ? '+' : ''}{change}%</span>
-            </motion.div>
-          )}
         </div>
         <div>
           <div className="text-2xl font-bold text-foreground mb-1 tabular-nums">
@@ -105,9 +76,6 @@ export function MetricCard({
             )}
           </div>
           <p className="text-sm text-muted-foreground font-medium">{title}</p>
-          {change !== undefined && (
-            <p className="text-xs text-muted-foreground/70 mt-2">{changeLabel}</p>
-          )}
         </div>
       </div>
     </motion.div>
