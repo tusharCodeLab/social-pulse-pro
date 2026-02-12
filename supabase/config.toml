@@ -23,3 +23,12 @@ verify_jwt = false
 
 [functions.ai-post-coach]
 verify_jwt = false
+
+[functions.ai-performance-digest]
+verify_jwt = false
+
+[functions.ai-caption-generator]
+verify_jwt = false
+
+[functions.ai-content-ideas]
+verify_jwt = false

@@ -114,3 +114,72 @@ export function useAIPostCoach() {
     },
   });
 }
+
+// ============================================================================
+// AI Performance Digest
+// ============================================================================
+export interface PerformanceDigest {
+  headline: string;
+  summary: string;
+  highlights: { emoji: string; text: string }[];
+  healthScore: number;
+  healthLabel: string;
+  weeklyGoal: string;
+  riskAlert?: string;
+}
+
+export function useAIPerformanceDigest() {
+  return useMutation({
+    mutationFn: async (): Promise<{ digest: PerformanceDigest | null; message?: string }> => {
+      const { data, error } = await supabase.functions.invoke("ai-performance-digest");
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+// ============================================================================
+// AI Caption Generator
+// ============================================================================
+export interface GeneratedCaption {
+  style: string;
+  caption: string;
+  hashtags: string[];
+  estimatedEngagement: string;
+  hookStrength: number;
+}
+
+export function useAICaptionGenerator() {
+  return useMutation({
+    mutationFn: async (params: { topic: string; tone?: string; postType?: string }): Promise<{ captions: GeneratedCaption[] }> => {
+      const { data, error } = await supabase.functions.invoke("ai-caption-generator", {
+        body: params,
+      });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+// ============================================================================
+// AI Content Ideas
+// ============================================================================
+export interface ContentIdea {
+  title: string;
+  description: string;
+  format: string;
+  priority: string;
+  basedOn: string;
+  estimatedImpact: string;
+  bestDay: string;
+}
+
+export function useAIContentIdeas() {
+  return useMutation({
+    mutationFn: async (): Promise<{ ideas: ContentIdea[] | null; strategy?: string; message?: string }> => {
+      const { data, error } = await supabase.functions.invoke("ai-content-ideas");
+      if (error) throw error;
+      return data;
+    },
+  });
+}

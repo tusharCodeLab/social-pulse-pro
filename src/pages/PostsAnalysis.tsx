@@ -6,7 +6,7 @@ import {
 import {
   FileText, TrendingUp, Eye, Heart, MessageCircle, Share2, Loader2,
   Wand2, Sparkles, Hash, Lightbulb, Target, Zap, ChevronRight, Brain,
-  Image, Video, Layers, Type,
+  Image, Video, Layers, Type, PenTool, Copy, Check, Star,
 } from 'lucide-react';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { MetricCard } from '@/components/dashboard/MetricCard';
@@ -14,8 +14,9 @@ import { ChartCard } from '@/components/dashboard/ChartCard';
 import { PlatformBadge } from '@/components/dashboard/PlatformBadge';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { usePostsApi, usePostStatsApi, useEngagementAnalyticsApi } from '@/hooks/useSocialApi';
-import { useAIPostCoach, PostCoaching } from '@/hooks/useAIFeatures';
+import { useAIPostCoach, useAICaptionGenerator, PostCoaching, GeneratedCaption } from '@/hooks/useAIFeatures';
 import { useToast } from '@/hooks/use-toast';
 
 const COLORS = {
@@ -62,7 +63,11 @@ export default function PostsAnalysis() {
   const { data: stats, isLoading: loadingStats } = usePostStatsApi();
   const { data: engagementTrend, isLoading: loadingTrend } = useEngagementAnalyticsApi(14);
   const [coaching, setCoaching] = useState<PostCoaching | null>(null);
+  const [captions, setCaptions] = useState<GeneratedCaption[] | null>(null);
+  const [captionTopic, setCaptionTopic] = useState('');
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const aiCoach = useAIPostCoach();
+  const aiCaption = useAICaptionGenerator();
   const { toast } = useToast();
 
   const isLoading = loadingPosts || loadingStats || loadingTrend;
@@ -98,6 +103,30 @@ export default function PostsAnalysis() {
         toast({ title: 'Analysis Failed', description: message, variant: 'destructive' });
       }
     }
+  };
+
+  const handleGenerateCaptions = async () => {
+    if (!captionTopic.trim()) {
+      toast({ title: 'Topic required', description: 'Enter a topic or theme for caption generation.' });
+      return;
+    }
+    try {
+      const result = await aiCaption.mutateAsync({ topic: captionTopic.trim(), tone: 'professional' });
+      if (result.captions) {
+        setCaptions(result.captions);
+      }
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Failed to generate captions.';
+      toast({ title: 'Generation Failed', description: msg, variant: 'destructive' });
+    }
+  };
+
+  const handleCopyCaption = (caption: string, idx: number) => {
+    navigator.clipboard.writeText(caption).then(() => {
+      setCopiedIdx(idx);
+      toast({ title: 'Copied!', description: 'Caption copied to clipboard.' });
+      setTimeout(() => setCopiedIdx(null), 2000);
+    });
   };
 
   const trendData = engagementTrend?.map(e => ({
@@ -284,6 +313,93 @@ export default function PostsAnalysis() {
                     : 'Click "Analyze Posts" to get AI-powered coaching with caption tips, hashtag ideas, and performance predictions.'}
                 </p>
               )}
+            </div>
+          </motion.div>
+
+          {/* AI Caption Generator */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="mb-8 rounded-xl border border-chart-reach/20 bg-gradient-to-r from-card via-card to-chart-reach/5 overflow-hidden"
+            style={{ boxShadow: '0 4px 30px -8px hsl(262 83% 58% / 0.12)' }}
+          >
+            <div className="p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-lg bg-gradient-to-br from-chart-reach/20 to-primary/20 border border-chart-reach/30">
+                    <PenTool className="h-5 w-5 text-chart-reach" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-foreground">AI Caption Generator</h3>
+                    <p className="text-xs text-muted-foreground">Generate optimized captions based on your brand voice</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-2 mb-4">
+                <Input
+                  placeholder="Enter topic or theme (e.g., 'product launch', 'behind the scenes')..."
+                  value={captionTopic}
+                  onChange={e => setCaptionTopic(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleGenerateCaptions()}
+                  className="flex-1"
+                />
+                <Button onClick={handleGenerateCaptions} disabled={aiCaption.isPending || !captionTopic.trim()} className="gap-1.5 bg-gradient-to-r from-chart-reach to-chart-reach/80 hover:from-chart-reach/90 hover:to-chart-reach/70 text-primary-foreground">
+                  {aiCaption.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  Generate
+                </Button>
+              </div>
+
+              {captions && captions.length > 0 ? (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
+                  {captions.map((cap, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.1 }}
+                      className="p-4 rounded-lg bg-muted/20 border border-border/50 group"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="text-xs bg-chart-reach/10 text-chart-reach border-chart-reach/20">{cap.style}</Badge>
+                          <Badge variant="secondary" className={`text-xs ${
+                            cap.estimatedEngagement === 'Very High' ? 'bg-chart-sentiment-positive/10 text-chart-sentiment-positive' :
+                            cap.estimatedEngagement === 'High' ? 'bg-primary/10 text-primary' :
+                            'bg-muted text-muted-foreground'
+                          }`}>
+                            {cap.estimatedEngagement} Engagement
+                          </Badge>
+                          <div className="flex items-center gap-0.5">
+                            {[...Array(5)].map((_, s) => (
+                              <Star key={s} className={`h-3 w-3 ${s < Math.round(cap.hookStrength / 2) ? 'text-chart-impressions fill-chart-impressions' : 'text-muted-foreground/30'}`} />
+                            ))}
+                          </div>
+                        </div>
+                        <Button
+                          size="sm" variant="ghost" className="gap-1.5 h-7 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => handleCopyCaption(cap.caption, i)}
+                        >
+                          {copiedIdx === i ? <Check className="h-3.5 w-3.5 text-chart-sentiment-positive" /> : <Copy className="h-3.5 w-3.5" />}
+                          {copiedIdx === i ? 'Copied' : 'Copy'}
+                        </Button>
+                      </div>
+                      <p className="text-sm text-foreground whitespace-pre-line leading-relaxed mb-3">{cap.caption}</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {cap.hashtags.map((tag, j) => (
+                          <span key={j} className="text-xs text-chart-reach bg-chart-reach/10 px-2 py-0.5 rounded-md">#{tag}</span>
+                        ))}
+                      </div>
+                    </motion.div>
+                  ))}
+                </motion.div>
+              ) : aiCaption.isPending ? (
+                <div className="flex items-center justify-center gap-2 py-6">
+                  <Loader2 className="h-5 w-5 animate-spin text-chart-reach" />
+                  <span className="text-sm text-muted-foreground">Crafting captions from your brand voice...</span>
+                </div>
+              ) : null}
             </div>
           </motion.div>
 
