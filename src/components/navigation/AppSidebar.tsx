@@ -7,7 +7,6 @@ import {
   Users,
   Heart,
   Brain,
-  BarChart3,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -20,14 +19,15 @@ import { SidebarNavLink } from './SidebarNavLink';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 
-const navItems = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/posts', icon: FileText, label: 'Posts Analysis' },
-  { to: '/audience', icon: Users, label: 'Audience Insights' },
-  { to: '/sentiment', icon: Heart, label: 'Sentiment' },
-  { to: '/ai-tools', icon: Brain, label: 'AI Tools' },
-  { to: '/reports', icon: BarChart3, label: 'Reports' },
-  { to: '/settings', icon: Settings, label: 'Settings' },
+const navGroups = [
+  { label: 'Overview', items: [{ to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' }] },
+  { label: 'Analytics', items: [
+    { to: '/posts', icon: FileText, label: 'Posts Analysis' },
+    { to: '/audience', icon: Users, label: 'Audience Insights' },
+    { to: '/sentiment', icon: Heart, label: 'Sentiment' },
+  ]},
+  { label: 'AI & Tools', items: [{ to: '/ai-tools', icon: Brain, label: 'AI Tools' }] },
+  { label: 'Account', items: [{ to: '/settings', icon: Settings, label: 'Settings' }] },
 ];
 
 export function AppSidebar() {
@@ -114,21 +114,39 @@ export function AppSidebar() {
       </AnimatePresence>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {navItems.map((item, index) => (
-          <motion.div
-            key={item.to}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: index * 0.05 }}
-          >
-            <SidebarNavLink
-              to={item.to}
-              icon={item.icon}
-              label={item.label}
-              collapsed={collapsed}
-            />
-          </motion.div>
+      <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto">
+        {navGroups.map((group, groupIndex) => (
+          <div key={group.label}>
+            <AnimatePresence mode="wait">
+              {!collapsed && (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60"
+                >
+                  {group.label}
+                </motion.p>
+              )}
+            </AnimatePresence>
+            <div className="space-y-1">
+              {group.items.map((item, itemIndex) => (
+                <motion.div
+                  key={item.to}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: (groupIndex * 3 + itemIndex) * 0.03 }}
+                >
+                  <SidebarNavLink
+                    to={item.to}
+                    icon={item.icon}
+                    label={item.label}
+                    collapsed={collapsed}
+                  />
+                </motion.div>
+              ))}
+            </div>
+          </div>
         ))}
       </nav>
 

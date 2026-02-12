@@ -12,7 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import PostsAnalysis from "./pages/PostsAnalysis";
 import AudienceInsights from "./pages/AudienceInsights";
 import Sentiment from "./pages/Sentiment";
-import Reports from "./pages/Reports";
+
 import Settings from "./pages/Settings";
 import AITools from "./pages/AITools";
 import NotFound from "./pages/NotFound";
@@ -34,7 +34,7 @@ const App = () => (
               <Route path="/posts" element={<ProtectedRoute><PostsAnalysis /></ProtectedRoute>} />
               <Route path="/audience" element={<ProtectedRoute><AudienceInsights /></ProtectedRoute>} />
               <Route path="/sentiment" element={<ProtectedRoute><Sentiment /></ProtectedRoute>} />
-              <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+              
               <Route path="/ai-tools" element={<ProtectedRoute><AITools /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
