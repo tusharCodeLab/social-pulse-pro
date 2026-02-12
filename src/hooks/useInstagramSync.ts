@@ -8,18 +8,26 @@ import { useAuth } from '@/contexts/AuthContext';
 import { queryKeys } from './useSocialApi';
 import { toast } from 'sonner';
 
-const SYNC_INTERVAL_MS = 5 * 60 * 1000; // Poll every 5 minutes to avoid Facebook API rate limits
-const MIN_SYNC_INTERVAL_MS = 60 * 1000; // Minimum 1 minute between syncs
+const SYNC_INTERVAL_MS = 10 * 60 * 1000; // Poll every 10 minutes to avoid Facebook API rate limits
+const MIN_SYNC_INTERVAL_MS = 5 * 60 * 1000; // Minimum 5 minutes between syncs
+const RATE_LIMIT_BACKOFF_MS = 15 * 60 * 1000; // Back off 15 minutes on rate limit
 
 export function useInstagramSync() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const lastSyncRef = useRef<number>(0);
   const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const rateLimitedRef = useRef<boolean>(false);
 
   // Trigger Instagram data fetch from the edge function
   const syncInstagramData = useCallback(async (showToast = false) => {
     if (!user) return;
+
+    // If rate limited, skip entirely
+    if (rateLimitedRef.current) {
+      console.log('[InstagramSync] Skipping sync - rate limited, waiting for backoff');
+      return;
+    }
 
     // Prevent too frequent syncs
     const now = Date.now();
@@ -40,8 +48,12 @@ export function useInstagramSync() {
         console.error('[InstagramSync] Sync error:', error);
         // Check if rate limited - back off significantly
         if (error.message?.includes('429') || error.message?.includes('rate limit')) {
-          toast.error('Instagram API rate limit reached. Will retry in a few minutes.');
-          lastSyncRef.current = Date.now() + 3 * 60 * 1000; // Back off 3 extra minutes
+          console.log('[InstagramSync] Rate limited - backing off for 15 minutes');
+          rateLimitedRef.current = true;
+          setTimeout(() => {
+            rateLimitedRef.current = false;
+            console.log('[InstagramSync] Rate limit backoff expired, resuming syncs');
+          }, RATE_LIMIT_BACKOFF_MS);
         }
         return;
       }
