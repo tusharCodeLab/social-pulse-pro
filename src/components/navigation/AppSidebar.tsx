@@ -6,6 +6,7 @@ import {
   FileText,
   Users,
   Heart,
+  Brain,
   BarChart3,
   Settings,
   ChevronLeft,
@@ -24,6 +25,7 @@ const navItems = [
   { to: '/posts', icon: FileText, label: 'Posts Analysis' },
   { to: '/audience', icon: Users, label: 'Audience Insights' },
   { to: '/sentiment', icon: Heart, label: 'Sentiment' },
+  { to: '/ai-tools', icon: Brain, label: 'AI Tools' },
   { to: '/reports', icon: BarChart3, label: 'Reports' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];

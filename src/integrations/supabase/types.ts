@@ -175,6 +175,48 @@ export type Database = {
         }
         Relationships: []
       }
+      personal_trends: {
+        Row: {
+          confidence_score: number | null
+          created_at: string
+          data_points: Json | null
+          description: string
+          detected_at: string
+          direction: string
+          id: string
+          platform: string | null
+          title: string
+          trend_type: string
+          user_id: string
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string
+          data_points?: Json | null
+          description: string
+          detected_at?: string
+          direction?: string
+          id?: string
+          platform?: string | null
+          title: string
+          trend_type: string
+          user_id: string
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string
+          data_points?: Json | null
+          description?: string
+          detected_at?: string
+          direction?: string
+          id?: string
+          platform?: string | null
+          title?: string
+          trend_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       post_comments: {
         Row: {
           analyzed_at: string | null
@@ -183,9 +225,11 @@ export type Database = {
           created_at: string | null
           external_comment_id: string | null
           id: string
+          is_spam: boolean | null
           post_id: string | null
           sentiment: Database["public"]["Enums"]["sentiment_type"] | null
           sentiment_score: number | null
+          spam_reason: string | null
           user_id: string
         }
         Insert: {
@@ -195,9 +239,11 @@ export type Database = {
           created_at?: string | null
           external_comment_id?: string | null
           id?: string
+          is_spam?: boolean | null
           post_id?: string | null
           sentiment?: Database["public"]["Enums"]["sentiment_type"] | null
           sentiment_score?: number | null
+          spam_reason?: string | null
           user_id: string
         }
         Update: {
@@ -207,9 +253,11 @@ export type Database = {
           created_at?: string | null
           external_comment_id?: string | null
           id?: string
+          is_spam?: boolean | null
           post_id?: string | null
           sentiment?: Database["public"]["Enums"]["sentiment_type"] | null
           sentiment_score?: number | null
+          spam_reason?: string | null
           user_id?: string
         }
         Relationships: [

@@ -11,3 +11,12 @@ verify_jwt = false
 
 [functions.debug-instagram-token]
 verify_jwt = false
+
+[functions.detect-spam]
+verify_jwt = false
+
+[functions.detect-trends]
+verify_jwt = false
+
+[functions.calculate-best-times]
+verify_jwt = false
