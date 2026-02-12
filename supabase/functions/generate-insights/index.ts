@@ -3,19 +3,37 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Simple in-memory rate limiting per user
+const rateLimitMap = new Map<string, { count: number; windowStart: number }>();
+const RATE_LIMIT_WINDOW_MS = 3600000; // 1 hour
+const RATE_LIMIT_MAX_CALLS = 5;
+
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(userId);
+  if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
+    rateLimitMap.set(userId, { count: 1, windowStart: now });
+    return true;
+  }
+  if (entry.count >= RATE_LIMIT_MAX_CALLS) {
+    return false;
+  }
+  entry.count++;
+  return true;
+}
+
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    const GOOGLE_GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
-    if (!GOOGLE_GEMINI_API_KEY) {
-      throw new Error("GOOGLE_GEMINI_API_KEY is not configured");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY is not configured");
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -24,7 +42,7 @@ serve(async (req) => {
 
     // Get user from auth header
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
+    if (!authHeader?.startsWith("Bearer ")) {
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -38,6 +56,14 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ error: "Invalid token" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Rate limit check
+    if (!checkRateLimit(user.id)) {
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded. Maximum 5 calls per hour." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -69,7 +95,6 @@ serve(async (req) => {
       return acc;
     }, {} as Record<string, number>);
 
-    // Get top performing posts
     const topPosts = [...posts].sort((a, b) => b.engagement_rate - a.engagement_rate).slice(0, 5);
 
     const dataSummary = `
@@ -90,19 +115,6 @@ ${topPosts.map((p, i) => `  ${i + 1}. ${p.platform}: ${p.engagement_rate}% engag
 
 ${dataSummary}
 
-Generate insights in JSON format:
-{
-  "insights": [
-    {
-      "type": "performance|engagement|timing|content|audience",
-      "title": "Short title (max 50 chars)",
-      "description": "Detailed actionable advice (max 200 chars)",
-      "priority": "high|medium|low",
-      "platform": "instagram|twitter|facebook|linkedin|null"
-    }
-  ]
-}
-
 Focus on:
 1. Best times to post based on engagement patterns
 2. Content types that perform best
@@ -110,54 +122,87 @@ Focus on:
 4. Platform-specific recommendations
 5. Areas needing improvement`;
 
-    // Call Google Gemini API
-    const aiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GOOGLE_GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.7 },
-        }),
-      }
-    );
+    // Call Lovable AI Gateway
+    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-3-flash-preview",
+        messages: [
+          { role: "system", content: "You are a social media analytics expert." },
+          { role: "user", content: prompt },
+        ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "return_insights",
+              description: "Return social media insights",
+              parameters: {
+                type: "object",
+                properties: {
+                  insights: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        type: { type: "string", enum: ["performance", "engagement", "timing", "content", "audience"] },
+                        title: { type: "string", description: "Short title max 50 chars" },
+                        description: { type: "string", description: "Actionable advice max 200 chars" },
+                        priority: { type: "string", enum: ["high", "medium", "low"] },
+                        platform: { type: "string", enum: ["instagram", "twitter", "facebook", "linkedin"], description: "null if general" },
+                      },
+                      required: ["type", "title", "description", "priority"],
+                      additionalProperties: false,
+                    },
+                  },
+                },
+                required: ["insights"],
+                additionalProperties: false,
+              },
+            },
+          },
+        ],
+        tool_choice: { type: "function", function: { name: "return_insights" } },
+      }),
+    });
 
     if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error("Gemini API error:", errorText);
-      throw new Error(`Gemini API error: ${aiResponse.status}`);
+      const errorStatus = aiResponse.status;
+      if (errorStatus === 429) {
+        return new Response(
+          JSON.stringify({ error: "AI rate limit reached. Please try again later." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (errorStatus === 402) {
+        return new Response(
+          JSON.stringify({ error: "AI credits exhausted." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      throw new Error(`AI API error: ${errorStatus}`);
     }
 
     const aiData = await aiResponse.json();
-    const responseContent = aiData.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!responseContent) {
-      throw new Error("No response from AI");
+    const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
+    if (!toolCall) {
+      throw new Error("No tool call response from AI");
     }
 
-    // Parse the JSON response
-    let insightsData;
-    try {
-      const jsonMatch = responseContent.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        insightsData = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error("Could not parse AI response");
-      }
-    } catch (parseError) {
-      console.error("Parse error:", parseError, "Response:", responseContent);
-      throw new Error("Failed to parse AI response");
-    }
+    const insightsData = JSON.parse(toolCall.function.arguments);
 
     // Store insights in database
     const insightsToInsert = insightsData.insights.map((insight: any) => ({
       user_id: user.id,
       insight_type: insight.type,
-      title: insight.title,
-      description: insight.description,
+      title: String(insight.title).slice(0, 100),
+      description: String(insight.description).slice(0, 500),
       priority: insight.priority,
-      platform: insight.platform === "null" ? null : insight.platform,
+      platform: insight.platform || null,
       is_read: false,
     }));
 
@@ -183,9 +228,8 @@ Focus on:
 
   } catch (error) {
     console.error("Generate insights error:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: "Failed to generate insights. Please try again." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
