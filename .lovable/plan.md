@@ -1,82 +1,76 @@
 
 
-# Run AI Sentiment Analysis Locally with Google Gemini (Free)
+# Sidebar Restructure and Cleanup
 
-## What Needs to Change
+## What Changes
 
-Your project currently uses **Lovable AI Gateway** (a Lovable-only service) to power two AI features:
-1. **Sentiment Analysis** -- classifies Instagram comments as positive/negative/neutral
-2. **Insights Generation** -- generates actionable social media advice
+### 1. Remove Non-Working Features
+- **Remove the Reports page** (`/reports` route, `Reports.tsx`) -- it's a "Coming Soon" placeholder with no functionality
+- **Remove the Reports entry** from the sidebar navigation
 
-The Lovable AI Gateway won't work outside Lovable Cloud. We'll replace it with **Google Gemini API**, which is free to use.
-
-## Step-by-Step Setup for You
-
-### 1. Get Your Free Google Gemini API Key
-- Go to [Google AI Studio](https://aistudio.google.com/apikeys)
-- Sign in with your Google account
-- Click "Create API Key"
-- Copy the key -- this is your `GOOGLE_GEMINI_API_KEY`
-
-### 2. Store the Key Locally
-When running Supabase edge functions locally, you'll create a file called `supabase/.env.local` with:
-```
-GOOGLE_GEMINI_API_KEY=your_key_here
-```
-
-## Technical Changes (Code Modifications)
-
-### File 1: `supabase/functions/analyze-sentiment/index.ts`
-- Replace `AI_GATEWAY_URL` from `https://ai.gateway.lovable.dev/v1/chat/completions` to `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent`
-- Replace `LOVABLE_API_KEY` with `GOOGLE_GEMINI_API_KEY`
-- Update the fetch call to use Google's API format (slightly different request/response structure)
-- The prompt and logic remain identical
-
-### File 2: `supabase/functions/generate-insights/index.ts`
-- Same changes as above -- swap the AI gateway URL and API key
-- Update request/response format to match Google Gemini's API
-
-### What Stays the Same
-- All frontend code (React pages, hooks, components) -- no changes needed
-- Database schema and queries -- unchanged
-- The prompts sent to the AI -- identical
-- The Instagram sync function -- unchanged
-
-## How It Works After the Change
+### 2. Reorganize Sidebar into Grouped Sections
+Instead of a flat list of 7 items, organize into logical groups with section labels:
 
 ```text
-User clicks "Analyze Comments"
-        |
-Frontend calls edge function
-        |
-Edge function reads GOOGLE_GEMINI_API_KEY
-        |
-Calls Google Gemini API directly (free)
-        |
-Parses response, updates database
-        |
-Frontend shows sentiment results
++-------------------------------+
+|  [Logo] Analytics             |
+|          Social Dashboard     |
++-------------------------------+
+|  [AI-Powered badge]           |
++-------------------------------+
+|                               |
+|  OVERVIEW                     |
+|    Dashboard                  |
+|                               |
+|  ANALYTICS                    |
+|    Posts Analysis              |
+|    Audience Insights           |
+|    Sentiment                   |
+|                               |
+|  AI & TOOLS                   |
+|    AI Tools                    |
+|                               |
+|  ACCOUNT                      |
+|    Settings                    |
+|                               |
++-------------------------------+
+|  [User info]                  |
+|  [Sign Out]                   |
+|  [Collapse]                   |
++-------------------------------+
 ```
 
-## Running Locally
+### 3. Files to Modify
+- **`src/components/navigation/AppSidebar.tsx`** -- Replace flat `navItems` array with grouped sections; add section labels that hide when collapsed
+- **`src/App.tsx`** -- Remove the `/reports` route
+- **`src/pages/Reports.tsx`** -- Delete this file
 
-After the code changes, you'll run locally with:
-```bash
-# Start Supabase locally
-npx supabase start
+### 4. Files Unchanged
+- `SidebarNavLink.tsx` -- Works as-is, no changes needed
+- `DashboardLayout.tsx` -- No changes needed
+- All other pages remain intact
 
-# Serve edge functions
-npx supabase functions serve --env-file supabase/.env.local
+## Technical Details
 
-# Start frontend
-npm run dev
-```
+**AppSidebar.tsx changes:**
+- Replace the single `navItems` array with a grouped structure:
+  ```ts
+  const navGroups = [
+    { label: 'Overview', items: [{ to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' }] },
+    { label: 'Analytics', items: [
+      { to: '/posts', icon: FileText, label: 'Posts Analysis' },
+      { to: '/audience', icon: Users, label: 'Audience Insights' },
+      { to: '/sentiment', icon: Heart, label: 'Sentiment' },
+    ]},
+    { label: 'AI & Tools', items: [{ to: '/ai-tools', icon: Brain, label: 'AI Tools' }] },
+    { label: 'Account', items: [{ to: '/settings', icon: Settings, label: 'Settings' }] },
+  ];
+  ```
+- Render each group with a small uppercase label (hidden when sidebar is collapsed) and its nav items below
+- Remove `BarChart3` import (was for Reports)
 
-## For Your Hackathon PPT
+**App.tsx changes:**
+- Remove `import Reports` and the `/reports` route
 
-You can mention:
-- **AI Model**: Google Gemini 2.0 Flash (free tier)
-- **Integration**: Serverless edge functions calling Gemini API
-- **Use Case**: Real-time sentiment classification of social media comments
-- **Cost**: Zero (free API tier)
-
+**Reports.tsx:**
+- Delete the file entirely
