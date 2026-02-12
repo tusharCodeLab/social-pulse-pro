@@ -64,9 +64,9 @@ export function useInstagramSync() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.accounts }),
         queryClient.invalidateQueries({ queryKey: queryKeys.posts() }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.postStats }),
+        queryClient.invalidateQueries({ queryKey: ['post-stats'] }),
         queryClient.invalidateQueries({ queryKey: queryKeys.comments() }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.dashboardSummary }),
+        queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] }),
         queryClient.invalidateQueries({ queryKey: queryKeys.audienceSummary }),
       ]);
 
@@ -98,8 +98,8 @@ export function useInstagramSync() {
           console.log('[InstagramSync] Posts change detected:', payload.eventType);
           // Immediately invalidate posts queries when DB changes
           queryClient.invalidateQueries({ queryKey: queryKeys.posts() });
-          queryClient.invalidateQueries({ queryKey: queryKeys.postStats });
-          queryClient.invalidateQueries({ queryKey: queryKeys.dashboardSummary });
+          queryClient.invalidateQueries({ queryKey: ['post-stats'] });
+          queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
         }
       )
       .subscribe((status) => {
@@ -139,7 +139,7 @@ export function useInstagramSync() {
         (payload) => {
           console.log('[InstagramSync] Comments change detected:', payload.eventType);
           queryClient.invalidateQueries({ queryKey: queryKeys.comments() });
-          queryClient.invalidateQueries({ queryKey: queryKeys.sentimentStats });
+          queryClient.invalidateQueries({ queryKey: ['sentiment-stats'] });
         }
       )
       .subscribe((status) => {
