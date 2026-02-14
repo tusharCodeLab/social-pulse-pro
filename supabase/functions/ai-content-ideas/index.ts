@@ -12,20 +12,24 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("Missing authorization header");
+    if (!authHeader?.startsWith("Bearer ")) throw new Error("Missing authorization header");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const serviceClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) throw new Error("Unauthorized");
+    const { data, error: claimsError } = await userClient.auth.getClaims(token);
+    if (claimsError || !data?.claims) throw new Error("Unauthorized");
+    const userId = data.claims.sub as string;
 
     // Fetch trends and recent posts for context
     const [trendsRes, postsRes] = await Promise.all([
-      supabase.from("personal_trends").select("title, description, direction, trend_type, confidence_score").eq("user_id", user.id).order("confidence_score", { ascending: false }).limit(10),
-      supabase.from("posts").select("content, likes_count, comments_count, engagement_rate, post_type").eq("user_id", user.id).order("published_at", { ascending: false }).limit(10),
+      serviceClient.from("personal_trends").select("title, description, direction, trend_type, confidence_score").eq("user_id", userId).order("confidence_score", { ascending: false }).limit(10),
+      serviceClient.from("posts").select("content, likes_count, comments_count, engagement_rate, post_type").eq("user_id", userId).order("published_at", { ascending: false }).limit(10),
     ]);
 
     const trends = trendsRes.data || [];
