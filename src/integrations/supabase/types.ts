@@ -133,6 +133,60 @@ export type Database = {
         }
         Relationships: []
       }
+      content_calendar: {
+        Row: {
+          ai_reasoning: string | null
+          ai_score: number | null
+          caption: string | null
+          content_type: string
+          created_at: string
+          hashtags: string[] | null
+          id: string
+          is_ai_generated: boolean | null
+          platform: string
+          scheduled_date: string
+          scheduled_time: string | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_reasoning?: string | null
+          ai_score?: number | null
+          caption?: string | null
+          content_type?: string
+          created_at?: string
+          hashtags?: string[] | null
+          id?: string
+          is_ai_generated?: boolean | null
+          platform?: string
+          scheduled_date: string
+          scheduled_time?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_reasoning?: string | null
+          ai_score?: number | null
+          caption?: string | null
+          content_type?: string
+          created_at?: string
+          hashtags?: string[] | null
+          id?: string
+          is_ai_generated?: boolean | null
+          platform?: string
+          scheduled_date?: string
+          scheduled_time?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       instagram_tokens: {
         Row: {
           access_token: string

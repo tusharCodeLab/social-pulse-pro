@@ -27,6 +27,9 @@ const navGroups = [
     { to: '/sentiment', icon: Heart, label: 'Sentiment' },
     { to: '/trends', icon: Activity, label: 'Trend Intelligence' },
   ]},
+  { label: 'Planning', items: [
+    { to: '/content-calendar', icon: Sparkles, label: 'AI Content Calendar' },
+  ]},
   { label: 'Account', items: [{ to: '/settings', icon: Settings, label: 'Settings' }] },
 ];
 

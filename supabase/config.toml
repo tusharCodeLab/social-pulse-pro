@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.ai-content-ideas]
 verify_jwt = false
+
+[functions.ai-content-calendar]
+verify_jwt = false
