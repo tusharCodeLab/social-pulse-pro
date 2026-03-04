@@ -1,76 +1,52 @@
 
 
-# Sidebar Restructure and Cleanup
+## Sidebar Navigation Restructure
 
-## What Changes
+Based on the reference image, the sidebar should be reorganized into a clear hierarchy with **platform-level grouping** (Instagram, YouTube) that expand to show sub-pages, plus top-level overview and AI tools sections.
 
-### 1. Remove Non-Working Features
-- **Remove the Reports page** (`/reports` route, `Reports.tsx`) -- it's a "Coming Soon" placeholder with no functionality
-- **Remove the Reports entry** from the sidebar navigation
-
-### 2. Reorganize Sidebar into Grouped Sections
-Instead of a flat list of 7 items, organize into logical groups with section labels:
+### New Navigation Structure
 
 ```text
-+-------------------------------+
-|  [Logo] Analytics             |
-|          Social Dashboard     |
-+-------------------------------+
-|  [AI-Powered badge]           |
-+-------------------------------+
-|                               |
-|  OVERVIEW                     |
-|    Dashboard                  |
-|                               |
-|  ANALYTICS                    |
-|    Posts Analysis              |
-|    Audience Insights           |
-|    Sentiment                   |
-|                               |
-|  AI & TOOLS                   |
-|    AI Tools                    |
-|                               |
-|  ACCOUNT                      |
-|    Settings                    |
-|                               |
-+-------------------------------+
-|  [User info]                  |
-|  [Sign Out]                   |
-|  [Collapse]                   |
-+-------------------------------+
+GENERAL OVERVIEW
+  └─ Dashboard
+
+PLATFORM BREAKDOWN
+  ├─ Instagram          (collapsible ▸)
+  │   ├─ Posts Analysis
+  │   ├─ Audience Insights
+  │   ├─ Sentiment
+  │   └─ Trend Intelligence
+  ├─ YouTube            (collapsible ▸)
+  │   └─ YouTube Analytics
+  └─ + Other Platforms  (link to Settings)
+
+AI INTELLIGENCE TOOLS
+  ├─ AI Content Calendar
+  └─ Content Studio Hub (future placeholder or link)
+
+ACCOUNT
+  └─ Settings
 ```
 
-### 3. Files to Modify
-- **`src/components/navigation/AppSidebar.tsx`** -- Replace flat `navItems` array with grouped sections; add section labels that hide when collapsed
-- **`src/App.tsx`** -- Remove the `/reports` route
-- **`src/pages/Reports.tsx`** -- Delete this file
+### Implementation
 
-### 4. Files Unchanged
-- `SidebarNavLink.tsx` -- Works as-is, no changes needed
-- `DashboardLayout.tsx` -- No changes needed
-- All other pages remain intact
+**1. Refactor `AppSidebar.tsx`**
+- Replace flat `navGroups` with a new structure that supports **collapsible platform groups** (Instagram, YouTube).
+- Add `useState` for `expandedPlatforms` to track which platform sections are open.
+- Instagram icon uses the existing camera/Instagram-style icon; YouTube uses the `Youtube` lucide icon.
+- "Other Platforms" item links to `/settings` (where platform connections are managed).
+- Clicking a platform header toggles its sub-items with `AnimatePresence` animation.
+- When sidebar is collapsed, platform sub-items are hidden; only icons for top-level items show.
 
-## Technical Details
+**2. Update `SidebarNavLink.tsx`**
+- Add support for a new `CollapsibleNavGroup` component (or inline in AppSidebar) that renders a clickable platform header with a chevron, and expands/collapses child nav links with smooth animation.
+- Sub-items get a subtle left indent (e.g., `pl-8`) to indicate hierarchy.
 
-**AppSidebar.tsx changes:**
-- Replace the single `navItems` array with a grouped structure:
-  ```ts
-  const navGroups = [
-    { label: 'Overview', items: [{ to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' }] },
-    { label: 'Analytics', items: [
-      { to: '/posts', icon: FileText, label: 'Posts Analysis' },
-      { to: '/audience', icon: Users, label: 'Audience Insights' },
-      { to: '/sentiment', icon: Heart, label: 'Sentiment' },
-    ]},
-    { label: 'AI & Tools', items: [{ to: '/ai-tools', icon: Brain, label: 'AI Tools' }] },
-    { label: 'Account', items: [{ to: '/settings', icon: Settings, label: 'Settings' }] },
-  ];
-  ```
-- Render each group with a small uppercase label (hidden when sidebar is collapsed) and its nav items below
-- Remove `BarChart3` import (was for Reports)
+**3. No route changes needed** — all existing routes (`/dashboard`, `/posts`, `/audience`, `/sentiment`, `/trends`, `/youtube-analytics`, `/content-calendar`, `/settings`) remain the same. This is purely a sidebar layout restructure.
 
-**App.tsx changes:**
-- Remove `import Reports` and the `/reports` route
+### Key Details
+- Platform headers are **not links** themselves — they just expand/collapse sub-items
+- The chevron rotates on expand (like the reference image shows `>` vs `v`)
+- Keep the existing premium styling, AI badge, user section, and collapse toggle
+- Remove the current flat "Analytics" group and redistribute items under their platform
 
-**Reports.tsx:**
-- Delete the file entirely
