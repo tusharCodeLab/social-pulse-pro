@@ -18,6 +18,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const platforms = [
   { id: 'instagram', name: 'Instagram', icon: Instagram, color: 'text-[#E4405F]', supported: true },
+  { id: 'youtube', name: 'YouTube', icon: Youtube, color: 'text-[#FF0000]', supported: true },
 ];
 
 export default function Settings() {
