@@ -87,6 +87,15 @@ export default function Settings() {
   const handlePlatformClick = (platformId: string, supported: boolean) => {
     if (platformId === 'instagram' && supported) {
       handleConnectInstagram();
+    } else if (platformId === 'youtube' && supported) {
+      // YouTube connection - toggle for now
+      togglePlatform(platformId);
+      toast({
+        title: connectedPlatforms.includes('youtube') ? 'YouTube disconnected' : 'YouTube connected',
+        description: connectedPlatforms.includes('youtube') 
+          ? 'YouTube analytics have been disconnected.' 
+          : 'YouTube analytics are now enabled. Add your YouTube data to start tracking.',
+      });
     } else if (!supported) {
       toast({
         title: 'Coming soon',

@@ -27,6 +27,7 @@ const navGroups = [
     { to: '/audience', icon: Users, label: 'Audience Insights' },
     { to: '/sentiment', icon: Heart, label: 'Sentiment' },
     { to: '/trends', icon: Activity, label: 'Trend Intelligence' },
+    { to: '/youtube-analytics', icon: Youtube, label: 'YouTube Analytics' },
   ]},
   { label: 'Planning', items: [
     { to: '/content-calendar', icon: Sparkles, label: 'AI Content Calendar' },
