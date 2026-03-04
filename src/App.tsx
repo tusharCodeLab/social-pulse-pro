@@ -19,6 +19,9 @@ import YouTubePostsAnalysis from "./pages/YouTubePostsAnalysis";
 import YouTubeAudience from "./pages/YouTubeAudience";
 import YouTubeSentiment from "./pages/YouTubeSentiment";
 import YouTubeTrends from "./pages/YouTubeTrends";
+import FacebookAnalytics from "./pages/FacebookAnalytics";
+import FacebookPosts from "./pages/FacebookPosts";
+import FacebookAudience from "./pages/FacebookAudience";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
