@@ -198,11 +198,11 @@ export function useAudienceSummaryApi() {
 // ============================================================================
 // Analytics Hooks
 // ============================================================================
-export function useEngagementAnalyticsApi(days: number = 30) {
+export function useEngagementAnalyticsApi(days: number = 30, platform?: SocialPlatform) {
   return useQuery({
-    queryKey: queryKeys.engagement(days),
+    queryKey: [...queryKeys.engagement(days), platform],
     queryFn: async () => {
-      const response = await socialApi.analytics.getEngagement(days);
+      const response = await socialApi.analytics.getEngagement(days, platform);
       return response.data;
     },
     staleTime: 5 * 60 * 1000,
