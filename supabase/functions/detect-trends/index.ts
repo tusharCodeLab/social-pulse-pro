@@ -16,8 +16,8 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabase = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
@@ -27,18 +27,22 @@ serve(async (req) => {
     }
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-    if (userError || !user) {
+    const authClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) {
       return new Response(JSON.stringify({ error: "Invalid token" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const userId = claimsData.claims.sub as string;
 
     // Fetch posts, comments, and metrics
     const [postsRes, commentsRes, metricsRes] = await Promise.all([
-      supabase.from("posts").select("*").eq("user_id", user.id).order("published_at", { ascending: false }).limit(50),
-      supabase.from("post_comments").select("content, sentiment, created_at").eq("user_id", user.id).limit(200),
-      supabase.from("audience_metrics").select("*").eq("user_id", user.id).order("date", { ascending: false }).limit(30),
+      supabase.from("posts").select("*").eq("user_id", userId).order("published_at", { ascending: false }).limit(50),
+      supabase.from("post_comments").select("content, sentiment, created_at").eq("user_id", userId).limit(200),
+      supabase.from("audience_metrics").select("*").eq("user_id", userId).order("date", { ascending: false }).limit(30),
     ]);
 
     const posts = postsRes.data || [];
@@ -141,11 +145,10 @@ Detect 3-5 specific, data-backed trends about this account's performance, conten
 
     const trendsData = JSON.parse(toolCall.function.arguments);
 
-    // Delete old trends and insert new ones
-    await supabase.from("personal_trends").delete().eq("user_id", user.id);
+    await supabase.from("personal_trends").delete().eq("user_id", userId);
 
     const trendsToInsert = trendsData.trends.map((t: any) => ({
-      user_id: user.id,
+      user_id: userId,
       trend_type: t.trend_type,
       title: String(t.title).slice(0, 100),
       description: String(t.description).slice(0, 500),
@@ -157,7 +160,7 @@ Detect 3-5 specific, data-backed trends about this account's performance, conten
     const { error: insertError } = await supabase.from("personal_trends").insert(trendsToInsert);
     if (insertError) throw insertError;
 
-    console.log(`Detected ${trendsData.trends.length} trends for user ${user.id}`);
+    console.log(`Detected ${trendsData.trends.length} trends for user ${userId}`);
 
     return new Response(JSON.stringify({
       success: true,

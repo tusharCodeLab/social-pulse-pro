@@ -15,8 +15,8 @@ serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabase = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
@@ -26,18 +26,22 @@ serve(async (req) => {
     }
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-    if (userError || !user) {
+    const authClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) {
       return new Response(JSON.stringify({ error: "Invalid token" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const userId = claimsData.claims.sub as string;
 
     // Fetch all posts with engagement data
     const { data: posts, error: postsError } = await supabase
       .from("posts")
       .select("published_at, likes_count, comments_count, shares_count, engagement_rate")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .not("published_at", "is", null)
       .order("published_at", { ascending: false });
 
@@ -59,12 +63,8 @@ serve(async (req) => {
       const day = date.getUTCDay();
       const hour = date.getUTCHours();
       const key = `${day}-${hour}`;
-
       const engagement = (post.likes_count || 0) + (post.comments_count || 0) * 2 + (post.shares_count || 0) * 3;
-
-      if (!timeSlots[key]) {
-        timeSlots[key] = { totalEngagement: 0, count: 0 };
-      }
+      if (!timeSlots[key]) timeSlots[key] = { totalEngagement: 0, count: 0 };
       timeSlots[key].totalEngagement += engagement;
       timeSlots[key].count += 1;
     }
@@ -84,10 +84,10 @@ serve(async (req) => {
       .slice(0, 10);
 
     // Delete old best times and insert new
-    await supabase.from("best_posting_times").delete().eq("user_id", user.id);
+    await supabase.from("best_posting_times").delete().eq("user_id", userId);
 
     const toInsert = ranked.map(r => ({
-      user_id: user.id,
+      user_id: userId,
       platform: "instagram" as const,
       day_of_week: r.day_of_week,
       hour_of_day: r.hour_of_day,
@@ -108,7 +108,7 @@ serve(async (req) => {
       sampleSize: r.sample_size,
     }));
 
-    console.log(`Calculated best times from ${posts.length} posts for user ${user.id}`);
+    console.log(`Calculated best times from ${posts.length} posts for user ${userId}`);
 
     return new Response(JSON.stringify({
       success: true,

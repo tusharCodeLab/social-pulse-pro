@@ -12,15 +12,19 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("Missing authorization header");
+    if (!authHeader?.startsWith("Bearer ")) throw new Error("Missing authorization header");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabase = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) throw new Error("Unauthorized");
+    const authClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) throw new Error("Unauthorized");
+    const userId = claimsData.claims.sub as string;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
@@ -29,17 +33,17 @@ serve(async (req) => {
     const [postsResult, bestTimesResult, trendsResult] = await Promise.all([
       supabase.from("posts")
         .select("content, post_type, platform, likes_count, comments_count, engagement_rate, published_at")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .order("published_at", { ascending: false })
         .limit(30),
       supabase.from("best_posting_times")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .order("engagement_score", { ascending: false })
         .limit(10),
       supabase.from("personal_trends")
         .select("title, trend_type, direction, confidence_score")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .order("confidence_score", { ascending: false })
         .limit(5),
     ]);
@@ -159,17 +163,16 @@ Generate exactly 7 calendar items (one per day) with variety in content types. E
 
     const calendarData = JSON.parse(toolCall.function.arguments);
 
-    // Delete existing AI-generated items for this week, then insert new ones
     await supabase
       .from("content_calendar")
       .delete()
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq("is_ai_generated", true)
       .gte("scheduled_date", weekDates[0])
       .lte("scheduled_date", weekDates[6]);
 
     const itemsToInsert = calendarData.items.map((item: any) => ({
-      user_id: user.id,
+      user_id: userId,
       scheduled_date: item.date,
       scheduled_time: item.time + ":00",
       platform: item.platform || "instagram",
@@ -183,10 +186,7 @@ Generate exactly 7 calendar items (one per day) with variety in content types. E
       is_ai_generated: true,
     }));
 
-    const { error: insertError } = await supabase
-      .from("content_calendar")
-      .insert(itemsToInsert);
-
+    const { error: insertError } = await supabase.from("content_calendar").insert(itemsToInsert);
     if (insertError) {
       console.error("Insert error:", insertError);
       throw new Error("Failed to save calendar items");

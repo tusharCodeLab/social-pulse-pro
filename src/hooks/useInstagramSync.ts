@@ -172,8 +172,17 @@ export function useInstagramSync() {
 
     console.log('[InstagramSync] Starting background polling...');
 
-    // Initial sync when user logs in
-    syncInstagramData(false);
+    // Verify session is valid before initial sync
+    const checkAndSync = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.log('[InstagramSync] No valid session, skipping sync');
+        return;
+      }
+      syncInstagramData(false);
+    };
+
+    checkAndSync();
 
     // Set up recurring sync
     syncIntervalRef.current = setInterval(() => {

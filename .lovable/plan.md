@@ -1,51 +1,76 @@
 
 
-## Diagnosis
+# Sidebar Restructure and Cleanup
 
-I found two distinct root causes:
+## What Changes
 
-### Issue 1: 401 "Invalid token" errors
-**11 out of 13 edge functions** still use the broken `supabase.auth.getUser(token)` pattern with the service-role client. This fails because Lovable Cloud uses ES256 signing keys, and `getUser()` calls the `/user` endpoint which requires a valid server-side session. The auth logs confirm repeated "Session not found" errors at exactly the timestamps the user reported 401s.
+### 1. Remove Non-Working Features
+- **Remove the Reports page** (`/reports` route, `Reports.tsx`) -- it's a "Coming Soon" placeholder with no functionality
+- **Remove the Reports entry** from the sidebar navigation
 
-Only `fetch-instagram` and `fetch-facebook` were fixed to use `getClaims()`. The remaining 11 functions are still broken:
-- `ai-post-coach`, `ai-caption-generator`, `ai-content-calendar`, `ai-performance-digest`
-- `analyze-sentiment`, `calculate-best-times`, `detect-spam`, `detect-trends`
-- `fetch-youtube`, `generate-insights`, `debug-instagram-token`
+### 2. Reorganize Sidebar into Grouped Sections
+Instead of a flat list of 7 items, organize into logical groups with section labels:
 
-### Issue 2: Facebook showing 6 posts when only 1 was imported
-The database contains 6 facebook posts for this user:
-- **1 post** from page "Demo1" (ID `1083761361477936`) -- the current/latest sync
-- **5 posts** from page "TEST1" (ID `902825082923565`) -- leftover from an earlier sync
+```text
++-------------------------------+
+|  [Logo] Analytics             |
+|          Social Dashboard     |
++-------------------------------+
+|  [AI-Powered badge]           |
++-------------------------------+
+|                               |
+|  OVERVIEW                     |
+|    Dashboard                  |
+|                               |
+|  ANALYTICS                    |
+|    Posts Analysis              |
+|    Audience Insights           |
+|    Sentiment                   |
+|                               |
+|  AI & TOOLS                   |
+|    AI Tools                    |
+|                               |
+|  ACCOUNT                      |
+|    Settings                    |
+|                               |
++-------------------------------+
+|  [User info]                  |
+|  [Sign Out]                   |
+|  [Collapse]                   |
++-------------------------------+
+```
 
-The edge function only processes the first page and reports "1 post imported", but it never cleans up stale posts from previously-synced pages. The `social_accounts` unique constraint (`user_id,platform`) means when the page changed from TEST1 to Demo1, the account record was updated but the old TEST1 posts remained orphaned in the database.
+### 3. Files to Modify
+- **`src/components/navigation/AppSidebar.tsx`** -- Replace flat `navItems` array with grouped sections; add section labels that hide when collapsed
+- **`src/App.tsx`** -- Remove the `/reports` route
+- **`src/pages/Reports.tsx`** -- Delete this file
 
----
+### 4. Files Unchanged
+- `SidebarNavLink.tsx` -- Works as-is, no changes needed
+- `DashboardLayout.tsx` -- No changes needed
+- All other pages remain intact
 
-## Plan
+## Technical Details
 
-### Fix 1: Update all 11 edge functions to use getClaims auth pattern
-Each function will be updated to:
-1. Read `SUPABASE_ANON_KEY` from environment
-2. Create an `authClient` using the anon key + user's Authorization header
-3. Call `authClient.auth.getClaims(token)` to extract `userId` from JWT claims
-4. Use a separate service-role client for database operations
+**AppSidebar.tsx changes:**
+- Replace the single `navItems` array with a grouped structure:
+  ```ts
+  const navGroups = [
+    { label: 'Overview', items: [{ to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' }] },
+    { label: 'Analytics', items: [
+      { to: '/posts', icon: FileText, label: 'Posts Analysis' },
+      { to: '/audience', icon: Users, label: 'Audience Insights' },
+      { to: '/sentiment', icon: Heart, label: 'Sentiment' },
+    ]},
+    { label: 'AI & Tools', items: [{ to: '/ai-tools', icon: Brain, label: 'AI Tools' }] },
+    { label: 'Account', items: [{ to: '/settings', icon: Settings, label: 'Settings' }] },
+  ];
+  ```
+- Render each group with a small uppercase label (hidden when sidebar is collapsed) and its nav items below
+- Remove `BarChart3` import (was for Reports)
 
-Files to update:
-- `supabase/functions/ai-post-coach/index.ts`
-- `supabase/functions/ai-caption-generator/index.ts`
-- `supabase/functions/ai-content-calendar/index.ts`
-- `supabase/functions/ai-performance-digest/index.ts`
-- `supabase/functions/analyze-sentiment/index.ts`
-- `supabase/functions/calculate-best-times/index.ts`
-- `supabase/functions/detect-spam/index.ts`
-- `supabase/functions/detect-trends/index.ts`
-- `supabase/functions/fetch-youtube/index.ts`
-- `supabase/functions/generate-insights/index.ts`
-- `supabase/functions/debug-instagram-token/index.ts`
+**App.tsx changes:**
+- Remove `import Reports` and the `/reports` route
 
-### Fix 2: Clean up stale Facebook posts on sync
-Update `supabase/functions/fetch-facebook/index.ts` to delete posts from previously-synced pages before importing new ones. After upserting the new posts, delete any posts where `user_id` matches and `platform = 'facebook'` but the `external_post_id` does not start with the current page ID prefix.
-
-### Fix 3: Make InstagramSyncProvider resilient to stale sessions
-Update `src/hooks/useInstagramSync.ts` to check if the session is valid before attempting auto-sync, preventing 401 cascades on app load when the user's session has expired.
-
+**Reports.tsx:**
+- Delete the file entirely

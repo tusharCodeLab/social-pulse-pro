@@ -20,43 +20,22 @@ const parseChannelInput = (rawInput: string): ChannelLookup => {
   const raw = rawInput.trim();
   const out: ChannelLookup = { original: raw };
 
-  // Accept full YouTube URLs
   try {
     const url = new URL(raw);
     if (url.hostname.includes("youtube.com") || url.hostname.includes("youtu.be")) {
       const path = url.pathname.replace(/\/$/, "");
-
-      if (path.startsWith("/@")) {
-        out.handle = path.slice(2);
-      } else if (path.startsWith("/channel/")) {
-        out.channelId = path.split("/")[2];
-      } else if (path.startsWith("/user/")) {
-        out.username = path.split("/")[2];
-      } else if (path.startsWith("/c/")) {
-        out.username = path.split("/")[2];
-      }
-
+      if (path.startsWith("/@")) out.handle = path.slice(2);
+      else if (path.startsWith("/channel/")) out.channelId = path.split("/")[2];
+      else if (path.startsWith("/user/")) out.username = path.split("/")[2];
+      else if (path.startsWith("/c/")) out.username = path.split("/")[2];
       const queryChannelId = url.searchParams.get("channel_id");
       if (!out.channelId && queryChannelId) out.channelId = queryChannelId;
     }
-  } catch {
-    // Not a URL, continue with raw parsing
-  }
+  } catch { /* Not a URL */ }
 
-  // Raw handle
-  if (!out.handle && raw.startsWith("@")) {
-    out.handle = raw.slice(1);
-  }
-
-  // Raw channel ID
-  if (!out.channelId && /^UC[a-zA-Z0-9_-]{20,}$/.test(raw)) {
-    out.channelId = raw;
-  }
-
-  // Fallback plain username/custom URL
-  if (!out.username && !out.handle && !out.channelId) {
-    out.username = raw;
-  }
+  if (!out.handle && raw.startsWith("@")) out.handle = raw.slice(1);
+  if (!out.channelId && /^UC[a-zA-Z0-9_-]{20,}$/.test(raw)) out.channelId = raw;
+  if (!out.username && !out.handle && !out.channelId) out.username = raw;
 
   return out;
 };
@@ -69,96 +48,81 @@ serve(async (req) => {
   try {
     const API_KEY = Deno.env.get("YOUTUBE_API_KEY");
     if (!API_KEY) {
-      return new Response(
-        JSON.stringify({ error: "YouTube API key not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "YouTube API key not configured" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabase = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    // Auth
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
+    if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-    if (userError || !user) {
-      return new Response(JSON.stringify({ error: "Invalid token" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Get channel handle from request body
+    const token = authHeader.replace("Bearer ", "");
+    const authClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) {
+      return new Response(JSON.stringify({ error: "Invalid token" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const userId = claimsData.claims.sub as string;
+
     const body = await req.json().catch(() => ({}));
     const channelHandle = body.channel_handle as string | undefined;
 
     if (!channelHandle) {
-      return new Response(
-        JSON.stringify({ error: "channel_handle is required (e.g. @MrBeast)" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "channel_handle is required (e.g. @MrBeast)" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    console.log(`[YouTube] Fetching data for handle: ${channelHandle}, user: ${user.id}`);
+    console.log(`[YouTube] Fetching data for handle: ${channelHandle}, user: ${userId}`);
 
     // Step 1: Resolve channel from handle / channel ID / username / URL
     const lookup = parseChannelInput(channelHandle);
     let channelItems: any[] = [];
 
     if (lookup.handle) {
-      const channelRes = await fetch(
-        `${YT_API}/channels?part=snippet,statistics,contentDetails&forHandle=${encodeURIComponent(lookup.handle)}&key=${API_KEY}`
-      );
+      const channelRes = await fetch(`${YT_API}/channels?part=snippet,statistics,contentDetails&forHandle=${encodeURIComponent(lookup.handle)}&key=${API_KEY}`);
       const channelJson = await channelRes.json();
       channelItems = channelJson.items || [];
     }
 
     if (channelItems.length === 0 && lookup.channelId) {
-      const byIdRes = await fetch(
-        `${YT_API}/channels?part=snippet,statistics,contentDetails&id=${encodeURIComponent(lookup.channelId)}&key=${API_KEY}`
-      );
-      const byIdJson = await byIdRes.json();
-      channelItems = byIdJson.items || [];
+      const byIdRes = await fetch(`${YT_API}/channels?part=snippet,statistics,contentDetails&id=${encodeURIComponent(lookup.channelId)}&key=${API_KEY}`);
+      channelItems = (await byIdRes.json()).items || [];
     }
 
     if (channelItems.length === 0 && lookup.username) {
-      const byUsernameRes = await fetch(
-        `${YT_API}/channels?part=snippet,statistics,contentDetails&forUsername=${encodeURIComponent(lookup.username)}&key=${API_KEY}`
-      );
-      const byUsernameJson = await byUsernameRes.json();
-      channelItems = byUsernameJson.items || [];
+      const byUsernameRes = await fetch(`${YT_API}/channels?part=snippet,statistics,contentDetails&forUsername=${encodeURIComponent(lookup.username)}&key=${API_KEY}`);
+      channelItems = (await byUsernameRes.json()).items || [];
     }
 
     // Final fallback: channel search by query
     if (channelItems.length === 0) {
-      const searchChannelRes = await fetch(
-        `${YT_API}/search?part=snippet&type=channel&maxResults=1&q=${encodeURIComponent(lookup.original)}&key=${API_KEY}`
-      );
+      const searchChannelRes = await fetch(`${YT_API}/search?part=snippet&type=channel&maxResults=1&q=${encodeURIComponent(lookup.original)}&key=${API_KEY}`);
       const searchChannelJson = await searchChannelRes.json();
       const searchedChannelId = searchChannelJson.items?.[0]?.snippet?.channelId;
 
       if (searchedChannelId) {
-        const bySearchIdRes = await fetch(
-          `${YT_API}/channels?part=snippet,statistics,contentDetails&id=${encodeURIComponent(searchedChannelId)}&key=${API_KEY}`
-        );
-        const bySearchIdJson = await bySearchIdRes.json();
-        channelItems = bySearchIdJson.items || [];
+        const bySearchIdRes = await fetch(`${YT_API}/channels?part=snippet,statistics,contentDetails&id=${encodeURIComponent(searchedChannelId)}&key=${API_KEY}`);
+        channelItems = (await bySearchIdRes.json()).items || [];
       }
     }
 
     if (channelItems.length === 0) {
-      return new Response(
-        JSON.stringify({ error: "YouTube channel not found. Use @handle, channel ID (UC...), username, or a YouTube channel URL." }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "YouTube channel not found." }), {
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const channel = channelItems[0];
@@ -173,7 +137,7 @@ serve(async (req) => {
       .from("social_accounts")
       .upsert(
         {
-          user_id: user.id,
+          user_id: userId,
           platform: "youtube",
           account_name: snippet.title,
           account_handle: snippet.customUrl
@@ -199,7 +163,7 @@ serve(async (req) => {
     const today = new Date().toISOString().split("T")[0];
     await supabase.from("audience_metrics").upsert(
       {
-        user_id: user.id,
+        user_id: userId,
         platform: "youtube",
         social_account_id: socialAccount?.id || null,
         date: today,
@@ -223,15 +187,14 @@ serve(async (req) => {
       const videosRes = await fetch(
         `${YT_API}/videos?part=snippet,statistics,contentDetails&id=${videoIds.join(",")}&key=${API_KEY}`
       );
-      const videosJson = await videosRes.json();
-      videosData = videosJson.items || [];
+      videosData = (await videosRes.json()).items || [];
     }
 
     console.log(`[YouTube] Fetched ${videosData.length} videos`);
 
     // Step 5: Upsert posts
     const postsToUpsert = videosData.map((v: any) => ({
-      user_id: user.id,
+      user_id: userId,
       platform: "youtube" as const,
       external_post_id: v.id,
       content: v.snippet.title || "",
@@ -268,8 +231,7 @@ serve(async (req) => {
           `${YT_API}/commentThreads?part=snippet&videoId=${video.id}&maxResults=50&order=relevance&key=${API_KEY}`
         );
         if (!commentsRes.ok) {
-          const errText = await commentsRes.text();
-          console.log(`[YouTube] Comments disabled or error for ${video.id}:`, errText);
+          console.log(`[YouTube] Comments disabled for ${video.id}`);
           continue;
         }
         const commentsJson = await commentsRes.json();
@@ -279,7 +241,7 @@ serve(async (req) => {
           const { data: postData } = await supabase
             .from("posts")
             .select("id")
-            .eq("user_id", user.id)
+            .eq("user_id", userId)
             .eq("external_post_id", video.id)
             .maybeSingle();
 
@@ -288,7 +250,7 @@ serve(async (req) => {
               const cs = c.snippet.topLevelComment.snippet;
               const { error: cErr } = await supabase.from("post_comments").upsert(
                 {
-                  user_id: user.id,
+                  user_id: userId,
                   post_id: postData.id,
                   content: cs.textDisplay || cs.textOriginal || "",
                   author_name: cs.authorDisplayName || "Anonymous",

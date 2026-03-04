@@ -12,22 +12,26 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("Missing authorization header");
+    if (!authHeader?.startsWith("Bearer ")) throw new Error("Missing authorization header");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabase = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) throw new Error("Unauthorized");
+    const authClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) throw new Error("Unauthorized");
+    const userId = claimsData.claims.sub as string;
 
     // Fetch all relevant data
     const [postsRes, metricsRes, commentsRes, trendsRes] = await Promise.all([
-      supabase.from("posts").select("*").eq("user_id", user.id).order("published_at", { ascending: false }).limit(30),
-      supabase.from("audience_metrics").select("*").eq("user_id", user.id).order("date", { ascending: false }).limit(14),
-      supabase.from("post_comments").select("id, sentiment, is_spam").eq("user_id", user.id).limit(200),
-      supabase.from("personal_trends").select("title, direction, trend_type, confidence_score").eq("user_id", user.id).order("confidence_score", { ascending: false }).limit(5),
+      supabase.from("posts").select("*").eq("user_id", userId).order("published_at", { ascending: false }).limit(30),
+      supabase.from("audience_metrics").select("*").eq("user_id", userId).order("date", { ascending: false }).limit(14),
+      supabase.from("post_comments").select("id, sentiment, is_spam").eq("user_id", userId).limit(200),
+      supabase.from("personal_trends").select("title, direction, trend_type, confidence_score").eq("user_id", userId).order("confidence_score", { ascending: false }).limit(5),
     ]);
 
     const posts = postsRes.data || [];

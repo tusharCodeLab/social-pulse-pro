@@ -6,9 +6,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Simple in-memory rate limiting per user
 const rateLimitMap = new Map<string, { count: number; windowStart: number }>();
-const RATE_LIMIT_WINDOW_MS = 3600000; // 1 hour
+const RATE_LIMIT_WINDOW_MS = 3600000;
 const RATE_LIMIT_MAX_CALLS = 5;
 
 function checkRateLimit(userId: string): boolean {
@@ -18,9 +17,7 @@ function checkRateLimit(userId: string): boolean {
     rateLimitMap.set(userId, { count: 1, windowStart: now });
     return true;
   }
-  if (entry.count >= RATE_LIMIT_MAX_CALLS) {
-    return false;
-  }
+  if (entry.count >= RATE_LIMIT_MAX_CALLS) return false;
   entry.count++;
   return true;
 }
@@ -32,48 +29,44 @@ serve(async (req) => {
 
   try {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabase = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    // Get user from auth header
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-    
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Invalid token" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    const authClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) {
+      return new Response(JSON.stringify({ error: "Invalid token" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const userId = claimsData.claims.sub as string;
+
+    if (!checkRateLimit(userId)) {
+      return new Response(JSON.stringify({ error: "Rate limit exceeded. Maximum 5 calls per hour." }), {
+        status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // Rate limit check
-    if (!checkRateLimit(user.id)) {
-      return new Response(
-        JSON.stringify({ error: "Rate limit exceeded. Maximum 5 calls per hour." }),
-        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    console.log(`Generating insights for user: ${user.id}`);
+    console.log(`Generating insights for user: ${userId}`);
 
     // Fetch user's analytics data
     const [postsResult, metricsResult, commentsResult] = await Promise.all([
-      supabase.from("posts").select("*").eq("user_id", user.id).order("published_at", { ascending: false }).limit(50),
-      supabase.from("audience_metrics").select("*").eq("user_id", user.id).order("date", { ascending: false }).limit(30),
-      supabase.from("post_comments").select("*").eq("user_id", user.id).limit(100),
+      supabase.from("posts").select("*").eq("user_id", userId).order("published_at", { ascending: false }).limit(50),
+      supabase.from("audience_metrics").select("*").eq("user_id", userId).order("date", { ascending: false }).limit(30),
+      supabase.from("post_comments").select("*").eq("user_id", userId).limit(100),
     ]);
 
     const posts = postsResult.data || [];
@@ -111,7 +104,7 @@ ${topPosts.map((p, i) => `  ${i + 1}. ${p.platform}: ${p.engagement_rate}% engag
 - Recent Follower Trend: ${metrics.length > 0 ? `${metrics[0]?.followers_count || 0} followers` : "No data"}
 `;
 
-    const prompt = `You are a social media analytics expert. Based on the following data, generate 3-5 actionable insights for improving social media performance.
+    const prompt = `You are a social media analytics expert. Based on the following data, generate 3-5 actionable insights.
 
 ${dataSummary}
 
@@ -197,7 +190,7 @@ Focus on:
 
     // Store insights in database
     const insightsToInsert = insightsData.insights.map((insight: any) => ({
-      user_id: user.id,
+      user_id: userId,
       insight_type: insight.type,
       title: String(insight.title).slice(0, 100),
       description: String(insight.description).slice(0, 500),

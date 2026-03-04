@@ -14,51 +14,46 @@ serve(async (req) => {
   }
 
   try {
-    // Authenticate user
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabase = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Invalid token" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    const authClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) {
+      return new Response(JSON.stringify({ error: "Invalid token" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // Get the test token from request body (for testing) or use stored secret
+    // Get test token from request body or use stored secret
     let testToken: string | null = null;
-    
     if (req.method === "POST") {
       const body = await req.json().catch(() => ({}));
-      // Validate token format: must be a non-empty string, max 500 chars, alphanumeric with common token chars
       if (body.token && typeof body.token === "string" && body.token.length <= 500 && /^[A-Za-z0-9_\-\.]+$/.test(body.token)) {
         testToken = body.token;
       } else if (body.token) {
-        return new Response(
-          JSON.stringify({ error: "Invalid token format" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return new Response(JSON.stringify({ error: "Invalid token format" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
     }
-    
+
     const ACCESS_TOKEN = testToken || Deno.env.get("INSTAGRAM_ACCESS_TOKEN");
-    
     if (!ACCESS_TOKEN) {
-      return new Response(
-        JSON.stringify({ error: "No token provided or configured" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "No token provided or configured" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Step 1: Check token info
@@ -147,10 +142,10 @@ serve(async (req) => {
         userInfo,
         pages,
         diagnosis: pages.length === 0 
-          ? "No Facebook Pages found. Make sure you're using a token from the Meta account that owns your Facebook Page."
+          ? "No Facebook Pages found."
           : pages.some(p => p.hasInstagram)
             ? `Ready! Found Instagram account: @${pages.find(p => p.hasInstagram)?.instagramUsername}`
-            : "Pages found but none have Instagram Business Account connected. Connect Instagram to your Facebook Page first.",
+            : "Pages found but none have Instagram Business Account connected.",
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
