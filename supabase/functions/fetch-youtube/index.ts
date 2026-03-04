@@ -176,7 +176,13 @@ serve(async (req) => {
           user_id: user.id,
           platform: "youtube",
           account_name: snippet.title,
-          account_handle: `@${snippet.customUrl || handle}`,
+          account_handle: snippet.customUrl
+            ? snippet.customUrl.startsWith("@")
+              ? snippet.customUrl
+              : `@${snippet.customUrl}`
+            : lookup.handle
+              ? `@${lookup.handle}`
+              : lookup.channelId || null,
           profile_image_url: snippet.thumbnails?.default?.url || null,
           followers_count: parseInt(stats.subscriberCount || "0"),
           is_connected: true,
