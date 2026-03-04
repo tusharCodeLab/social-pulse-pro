@@ -1,7 +1,7 @@
 // API Types - Matching Meta Graph API response structures
 // These types can be used with both mock data and real API responses
 
-export type SocialPlatform = 'instagram' | 'twitter' | 'facebook' | 'linkedin';
+export type SocialPlatform = 'instagram' | 'twitter' | 'facebook' | 'linkedin' | 'youtube';
 export type SentimentType = 'positive' | 'negative' | 'neutral';
 export type PostType = 'image' | 'video' | 'carousel' | 'text' | 'reel' | 'story';
 

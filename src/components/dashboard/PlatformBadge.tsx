@@ -1,8 +1,8 @@
 import { motion } from 'framer-motion';
-import { Twitter, Instagram, Facebook, Linkedin, Video } from 'lucide-react';
+import { Twitter, Instagram, Facebook, Linkedin, Video, Youtube } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type Platform = 'twitter' | 'instagram' | 'facebook' | 'linkedin' | 'tiktok';
+type Platform = 'twitter' | 'instagram' | 'facebook' | 'linkedin' | 'tiktok' | 'youtube';
 
 interface PlatformBadgeProps {
   platform: Platform;
@@ -16,6 +16,7 @@ const platformConfig: Record<Platform, { icon: typeof Twitter; label: string; co
   facebook: { icon: Facebook, label: 'Facebook', color: 'bg-[#1877F2]/10 text-[#1877F2]' },
   linkedin: { icon: Linkedin, label: 'LinkedIn', color: 'bg-[#0A66C2]/10 text-[#0A66C2]' },
   tiktok: { icon: Video, label: 'TikTok', color: 'bg-[#000000]/10 text-foreground' },
+  youtube: { icon: Youtube, label: 'YouTube', color: 'bg-[#FF0000]/10 text-[#FF0000]' },
 };
 
 const sizeConfig = {

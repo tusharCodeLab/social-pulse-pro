@@ -112,7 +112,7 @@ export default function Dashboard() {
           <h1 className="text-2xl font-bold text-foreground">
             Welcome, <span className="gradient-text">{user?.email?.split('@')[0] || 'Analyst'}</span>
           </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Your Instagram analytics at a glance</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Your social media analytics at a glance</p>
         </div>
         <Button
           variant="outline" size="sm" className="gap-1.5 h-8 text-xs"
