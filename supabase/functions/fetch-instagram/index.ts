@@ -131,6 +131,7 @@ serve(async (req) => {
     let instagramFollowersCount: number = 0;
     let instagramMediaCount: number = 0;
     let pageAccessToken: string | null = null;
+    const checkedPages: Array<{ id: string; name: string; hasInstagram: boolean }> = [];
 
     for (const page of pagesData.data) {
       await delay(500); // Delay between page checks to avoid rate limits
@@ -142,7 +143,10 @@ serve(async (req) => {
       
       if (igAccountResponse.ok) {
         const igData = await igAccountResponse.json();
-        if (igData.instagram_business_account) {
+        const hasInstagram = Boolean(igData.instagram_business_account);
+        checkedPages.push({ id: page.id, name: page.name, hasInstagram });
+
+        if (hasInstagram) {
           instagramAccountId = igData.instagram_business_account.id;
           instagramUsername = igData.instagram_business_account.username;
           instagramFollowersCount = igData.instagram_business_account.followers_count || 0;
@@ -151,16 +155,21 @@ serve(async (req) => {
           console.log(`Found Instagram account: @${instagramUsername} (${instagramAccountId}), Followers: ${instagramFollowersCount}, Posts: ${instagramMediaCount}`);
           break;
         }
+      } else {
+        checkedPages.push({ id: page.id, name: page.name, hasInstagram: false });
       }
     }
 
     if (!instagramAccountId) {
       return new Response(
         JSON.stringify({ 
+          success: false,
+          reason: "instagram_not_connected",
           error: "No Instagram Business Account found",
-          hint: "Your Facebook Page must be connected to an Instagram Business or Creator account. Go to your Facebook Page settings to connect Instagram."
+          hint: "Your Facebook Page must be connected to an Instagram Business or Creator account. Go to your Facebook Page settings to connect Instagram.",
+          checked_pages: checkedPages,
         }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 

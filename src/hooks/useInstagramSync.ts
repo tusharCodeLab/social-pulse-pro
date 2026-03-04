@@ -58,6 +58,17 @@ export function useInstagramSync() {
         return;
       }
 
+      if (data?.success === false || data?.error) {
+        console.warn('[InstagramSync] Sync skipped:', data?.reason || data?.error || 'Unknown reason');
+
+        if (showToast) {
+          toast.warning(
+            data?.hint || 'Instagram is not linked to a Facebook Page yet. Link it first, then sync again.'
+          );
+        }
+        return;
+      }
+
       console.log('[InstagramSync] Sync completed:', data);
 
       // Invalidate all related queries to refresh UI
