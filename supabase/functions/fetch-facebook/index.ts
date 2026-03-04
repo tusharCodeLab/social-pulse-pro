@@ -45,6 +45,8 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Invalid token" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    const user = { id: userId };
+
     // Use service role client for DB operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
