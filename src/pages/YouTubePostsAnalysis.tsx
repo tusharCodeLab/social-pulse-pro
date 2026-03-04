@@ -1,12 +1,31 @@
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Youtube, Eye, ThumbsUp, MessageCircle, Clock, PlayCircle,
-  Film, Video, Radio, FileText,
+  Youtube, Eye, ThumbsUp, MessageCircle, Clock, Film,
 } from 'lucide-react';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { MetricCard } from '@/components/dashboard/MetricCard';
 import { ChartCard } from '@/components/dashboard/ChartCard';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+import { useYouTubeVideos } from '@/hooks/useYouTubeData';
+import {
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+} from 'recharts';
+import { format } from 'date-fns';
+
+const tooltipStyle = {
+  backgroundColor: 'hsl(222, 47%, 10%)',
+  border: '1px solid hsl(222, 30%, 15%)',
+  borderRadius: '8px',
+  color: 'hsl(210, 40%, 98%)',
+};
+
+function formatNum(n: number) {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+  if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K';
+  return n.toLocaleString();
+}
 
 const emptyState = (
   <div className="flex flex-col items-center justify-center h-full gap-2 text-center py-8">
@@ -17,6 +36,57 @@ const emptyState = (
 );
 
 export default function YouTubePostsAnalysis() {
+  const { data: videos = [] } = useYouTubeVideos();
+  const hasData = videos.length > 0;
+
+  const totals = useMemo(() => {
+    const totalViews = videos.reduce((s, v) => s + (v.reach || 0), 0);
+    const totalLikes = videos.reduce((s, v) => s + (v.likes_count || 0), 0);
+    const totalComments = videos.reduce((s, v) => s + (v.comments_count || 0), 0);
+    return { totalViews, totalLikes, totalComments };
+  }, [videos]);
+
+  const engagementTrend = useMemo(() => {
+    return videos
+      .filter(v => v.published_at)
+      .sort((a, b) => new Date(a.published_at!).getTime() - new Date(b.published_at!).getTime())
+      .map(v => ({
+        date: format(new Date(v.published_at!), 'MMM d'),
+        likes: v.likes_count || 0,
+        comments: v.comments_count || 0,
+        shares: v.shares_count || 0,
+      }));
+  }, [videos]);
+
+  // Content type breakdown
+  const contentTypes = useMemo(() => {
+    const types: Record<string, { count: number; views: number; likes: number }> = {};
+    videos.forEach(v => {
+      const t = v.post_type || 'video';
+      if (!types[t]) types[t] = { count: 0, views: 0, likes: 0 };
+      types[t].count++;
+      types[t].views += v.reach || 0;
+      types[t].likes += v.likes_count || 0;
+    });
+    return Object.entries(types).map(([name, d]) => ({ name, ...d }));
+  }, [videos]);
+
+  // Upload frequency (per week)
+  const uploadFreq = useMemo(() => {
+    const weeks: Record<string, number> = {};
+    videos.forEach(v => {
+      if (!v.published_at) return;
+      const d = new Date(v.published_at);
+      const weekStart = new Date(d);
+      weekStart.setDate(d.getDate() - d.getDay());
+      const key = format(weekStart, 'MMM d');
+      weeks[key] = (weeks[key] || 0) + 1;
+    });
+    return Object.entries(weeks)
+      .map(([week, count]) => ({ week, count }))
+      .slice(-12);
+  }, [videos]);
+
   return (
     <DashboardLayout>
       <div className="mb-8">
@@ -36,48 +106,100 @@ export default function YouTubePostsAnalysis() {
 
       {/* Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <MetricCard title="Total Videos" value="0" icon={Film} delay={0.1} />
-        <MetricCard title="Total Views" value="0" icon={Eye} delay={0.15} />
-        <MetricCard title="Total Likes" value="0" icon={ThumbsUp} delay={0.2} />
-        <MetricCard title="Avg Watch Time" value="0:00" icon={Clock} delay={0.25} />
+        <MetricCard title="Total Videos" value={String(videos.length)} icon={Film} delay={0.1} />
+        <MetricCard title="Total Views" value={formatNum(totals.totalViews)} icon={Eye} delay={0.15} />
+        <MetricCard title="Total Likes" value={formatNum(totals.totalLikes)} icon={ThumbsUp} delay={0.2} />
+        <MetricCard title="Total Comments" value={formatNum(totals.totalComments)} icon={MessageCircle} delay={0.25} />
       </div>
 
       {/* Engagement Trend */}
-      <ChartCard title="Video Engagement Trend" subtitle="Likes, comments, and shares over time" delay={0.3}>
-        <div className="h-[300px]">{emptyState}</div>
+      <ChartCard title="Video Engagement Trend" subtitle="Likes, comments, and shares per video" delay={0.3}>
+        <div className="h-[300px]">
+          {hasData ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={engagementTrend}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(222,30%,15%)" />
+                <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="hsl(215,20%,50%)" />
+                <YAxis tick={{ fontSize: 10 }} stroke="hsl(215,20%,50%)" />
+                <Tooltip contentStyle={tooltipStyle} />
+                <Bar dataKey="likes" fill="hsl(0,80%,50%)" radius={[4, 4, 0, 0]} name="Likes" />
+                <Bar dataKey="comments" fill="hsl(210,80%,55%)" radius={[4, 4, 0, 0]} name="Comments" />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : emptyState}
+        </div>
       </ChartCard>
 
       {/* Top Videos Table */}
       <div className="mt-6">
-        <ChartCard title="Top Performing Videos" subtitle="Ranked by engagement rate" delay={0.35}>
+        <ChartCard title="Top Performing Videos" subtitle="Ranked by view count" delay={0.35}>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border">
-                  {['Video', 'Views', 'Likes', 'Comments', 'Watch Time', 'Eng. Rate'].map(h => (
-                    <th key={h} className={`py-2.5 px-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider ${h === 'Video' ? 'text-left' : 'text-right'}`}>
+                  {['Video', 'Views', 'Likes', 'Comments', 'Eng. Rate'].map(h => (
+                    <th key={h} className={cn('py-2.5 px-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider', h === 'Video' ? 'text-left' : 'text-right')}>
                       {h}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td colSpan={6} className="py-12 text-center">{emptyState}</td>
-                </tr>
+                {hasData ? (
+                  [...videos]
+                    .sort((a, b) => (b.reach || 0) - (a.reach || 0))
+                    .slice(0, 15)
+                    .map(v => (
+                      <tr key={v.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                        <td className="py-2.5 px-3 text-sm text-foreground max-w-xs truncate">{v.content || 'Untitled'}</td>
+                        <td className="py-2.5 px-3 text-sm text-right text-foreground">{formatNum(v.reach || 0)}</td>
+                        <td className="py-2.5 px-3 text-sm text-right text-foreground">{formatNum(v.likes_count || 0)}</td>
+                        <td className="py-2.5 px-3 text-sm text-right text-foreground">{formatNum(v.comments_count || 0)}</td>
+                        <td className="py-2.5 px-3 text-sm text-right text-foreground">
+                          {(v.reach || 0) > 0 ? (((v.likes_count || 0) + (v.comments_count || 0)) / (v.reach || 1) * 100).toFixed(2) + '%' : '0%'}
+                        </td>
+                      </tr>
+                    ))
+                ) : (
+                  <tr><td colSpan={6} className="py-12 text-center">{emptyState}</td></tr>
+                )}
               </tbody>
             </table>
           </div>
         </ChartCard>
       </div>
 
-      {/* Content Type Breakdown */}
+      {/* Content Type Breakdown & Upload Frequency */}
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ChartCard title="Content Type Performance" subtitle="Videos vs Shorts vs Live" delay={0.4}>
-          <div className="h-[250px]">{emptyState}</div>
+        <ChartCard title="Content Type Performance" subtitle="Views by content type" delay={0.4}>
+          <div className="h-[250px]">
+            {contentTypes.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={contentTypes}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(222,30%,15%)" />
+                  <XAxis dataKey="name" tick={{ fontSize: 10 }} stroke="hsl(215,20%,50%)" />
+                  <YAxis tick={{ fontSize: 10 }} stroke="hsl(215,20%,50%)" />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Bar dataKey="views" fill="hsl(0,80%,50%)" radius={[4, 4, 0, 0]} name="Views" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : emptyState}
+          </div>
         </ChartCard>
         <ChartCard title="Upload Frequency" subtitle="Videos published per week" delay={0.45}>
-          <div className="h-[250px]">{emptyState}</div>
+          <div className="h-[250px]">
+            {uploadFreq.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={uploadFreq}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(222,30%,15%)" />
+                  <XAxis dataKey="week" tick={{ fontSize: 10 }} stroke="hsl(215,20%,50%)" />
+                  <YAxis tick={{ fontSize: 10 }} stroke="hsl(215,20%,50%)" allowDecimals={false} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Bar dataKey="count" fill="hsl(262,83%,58%)" radius={[4, 4, 0, 0]} name="Videos" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : emptyState}
+          </div>
         </ChartCard>
       </div>
     </DashboardLayout>

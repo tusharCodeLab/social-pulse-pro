@@ -43,16 +43,20 @@ export function useDetectSpam() {
 // ============================================================================
 // Personal Trends
 // ============================================================================
-export function usePersonalTrends() {
+export function usePersonalTrends(platform?: string) {
   const { user } = useAuth();
   return useQuery({
-    queryKey: ["personal-trends", user?.id],
+    queryKey: ["personal-trends", user?.id, platform],
     queryFn: async () => {
       if (!user) return [];
-      const { data, error } = await supabase
+      let query = supabase
         .from("personal_trends")
         .select("*")
         .order("confidence_score", { ascending: false });
+      if (platform) {
+        query = query.eq("platform", platform);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       return data || [];
     },
