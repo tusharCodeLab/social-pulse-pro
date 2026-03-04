@@ -539,15 +539,21 @@ export const analyticsApi = {
     };
   },
 
-  async getSentiment(days: number = 14): Promise<APIResponse<SentimentAnalytics[]>> {
+  async getSentiment(days: number = 14, platform?: SocialPlatform): Promise<APIResponse<SentimentAnalytics[]>> {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    const { data: comments, error } = await supabase
+    let query = supabase
       .from('post_comments')
-      .select('created_at, sentiment, sentiment_score')
+      .select('created_at, sentiment, sentiment_score, posts!inner(platform)')
       .gte('created_at', startDate.toISOString())
       .order('created_at', { ascending: true });
+
+    if (platform) {
+      query = query.eq('posts.platform', platform);
+    }
+
+    const { data: comments, error } = await query;
 
     if (error) throw error;
 
