@@ -49,6 +49,9 @@ const App = () => (
               <Route path="/youtube-audience" element={<ProtectedRoute><YouTubeAudience /></ProtectedRoute>} />
               <Route path="/youtube-sentiment" element={<ProtectedRoute><YouTubeSentiment /></ProtectedRoute>} />
               <Route path="/youtube-trends" element={<ProtectedRoute><YouTubeTrends /></ProtectedRoute>} />
+              <Route path="/facebook-analytics" element={<ProtectedRoute><FacebookAnalytics /></ProtectedRoute>} />
+              <Route path="/facebook-posts" element={<ProtectedRoute><FacebookPosts /></ProtectedRoute>} />
+              <Route path="/facebook-audience" element={<ProtectedRoute><FacebookAudience /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

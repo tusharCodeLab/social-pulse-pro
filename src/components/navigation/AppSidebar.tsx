@@ -89,7 +89,7 @@ const accountItems: NavItem[] = [
 
 export function AppSidebar() {
   const [collapsed, setCollapsed] = useState(false);
-  const [expandedPlatforms, setExpandedPlatforms] = useState<Record<string, boolean>>({ instagram: true, youtube: true });
+  const [expandedPlatforms, setExpandedPlatforms] = useState<Record<string, boolean>>({ instagram: true, youtube: true, facebook: true });
   const { signOut, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
