@@ -67,9 +67,7 @@ const platformGroups: PlatformGroup[] = [
   },
 ];
 
-const aiToolsItems: NavItem[] = [
-  { to: '/content-calendar', icon: Calendar, label: 'AI Content Calendar' },
-];
+const aiToolsItems: NavItem[] = [];
 
 const accountItems: NavItem[] = [
   { to: '/settings', icon: Settings, label: 'Settings' },
