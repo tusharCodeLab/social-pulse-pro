@@ -209,11 +209,11 @@ export function useEngagementAnalyticsApi(days: number = 30, platform?: SocialPl
   });
 }
 
-export function useSentimentTrendApi(days: number = 14) {
+export function useSentimentTrendApi(days: number = 14, platform?: SocialPlatform) {
   return useQuery({
-    queryKey: queryKeys.sentimentTrend(days),
+    queryKey: [...queryKeys.sentimentTrend(days), platform],
     queryFn: async () => {
-      const response = await socialApi.analytics.getSentiment(days);
+      const response = await socialApi.analytics.getSentiment(days, platform);
       return response.data;
     },
     staleTime: 5 * 60 * 1000,
