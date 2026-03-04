@@ -143,7 +143,10 @@ serve(async (req) => {
       
       if (igAccountResponse.ok) {
         const igData = await igAccountResponse.json();
-        if (igData.instagram_business_account) {
+        const hasInstagram = Boolean(igData.instagram_business_account);
+        checkedPages.push({ id: page.id, name: page.name, hasInstagram });
+
+        if (hasInstagram) {
           instagramAccountId = igData.instagram_business_account.id;
           instagramUsername = igData.instagram_business_account.username;
           instagramFollowersCount = igData.instagram_business_account.followers_count || 0;
@@ -152,6 +155,8 @@ serve(async (req) => {
           console.log(`Found Instagram account: @${instagramUsername} (${instagramAccountId}), Followers: ${instagramFollowersCount}, Posts: ${instagramMediaCount}`);
           break;
         }
+      } else {
+        checkedPages.push({ id: page.id, name: page.name, hasInstagram: false });
       }
     }
 
