@@ -68,6 +68,17 @@ const platformGroups: PlatformGroup[] = [
       { to: '/youtube-trends', icon: Activity, label: 'Trend Intelligence' },
     ],
   },
+  {
+    key: 'facebook',
+    icon: Facebook,
+    label: 'Facebook',
+    color: 'text-[#1877F2]',
+    items: [
+      { to: '/facebook-analytics', icon: LayoutDashboard, label: 'Page Overview' },
+      { to: '/facebook-posts', icon: FileText, label: 'Posts Analysis' },
+      { to: '/facebook-audience', icon: Users, label: 'Audience' },
+    ],
+  },
 ];
 
 const aiToolsItems: NavItem[] = [];
