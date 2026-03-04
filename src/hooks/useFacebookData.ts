@@ -29,6 +29,7 @@ export function useFacebookPosts() {
       const { data, error } = await supabase
         .from("posts")
         .select("*")
+        .eq("user_id", user.id)
         .eq("platform", "facebook")
         .order("published_at", { ascending: false });
       if (error) throw error;
