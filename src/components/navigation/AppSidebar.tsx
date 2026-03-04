@@ -18,8 +18,6 @@ import {
   Youtube,
   Instagram,
   Plus,
-  Calendar,
-  BrainCircuit,
 } from 'lucide-react';
 import { SidebarNavLink } from './SidebarNavLink';
 import { cn } from '@/lib/utils';
