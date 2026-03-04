@@ -173,11 +173,11 @@ export function useDemographicsApi(accountId?: string) {
   });
 }
 
-export function useAudienceGrowthApi(days: number = 30) {
+export function useAudienceGrowthApi(days: number = 30, platform?: SocialPlatform) {
   return useQuery({
-    queryKey: queryKeys.audienceGrowth(days),
+    queryKey: [...queryKeys.audienceGrowth(days), platform],
     queryFn: async () => {
-      const response = await socialApi.audience.getGrowth(days);
+      const response = await socialApi.audience.getGrowth(days, platform);
       return response.data;
     },
     staleTime: 5 * 60 * 1000,
