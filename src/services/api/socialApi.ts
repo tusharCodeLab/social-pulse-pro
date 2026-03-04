@@ -339,7 +339,7 @@ export const commentsApi = {
     };
   },
 
-  async getSentimentStats(): Promise<APIResponse<{
+  async getSentimentStats(platform?: SocialPlatform): Promise<APIResponse<{
     total: number;
     positive: number;
     negative: number;
@@ -349,9 +349,15 @@ export const commentsApi = {
     neutralPercent: number;
     avgScore: number;
   }>> {
-    const { data: comments, error } = await supabase
+    let query = supabase
       .from('post_comments')
-      .select('sentiment, sentiment_score');
+      .select('sentiment, sentiment_score, posts!inner(platform)');
+
+    if (platform) {
+      query = query.eq('posts.platform', platform);
+    }
+
+    const { data: comments, error } = await query;
 
     if (error) throw error;
 
