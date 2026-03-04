@@ -200,6 +200,35 @@ serve(async (req) => {
 
       pagesSummary.push({ name: pageName, followers, posts: posts.length });
 
+      // Clean up stale posts from previously-synced pages
+      // Delete any facebook posts whose external_post_id doesn't start with the current page ID
+      const currentPagePrefix = page.id + "_";
+      const { data: stalePosts } = await supabase
+        .from("posts")
+        .select("id, external_post_id")
+        .eq("user_id", user.id)
+        .eq("platform", "facebook");
+
+      if (stalePosts && stalePosts.length > 0) {
+        const staleIds = stalePosts
+          .filter(p => p.external_post_id && !p.external_post_id.startsWith(currentPagePrefix))
+          .map(p => p.id);
+
+        if (staleIds.length > 0) {
+          // Delete orphaned comments first
+          for (const staleId of staleIds) {
+            await supabase.from("post_comments").delete().eq("post_id", staleId);
+          }
+          // Then delete stale posts
+          const { error: deleteError } = await supabase
+            .from("posts")
+            .delete()
+            .in("id", staleIds);
+          if (deleteError) console.error("Error cleaning stale posts:", deleteError);
+          else console.log(`Cleaned up ${staleIds.length} stale Facebook posts from previous pages`);
+        }
+      }
+
       // Only process first page for now (to match social_accounts unique constraint)
       break;
     }
