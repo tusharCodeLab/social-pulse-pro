@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 const platforms = [
   { id: 'instagram', name: 'Instagram', icon: Instagram, color: 'text-[#E4405F]', supported: true },
   { id: 'youtube', name: 'YouTube', icon: Youtube, color: 'text-[#FF0000]', supported: true },
+  { id: 'facebook', name: 'Facebook', icon: Facebook, color: 'text-[#1877F2]', supported: true },
 ];
 
 export default function Settings() {
