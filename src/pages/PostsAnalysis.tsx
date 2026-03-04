@@ -59,9 +59,9 @@ function formatNumber(num: number): string {
 }
 
 export default function PostsAnalysis() {
-  const { data: posts, isLoading: loadingPosts, error: postsError } = usePostsApi();
-  const { data: stats, isLoading: loadingStats } = usePostStatsApi();
-  const { data: engagementTrend, isLoading: loadingTrend } = useEngagementAnalyticsApi(14);
+  const { data: posts, isLoading: loadingPosts, error: postsError } = usePostsApi('instagram');
+  const { data: stats, isLoading: loadingStats } = usePostStatsApi('instagram');
+  const { data: engagementTrend, isLoading: loadingTrend } = useEngagementAnalyticsApi(14, 'instagram');
   const [coaching, setCoaching] = useState<PostCoaching | null>(null);
   const [captions, setCaptions] = useState<GeneratedCaption[] | null>(null);
   const [captionTopic, setCaptionTopic] = useState('');

@@ -37,9 +37,9 @@ function formatRelativeDate(dateStr: string): string {
 export default function Sentiment() {
   const { toast } = useToast();
   
-  const { data: stats, isLoading: loadingStats, refetch: refetchStats } = useSentimentStatsApi();
-  const { data: trend, isLoading: loadingTrend } = useSentimentTrendApi(14);
-  const { data: comments, isLoading: loadingComments, refetch: refetchComments } = useCommentsApi();
+  const { data: stats, isLoading: loadingStats, refetch: refetchStats } = useSentimentStatsApi('instagram');
+  const { data: trend, isLoading: loadingTrend } = useSentimentTrendApi(14, 'instagram');
+  const { data: comments, isLoading: loadingComments, refetch: refetchComments } = useCommentsApi(undefined, 'instagram');
   const analyzeSentiment = useAnalyzeSentimentApi();
 
   const { data: spamComments, isLoading: loadingSpam } = useSpamComments();
