@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import {
   Instagram,
   Youtube,
+  Facebook,
   Check,
   Loader2,
   Wifi,
