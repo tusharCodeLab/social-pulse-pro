@@ -179,7 +179,7 @@ export default function Settings() {
                   {platform.id === 'youtube' && (
                     <div className="mt-4 flex gap-2" onClick={(e) => e.stopPropagation()}>
                       <Input
-                        placeholder="@YourChannel or Channel ID"
+                        placeholder="@YourChannel, UC..., username, or YouTube URL"
                         value={ytHandle}
                         onChange={(e) => setYtHandle(e.target.value)}
                         className="flex-1"

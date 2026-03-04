@@ -313,7 +313,13 @@ serve(async (req) => {
         success: true,
         channel: {
           title: snippet.title,
-          handle: snippet.customUrl || handle,
+          handle: snippet.customUrl
+            ? snippet.customUrl.startsWith("@")
+              ? snippet.customUrl
+              : `@${snippet.customUrl}`
+            : lookup.handle
+              ? `@${lookup.handle}`
+              : lookup.channelId || lookup.original,
           subscriberCount: parseInt(stats.subscriberCount || "0"),
           viewCount: parseInt(stats.viewCount || "0"),
           videoCount: parseInt(stats.videoCount || "0"),
