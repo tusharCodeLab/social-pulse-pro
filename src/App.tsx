@@ -13,7 +13,7 @@ import PostsAnalysis from "./pages/PostsAnalysis";
 import AudienceInsights from "./pages/AudienceInsights";
 import Sentiment from "./pages/Sentiment";
 import Trends from "./pages/Trends";
-import ContentCalendar from "./pages/ContentCalendar";
+
 import YouTubeAnalytics from "./pages/YouTubeAnalytics";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
@@ -36,7 +36,7 @@ const App = () => (
               <Route path="/audience" element={<ProtectedRoute><AudienceInsights /></ProtectedRoute>} />
               <Route path="/sentiment" element={<ProtectedRoute><Sentiment /></ProtectedRoute>} />
               <Route path="/trends" element={<ProtectedRoute><Trends /></ProtectedRoute>} />
-              <Route path="/content-calendar" element={<ProtectedRoute><ContentCalendar /></ProtectedRoute>} />
+              
               <Route path="/youtube-analytics" element={<ProtectedRoute><YouTubeAnalytics /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

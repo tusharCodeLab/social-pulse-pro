@@ -18,8 +18,6 @@ import {
   Youtube,
   Instagram,
   Plus,
-  Calendar,
-  BrainCircuit,
 } from 'lucide-react';
 import { SidebarNavLink } from './SidebarNavLink';
 import { cn } from '@/lib/utils';
@@ -67,9 +65,7 @@ const platformGroups: PlatformGroup[] = [
   },
 ];
 
-const aiToolsItems: NavItem[] = [
-  { to: '/content-calendar', icon: Calendar, label: 'AI Content Calendar' },
-];
+const aiToolsItems: NavItem[] = [];
 
 const accountItems: NavItem[] = [
   { to: '/settings', icon: Settings, label: 'Settings' },
@@ -232,12 +228,8 @@ export function AppSidebar() {
           />
         </SidebarSection>
 
-        {/* AI INTELLIGENCE TOOLS */}
-        <SidebarSection label="AI Intelligence Tools" collapsed={collapsed}>
-          {aiToolsItems.map(item => (
-            <SidebarNavLink key={item.to} to={item.to} icon={item.icon} label={item.label} collapsed={collapsed} />
-          ))}
-        </SidebarSection>
+
+
 
         {/* ACCOUNT */}
         <SidebarSection label="Account" collapsed={collapsed}>
