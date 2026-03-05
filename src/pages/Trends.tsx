@@ -4,7 +4,7 @@ import {
   TrendingUp, Loader2, ArrowUp, ArrowDown, Minus, Activity, BarChart3,
   Lightbulb, Calendar, Sparkles, Video, Image, Layers, Radio, MonitorPlay,
 } from 'lucide-react';
-import { DashboardLayout } from '@/components/DashboardLayout';
+
 import { ChartCard } from '@/components/dashboard/ChartCard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -100,7 +100,7 @@ export default function Trends() {
   }, {});
 
   return (
-    <DashboardLayout>
+    <>
       <div className="mb-8">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -294,6 +294,6 @@ export default function Trends() {
           ) : null}
         </div>
       </motion.div>
-    </DashboardLayout>
+    </>
   );
 }

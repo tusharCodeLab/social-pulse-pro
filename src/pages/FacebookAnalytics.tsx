@@ -8,7 +8,7 @@ import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer,
 } from 'recharts';
-import { DashboardLayout } from '@/components/DashboardLayout';
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -84,7 +84,7 @@ export default function FacebookAnalytics() {
   );
 
   return (
-    <DashboardLayout>
+    <>
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-xl bg-[#1877F2]/10"><FacebookIcon className="h-6 w-6 text-[#1877F2]" /></div>
@@ -211,6 +211,6 @@ export default function FacebookAnalytics() {
           </motion.div>
         </TabsContent>
       </Tabs>
-    </DashboardLayout>
+    </>
   );
 }

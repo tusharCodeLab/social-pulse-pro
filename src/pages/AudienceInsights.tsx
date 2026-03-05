@@ -3,7 +3,7 @@ import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
 } from 'recharts';
 import { Users, TrendingUp, UserPlus, Loader2, Clock, Zap, Percent } from 'lucide-react';
-import { DashboardLayout } from '@/components/DashboardLayout';
+
 import { MetricCard } from '@/components/dashboard/MetricCard';
 import { ChartCard } from '@/components/dashboard/ChartCard';
 import { Button } from '@/components/ui/button';
@@ -58,7 +58,7 @@ export default function AudienceInsights() {
     : '0%';
 
   return (
-    <DashboardLayout>
+    <>
       <div className="mb-8">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <h1 className="text-3xl font-bold text-foreground mb-2">Audience Insights</h1>
@@ -231,6 +231,6 @@ export default function AudienceInsights() {
           </div>
         </>
       )}
-    </DashboardLayout>
+    </>
   );
 }

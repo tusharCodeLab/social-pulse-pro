@@ -22,7 +22,7 @@ import {
   Video,
   Zap,
 } from "lucide-react";
-import { DashboardLayout } from "@/components/DashboardLayout";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -163,7 +163,7 @@ export default function ContentCalendar() {
   }, [weekDates]);
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -476,6 +476,6 @@ export default function ContentCalendar() {
           })()}
         </DialogContent>
       </Dialog>
-    </DashboardLayout>
+    </>
   );
 }

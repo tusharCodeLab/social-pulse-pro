@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { InstagramSyncProvider } from "@/components/InstagramSyncProvider";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { DashboardLayout } from "@/components/DashboardLayout";
 import Home from "./pages/Home";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -24,6 +25,7 @@ import FacebookPosts from "./pages/FacebookPosts";
 import FacebookAudience from "./pages/FacebookAudience";
 
 import Settings from "./pages/Settings";
+import ContentCalendar from "./pages/ContentCalendar";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,22 +41,23 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/auth" element={<Auth />} />
-              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-              <Route path="/posts" element={<ProtectedRoute><PostsAnalysis /></ProtectedRoute>} />
-              <Route path="/audience" element={<ProtectedRoute><AudienceInsights /></ProtectedRoute>} />
-              <Route path="/sentiment" element={<ProtectedRoute><Sentiment /></ProtectedRoute>} />
-              <Route path="/trends" element={<ProtectedRoute><Trends /></ProtectedRoute>} />
-              
-              <Route path="/youtube-analytics" element={<ProtectedRoute><YouTubeAnalytics /></ProtectedRoute>} />
-              <Route path="/youtube-posts" element={<ProtectedRoute><YouTubePostsAnalysis /></ProtectedRoute>} />
-              <Route path="/youtube-audience" element={<ProtectedRoute><YouTubeAudience /></ProtectedRoute>} />
-              <Route path="/youtube-sentiment" element={<ProtectedRoute><YouTubeSentiment /></ProtectedRoute>} />
-              <Route path="/youtube-trends" element={<ProtectedRoute><YouTubeTrends /></ProtectedRoute>} />
-              <Route path="/facebook-analytics" element={<ProtectedRoute><FacebookAnalytics /></ProtectedRoute>} />
-              <Route path="/facebook-posts" element={<ProtectedRoute><FacebookPosts /></ProtectedRoute>} />
-              <Route path="/facebook-audience" element={<ProtectedRoute><FacebookAudience /></ProtectedRoute>} />
-              
-              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+              <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/posts" element={<PostsAnalysis />} />
+                <Route path="/audience" element={<AudienceInsights />} />
+                <Route path="/sentiment" element={<Sentiment />} />
+                <Route path="/trends" element={<Trends />} />
+                <Route path="/youtube-analytics" element={<YouTubeAnalytics />} />
+                <Route path="/youtube-posts" element={<YouTubePostsAnalysis />} />
+                <Route path="/youtube-audience" element={<YouTubeAudience />} />
+                <Route path="/youtube-sentiment" element={<YouTubeSentiment />} />
+                <Route path="/youtube-trends" element={<YouTubeTrends />} />
+                <Route path="/facebook-analytics" element={<FacebookAnalytics />} />
+                <Route path="/facebook-posts" element={<FacebookPosts />} />
+                <Route path="/facebook-audience" element={<FacebookAudience />} />
+                <Route path="/content-calendar" element={<ContentCalendar />} />
+                <Route path="/settings" element={<Settings />} />
+              </Route>
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

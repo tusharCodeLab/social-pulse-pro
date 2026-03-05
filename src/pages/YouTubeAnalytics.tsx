@@ -8,7 +8,7 @@ import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer,
 } from 'recharts';
-import { DashboardLayout } from '@/components/DashboardLayout';
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -79,7 +79,7 @@ export default function YouTubeAnalytics() {
   );
 
   return (
-    <DashboardLayout>
+    <>
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-xl bg-[#FF0000]/10"><Youtube className="h-6 w-6 text-[#FF0000]" /></div>
@@ -213,6 +213,6 @@ export default function YouTubeAnalytics() {
           </motion.div>
         </TabsContent>
       </Tabs>
-    </DashboardLayout>
+    </>
   );
 }

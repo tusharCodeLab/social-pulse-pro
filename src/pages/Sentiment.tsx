@@ -5,7 +5,7 @@ import {
 import {
   Smile, Frown, Meh, MessageCircle, Sparkles, Loader2, Shield, AlertTriangle, Clock,
 } from 'lucide-react';
-import { DashboardLayout } from '@/components/DashboardLayout';
+
 import { MetricCard } from '@/components/dashboard/MetricCard';
 import { ChartCard } from '@/components/dashboard/ChartCard';
 import { SentimentBadge } from '@/components/dashboard/SentimentBadge';
@@ -99,7 +99,7 @@ export default function Sentiment() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="mb-8">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -317,6 +317,6 @@ export default function Sentiment() {
           </div>
         </>
       )}
-    </DashboardLayout>
+    </>
   );
 }

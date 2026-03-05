@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { ThumbsUp, MessageCircle, Share2, Facebook, Image as ImageIcon } from 'lucide-react';
-import { DashboardLayout } from '@/components/DashboardLayout';
+
 import { Badge } from '@/components/ui/badge';
 import { useFacebookPosts } from '@/hooks/useFacebookData';
 import { format } from 'date-fns';
@@ -41,7 +41,7 @@ export default function FacebookPosts() {
   const hasData = posts.length > 0;
 
   return (
-    <DashboardLayout>
+    <>
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-xl bg-[#1877F2]/10"><Facebook className="h-6 w-6 text-[#1877F2]" /></div>
@@ -104,6 +104,6 @@ export default function FacebookPosts() {
           </div>
         </motion.div>
       )}
-    </DashboardLayout>
+    </>
   );
 }

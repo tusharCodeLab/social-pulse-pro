@@ -9,7 +9,7 @@ import {
   Wifi,
   WifiOff,
 } from 'lucide-react';
-import { DashboardLayout } from '@/components/DashboardLayout';
+
 import { ChartCard } from '@/components/dashboard/ChartCard';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useToast } from '@/hooks/use-toast';
@@ -153,7 +153,7 @@ export default function Settings() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       {/* Header */}
       <div className="mb-8">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }} className="flex items-center justify-between">
@@ -283,6 +283,6 @@ export default function Settings() {
           </motion.div>
         </ChartCard>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

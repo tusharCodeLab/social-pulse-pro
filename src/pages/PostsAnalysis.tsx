@@ -8,7 +8,7 @@ import {
   Wand2, Sparkles, Hash, Lightbulb, Target, Zap, ChevronRight, Brain,
   Image, Video, Layers, Type, PenTool, Copy, Check, Star,
 } from 'lucide-react';
-import { DashboardLayout } from '@/components/DashboardLayout';
+
 import { MetricCard } from '@/components/dashboard/MetricCard';
 import { ChartCard } from '@/components/dashboard/ChartCard';
 import { PlatformBadge } from '@/components/dashboard/PlatformBadge';
@@ -155,7 +155,7 @@ export default function PostsAnalysis() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="mb-8">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <h1 className="text-3xl font-bold text-foreground mb-2">Posts Analysis</h1>
@@ -556,6 +556,6 @@ export default function PostsAnalysis() {
           </ChartCard>
         </>
       )}
-    </DashboardLayout>
+    </>
   );
 }

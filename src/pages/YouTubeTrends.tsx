@@ -3,7 +3,7 @@ import {
   Youtube, TrendingUp, Activity, Lightbulb, BarChart3,
   ArrowUp, ArrowDown, Minus, Loader2,
 } from 'lucide-react';
-import { DashboardLayout } from '@/components/DashboardLayout';
+
 import { ChartCard } from '@/components/dashboard/ChartCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -33,7 +33,7 @@ export default function YouTubeTrends() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="mb-8">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <div className="flex items-center gap-3 mb-2">
@@ -134,6 +134,6 @@ export default function YouTubeTrends() {
           )}
         </div>
       </motion.div>
-    </DashboardLayout>
+    </>
   );
 }
