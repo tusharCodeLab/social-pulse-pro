@@ -22,6 +22,7 @@ import YouTubeTrends from "./pages/YouTubeTrends";
 import FacebookAnalytics from "./pages/FacebookAnalytics";
 import FacebookPosts from "./pages/FacebookPosts";
 import FacebookAudience from "./pages/FacebookAudience";
+import CrossPlatformAnalytics from "./pages/CrossPlatformAnalytics";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
