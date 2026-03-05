@@ -16,9 +16,9 @@ interface TopPost {
 }
 
 const PLATFORM_ICONS: Record<string, any> = {
-  instagram: Instagram,
-  youtube: Youtube,
-  facebook: Facebook,
+  instagram: InstagramIcon,
+  youtube: YouTubeIcon,
+  facebook: FacebookIcon,
 };
 
 const PLATFORM_COLORS: Record<string, string> = {
