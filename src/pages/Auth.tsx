@@ -205,12 +205,12 @@ const Auth = () => {
               <span className="gradient-text">Social Insights</span>
             </h2>
             <p className="text-lg text-muted-foreground max-w-md">
-              Join <span className="text-foreground font-semibold">10,000+</span> marketers who trust SocialPulse for 
-              real-time analytics and AI-powered recommendations.
+              Connect your accounts and get <span className="text-foreground font-semibold">AI-powered</span> analytics, 
+              sentiment analysis, and trend detection — completely free.
             </p>
           </motion.div>
 
-          {/* Animated Stat Cards */}
+          {/* Feature Highlight Cards */}
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
@@ -218,10 +218,10 @@ const Auth = () => {
             className="mt-12 grid grid-cols-2 gap-4 max-w-lg w-full"
           >
             {[
-              { icon: TrendingUp, label: "Avg Engagement Boost", value: 34, suffix: "%" },
-              { icon: Sparkles, label: "AI-Powered Insights", value: 12, suffix: "/day" },
-              { icon: Users, label: "Active Users", value: 10000, suffix: "+" },
-              { icon: Shield, label: "Spam Blocked", value: 98, suffix: "%" },
+              { icon: TrendingUp, label: "Trend Detection", desc: "Spot what's working" },
+              { icon: Sparkles, label: "AI Insights", desc: "Smart recommendations" },
+              { icon: Users, label: "Audience Analytics", desc: "Know your followers" },
+              { icon: Shield, label: "Spam Detection", desc: "Filter bot comments" },
             ].map((item, i) => (
               <motion.div
                 key={i}
@@ -231,11 +231,8 @@ const Auth = () => {
                 className="glass-card rounded-xl p-4 border border-border/50"
               >
                 <item.icon className="w-5 h-5 text-primary mb-2" />
-                <div className="text-2xl font-bold text-foreground">
-                  <AnimatedCounter value={item.value} duration={1.5} />
-                  <span>{item.suffix}</span>
-                </div>
-                <div className="text-xs text-muted-foreground mt-1">{item.label}</div>
+                <div className="text-sm font-semibold text-foreground">{item.label}</div>
+                <div className="text-xs text-muted-foreground mt-0.5">{item.desc}</div>
               </motion.div>
             ))}
           </motion.div>
