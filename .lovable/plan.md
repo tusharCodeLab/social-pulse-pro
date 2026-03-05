@@ -1,70 +1,76 @@
 
 
-## Plan: Professional Dashboard Redesign
+# Sidebar Restructure and Cleanup
 
-The current dashboard has 4 metric pills, a reach chart, 3 platform cards, and an AI digest section. It feels sparse with large empty areas. Here is the plan to make it dense, feature-rich, and professional.
+## What Changes
 
-### New Dashboard Sections (top to bottom)
+### 1. Remove Non-Working Features
+- **Remove the Reports page** (`/reports` route, `Reports.tsx`) -- it's a "Coming Soon" placeholder with no functionality
+- **Remove the Reports entry** from the sidebar navigation
 
-**1. Enhanced Header with Status Indicators**
-- Greeting with animated gradient text
-- Live status badges showing connected platforms count, last sync time
-- Sentiment donut (existing) + refresh button
+### 2. Reorganize Sidebar into Grouped Sections
+Instead of a flat list of 7 items, organize into logical groups with section labels:
 
-**2. Metric Cards Row (upgraded from pills)**
-- 4 cards: Total Followers, Total Engagement, Total Reach, Avg Engagement Rate
-- Each card gets a sparkline mini-chart (tiny area chart showing 7-day trend using post data)
-- Change indicator showing percentage up/down vs prior period
-- Subtle glow-on-hover effect
+```text
++-------------------------------+
+|  [Logo] Analytics             |
+|          Social Dashboard     |
++-------------------------------+
+|  [AI-Powered badge]           |
++-------------------------------+
+|                               |
+|  OVERVIEW                     |
+|    Dashboard                  |
+|                               |
+|  ANALYTICS                    |
+|    Posts Analysis              |
+|    Audience Insights           |
+|    Sentiment                   |
+|                               |
+|  AI & TOOLS                   |
+|    AI Tools                    |
+|                               |
+|  ACCOUNT                      |
+|    Settings                    |
+|                               |
++-------------------------------+
+|  [User info]                  |
+|  [Sign Out]                   |
+|  [Collapse]                   |
++-------------------------------+
+```
 
-**3. Main Analytics Grid (2 rows)**
+### 3. Files to Modify
+- **`src/components/navigation/AppSidebar.tsx`** -- Replace flat `navItems` array with grouped sections; add section labels that hide when collapsed
+- **`src/App.tsx`** -- Remove the `/reports` route
+- **`src/pages/Reports.tsx`** -- Delete this file
 
-*Row 1 - 3-column layout:*
-- **Combined Reach Chart** (col-span-2): Keep existing area chart but add period selector tabs (7d / 14d / 30d / All)
-- **Engagement Breakdown** (col-span-1): Radial bar chart or stacked bar showing likes vs comments vs shares per platform
+### 4. Files Unchanged
+- `SidebarNavLink.tsx` -- Works as-is, no changes needed
+- `DashboardLayout.tsx` -- No changes needed
+- All other pages remain intact
 
-*Row 2 - 3-column layout:*
-- **Top Performing Posts** (col-span-2): Horizontal ranked list of top 5 posts across all platforms with thumbnail, platform badge, engagement rate, reach, and a mini bar showing relative performance. Uses existing `useTopContentByReach` hook.
-- **Sentiment Overview** (col-span-1): Larger donut chart with legend, total analyzed count, and sentiment distribution bars underneath
+## Technical Details
 
-**4. Platform Comparison Strip**
-- 3 platform cards in a row (existing but enhanced)
-- Add a mini sparkline per card showing follower trend
-- Add a "vs last period" change badge
+**AppSidebar.tsx changes:**
+- Replace the single `navItems` array with a grouped structure:
+  ```ts
+  const navGroups = [
+    { label: 'Overview', items: [{ to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' }] },
+    { label: 'Analytics', items: [
+      { to: '/posts', icon: FileText, label: 'Posts Analysis' },
+      { to: '/audience', icon: Users, label: 'Audience Insights' },
+      { to: '/sentiment', icon: Heart, label: 'Sentiment' },
+    ]},
+    { label: 'AI & Tools', items: [{ to: '/ai-tools', icon: Brain, label: 'AI Tools' }] },
+    { label: 'Account', items: [{ to: '/settings', icon: Settings, label: 'Settings' }] },
+  ];
+  ```
+- Render each group with a small uppercase label (hidden when sidebar is collapsed) and its nav items below
+- Remove `BarChart3` import (was for Reports)
 
-**5. Quick Actions & AI Section**
-- **AI Performance Digest** (existing, keep as-is)
-- **Quick Actions Row**: 3 action cards side-by-side
-  - "Generate Content Ideas" (triggers AI content ideas)
-  - "Analyze Sentiment" (triggers bulk sentiment analysis)
-  - "Detect Trends" (triggers trend detection)
-  - Each shows a brief result preview after running
+**App.tsx changes:**
+- Remove `import Reports` and the `/reports` route
 
-**6. Recent Activity Feed**
-- Latest 5 AI insights from `useCrossPlatformInsights` hook
-- Each insight shown as a compact card with icon, text, timestamp, and read/unread status
-
-### Data Sources (all existing hooks, no new backend needed)
-- `useDashboardSummaryApi` - top metrics
-- `usePlatformComparison` - platform cards
-- `useReachTrends` - reach chart
-- `useSentimentStatsApi` - sentiment donut
-- `useTopContentByReach` - top posts (already exists but unused on dashboard)
-- `useCrossPlatformInsights` - AI insights feed
-- `usePostsApi` - for sparkline data
-- `useAIPerformanceDigest` - digest section
-- `useAIContentIdeas`, `useDetectTrends`, `useAnalyzeSentimentApi` - quick actions
-
-### Design Details
-- Staggered framer-motion entrance animations (increasing delay per section)
-- Glass-morphism cards with `bg-card border border-border/60` and `boxShadow: var(--shadow-card)`
-- Glow hover effects on interactive cards
-- Consistent icon + title + subtitle headers per section
-- Recharts for all visualizations (AreaChart, PieChart, BarChart, RadialBarChart)
-- Premium skeleton loading states for each section
-
-### File Changes
-- **`src/pages/Dashboard.tsx`**: Full rewrite with all new sections. Extract sub-components inline (TopPostsTable, SentimentPanel, QuickActionsRow, ActivityFeed, EnhancedMetricCard, EngagementBreakdown)
-
-No database changes or new hooks needed -- all data sources already exist.
-
+**Reports.tsx:**
+- Delete the file entirely
