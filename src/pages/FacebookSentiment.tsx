@@ -47,7 +47,7 @@ export default function FacebookSentiment() {
 
   const handleAnalyze = async () => {
     try {
-      const result = await analyzeSentiment.mutateAsync();
+      const result = await analyzeSentiment.mutateAsync('facebook');
       await refetchComments();
       toast({
         title: 'Analysis complete',

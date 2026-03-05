@@ -69,7 +69,7 @@ export default function Sentiment() {
 
   const handleAnalyze = async () => {
     try {
-      const result = await analyzeSentiment.mutateAsync();
+      const result = await analyzeSentiment.mutateAsync('instagram');
       await Promise.all([refetchStats(), refetchComments()]);
       toast({
         title: 'Analysis complete',

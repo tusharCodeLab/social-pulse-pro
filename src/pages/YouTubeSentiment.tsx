@@ -55,7 +55,7 @@ export default function YouTubeSentiment() {
 
   const handleAnalyze = async () => {
     try {
-      const result = await analyzeSentiment.mutateAsync();
+      const result = await analyzeSentiment.mutateAsync('youtube');
       await refetchComments();
       toast({
         title: 'Analysis complete',
