@@ -79,7 +79,7 @@ function PlatformCard({ platform, metrics }: { platform: 'instagram' | 'youtube'
       <div className="p-4 relative z-10">
         <div className="flex items-center gap-2.5 mb-3">
           <div className="p-2 rounded-lg" style={{ backgroundColor: `${config.color}15` }}>
-            <Icon className="h-4 w-4" style={{ color: config.color }} />
+            <Icon className="h-4 w-4" />
           </div>
           <h3 className="text-sm font-bold text-foreground">{config.label}</h3>
         </div>
