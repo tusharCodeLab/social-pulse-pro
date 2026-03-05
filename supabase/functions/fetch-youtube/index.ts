@@ -175,6 +175,30 @@ serve(async (req) => {
       { onConflict: "user_id,platform,date", ignoreDuplicates: false }
     );
 
+    // Step 3.5: Clean up old posts & comments from previous channel syncs
+    const { data: oldPosts } = await supabase
+      .from("posts")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("platform", "youtube");
+
+    if (oldPosts && oldPosts.length > 0) {
+      const oldPostIds = oldPosts.map((p: any) => p.id);
+      await supabase
+        .from("post_comments")
+        .delete()
+        .eq("user_id", userId)
+        .in("post_id", oldPostIds);
+      console.log(`[YouTube] Deleted comments for ${oldPostIds.length} old posts`);
+    }
+
+    await supabase
+      .from("posts")
+      .delete()
+      .eq("user_id", userId)
+      .eq("platform", "youtube");
+    console.log("[YouTube] Cleaned up old YouTube posts");
+
     // Step 4: Fetch recent videos via search
     const searchRes = await fetch(
       `${YT_API}/search?part=snippet&channelId=${channelId}&type=video&order=date&maxResults=25&key=${API_KEY}`
