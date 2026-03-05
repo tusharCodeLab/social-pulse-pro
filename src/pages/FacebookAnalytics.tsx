@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   Eye, ThumbsUp, MessageCircle, Users, Share2,
-  TrendingUp, BarChart3, Activity, FileText, Facebook,
+  TrendingUp, BarChart3, Activity, FileText, Facebook, Image,
 } from 'lucide-react';
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -22,7 +22,9 @@ const tooltipStyle = {
   color: 'hsl(210, 40%, 98%)',
 };
 
-function MetricTile({ icon: Icon, label, value, color }: { icon: any; label: string; value: string; color?: string }) {
+function MetricTile({ icon: Icon, label, value, color }: {
+  icon: any; label: string; value: string; color?: string;
+}) {
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border bg-card p-4" style={{ boxShadow: 'var(--shadow-card)' }}>
       <div className="flex items-center gap-2 mb-2">
@@ -40,11 +42,6 @@ function formatNum(n: number) {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
   if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K';
   return n.toLocaleString();
-}
-
-// Facebook brand icon component
-function FacebookIcon({ className }: { className?: string }) {
-  return <Facebook className={className} />;
 }
 
 export default function FacebookAnalytics() {
@@ -72,12 +69,13 @@ export default function FacebookAnalytics() {
         likes: v.likes_count || 0,
         comments: v.comments_count || 0,
         shares: v.shares_count || 0,
+        reach: v.reach || 0,
       }));
   }, [posts]);
 
   const emptyChartMessage = (
     <div className="flex flex-col items-center justify-center h-full gap-2 text-center py-8">
-      <FacebookIcon className="h-8 w-8 text-muted-foreground/40" />
+      <Facebook className="h-8 w-8 text-muted-foreground/40" />
       <p className="text-sm text-muted-foreground">Connect your Facebook Page to see analytics</p>
       <p className="text-xs text-muted-foreground/60">Go to Settings → Connect Facebook</p>
     </div>
@@ -87,7 +85,7 @@ export default function FacebookAnalytics() {
     <>
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-[#1877F2]/10"><FacebookIcon className="h-6 w-6 text-[#1877F2]" /></div>
+          <div className="p-2.5 rounded-xl bg-[#1877F2]/10"><Facebook className="h-6 w-6 text-[#1877F2]" /></div>
           <div>
             <h1 className="text-2xl font-bold text-foreground">Facebook Page Overview</h1>
             <p className="text-xs text-muted-foreground mt-0.5">
@@ -96,7 +94,7 @@ export default function FacebookAnalytics() {
           </div>
         </div>
         <Badge variant="outline" className="gap-1.5 text-xs border-[#1877F2]/30 text-[#1877F2]">
-          <FacebookIcon className="h-3 w-3" /> Facebook
+          <Facebook className="h-3 w-3" /> Facebook
         </Badge>
       </motion.div>
 
@@ -158,17 +156,24 @@ export default function FacebookAnalytics() {
 
         <TabsContent value="engagement">
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border bg-card p-5" style={{ boxShadow: 'var(--shadow-card)' }}>
-            <div className="flex items-center gap-2 mb-1"><TrendingUp className="h-4 w-4 text-chart-reach" /><h3 className="text-sm font-semibold text-foreground">Engagement by Post</h3></div>
-            <p className="text-[10px] text-muted-foreground mb-4">Likes + Comments + Shares per post</p>
+            <div className="flex items-center gap-2 mb-1"><TrendingUp className="h-4 w-4 text-chart-reach" /><h3 className="text-sm font-semibold text-foreground">Engagement Rate by Post</h3></div>
+            <p className="text-[10px] text-muted-foreground mb-4">(Likes + Comments + Shares) / Reach × 100</p>
             <div className="h-[280px]">
               {hasData ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={postsTrend.map(v => ({ ...v, engagement: v.likes + v.comments + v.shares }))}>
+                  <BarChart data={postsTrend.map((v, i) => {
+                    const post = posts.filter(p => p.published_at).sort((a, b) => new Date(a.published_at!).getTime() - new Date(b.published_at!).getTime())[i];
+                    const reach = post?.reach || 0;
+                    return {
+                      ...v,
+                      engRate: reach > 0 ? (((post?.likes_count || 0) + (post?.comments_count || 0) + (post?.shares_count || 0)) / reach * 100).toFixed(2) : 0,
+                    };
+                  })}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(222,30%,15%)" />
                     <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="hsl(215,20%,50%)" />
-                    <YAxis tick={{ fontSize: 10 }} stroke="hsl(215,20%,50%)" />
+                    <YAxis tick={{ fontSize: 10 }} stroke="hsl(215,20%,50%)" unit="%" />
                     <Tooltip contentStyle={tooltipStyle} />
-                    <Bar dataKey="engagement" fill="hsl(214,89%,52%)" radius={[4, 4, 0, 0]} name="Engagement" />
+                    <Bar dataKey="engRate" fill="hsl(214,89%,52%)" radius={[4, 4, 0, 0]} name="Eng. Rate %" />
                   </BarChart>
                 </ResponsiveContainer>
               ) : emptyChartMessage}
@@ -183,7 +188,7 @@ export default function FacebookAnalytics() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-border">
-                    {['Post', 'Likes', 'Comments', 'Shares', 'Date'].map(h => (
+                    {['Post', 'Likes', 'Comments', 'Shares', 'Reach'].map(h => (
                       <th key={h} className={cn('py-2.5 px-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider', h === 'Post' ? 'text-left' : 'text-right')}>{h}</th>
                     ))}
                   </tr>
@@ -195,11 +200,11 @@ export default function FacebookAnalytics() {
                       .slice(0, 15)
                       .map(v => (
                         <tr key={v.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                          <td className="py-2.5 px-3 text-sm text-foreground max-w-xs truncate">{v.content || 'No text'}</td>
+                          <td className="py-2.5 px-3 text-sm text-foreground max-w-xs truncate">{v.content || 'No caption'}</td>
                           <td className="py-2.5 px-3 text-sm text-right text-foreground">{formatNum(v.likes_count || 0)}</td>
                           <td className="py-2.5 px-3 text-sm text-right text-foreground">{formatNum(v.comments_count || 0)}</td>
                           <td className="py-2.5 px-3 text-sm text-right text-foreground">{formatNum(v.shares_count || 0)}</td>
-                          <td className="py-2.5 px-3 text-sm text-right text-muted-foreground">{v.published_at ? format(new Date(v.published_at), 'MMM d, yyyy') : '—'}</td>
+                          <td className="py-2.5 px-3 text-sm text-right text-foreground">{formatNum(v.reach || 0)}</td>
                         </tr>
                       ))
                   ) : (
