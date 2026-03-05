@@ -11,10 +11,11 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import {
   useAudienceGrowthApi,
-  useAudienceSummaryApi,
   useBestPostingTimesApi,
 } from '@/hooks/useSocialApi';
 import { useCalculateBestTimes } from '@/hooks/useAIFeatures';
+import { useFacebookAccount } from '@/hooks/useFacebookData';
+import { useAudienceMetrics } from '@/hooks/useAudienceMetrics';
 
 const COLORS = {
   primary: 'hsl(214, 89%, 52%)',
