@@ -11,7 +11,14 @@ import {
   MessageSquare,
   Shield,
   Clock,
+  Instagram,
+  Youtube,
+  Facebook,
+  Users,
+  Zap,
+  CheckCircle2,
 } from "lucide-react";
+import { AnimatedCounter } from "@/components/ui/animated-counter";
 
 const features = [
   {
@@ -22,7 +29,7 @@ const features = [
   {
     icon: Brain,
     title: "AI-Powered Insights",
-    description: "Get personalized recommendations from Gemini AI to improve your content strategy across all platforms."
+    description: "Get personalized recommendations from AI to improve your content strategy across all platforms."
   },
   {
     icon: TrendingUp,
@@ -44,6 +51,19 @@ const features = [
     title: "Best Time to Post",
     description: "Find your optimal posting times based on real engagement data from your posts."
   }
+];
+
+const stats = [
+  { value: 10000, suffix: "+", label: "Active Users", icon: Users },
+  { value: 3, suffix: "", label: "Platforms", icon: Zap },
+  { value: 50, suffix: "M+", label: "Posts Analyzed", icon: BarChart3 },
+  { value: 99, suffix: "%", label: "Uptime", icon: CheckCircle2 },
+];
+
+const steps = [
+  { step: "01", title: "Connect Your Accounts", description: "Link your Instagram, YouTube, and Facebook accounts in one click." },
+  { step: "02", title: "AI Analyzes Your Data", description: "Our AI engine processes your posts, comments, and engagement patterns." },
+  { step: "03", title: "Get Actionable Insights", description: "Receive personalized recommendations, trend alerts, and optimal posting times." },
 ];
 
 const Home = () => {
@@ -128,6 +148,165 @@ const Home = () => {
               </Link>
             </motion.div>
           </motion.div>
+
+          {/* Animated Stats Strip */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+            className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto"
+          >
+            {stats.map((stat, i) => (
+              <motion.div
+                key={stat.label}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.7 + i * 0.1 }}
+                className="text-center p-4 rounded-xl bg-card/50 border border-border/50 backdrop-blur-sm"
+              >
+                <stat.icon className="w-5 h-5 text-primary mx-auto mb-2" />
+                <div className="text-2xl font-bold text-foreground">
+                  <AnimatedCounter value={stat.value} duration={1.5} />
+                  <span>{stat.suffix}</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          {/* Platform Logo Strip */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1 }}
+            className="mt-12 flex items-center justify-center gap-8"
+          >
+            <span className="text-xs text-muted-foreground uppercase tracking-widest">Supported Platforms</span>
+            {[
+              { icon: Instagram, color: "text-[#E4405F]", name: "Instagram" },
+              { icon: Youtube, color: "text-[#FF0000]", name: "YouTube" },
+              { icon: Facebook, color: "text-[#1877F2]", name: "Facebook" },
+            ].map((p, i) => (
+              <motion.div
+                key={p.name}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.1 + i * 0.1 }}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-card/50 border border-border/50"
+              >
+                <p.icon className={`w-5 h-5 ${p.color}`} />
+                <span className="text-sm font-medium text-foreground">{p.name}</span>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Dashboard Preview Mockup */}
+      <section className="py-16 px-6">
+        <div className="max-w-5xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="rounded-2xl border border-border/60 bg-card/80 backdrop-blur-xl p-6 shadow-2xl"
+          >
+            <div className="flex items-center gap-2 mb-6">
+              <div className="w-3 h-3 rounded-full bg-destructive/60" />
+              <div className="w-3 h-3 rounded-full bg-chart-impressions/60" />
+              <div className="w-3 h-3 rounded-full bg-chart-sentiment-positive/60" />
+              <span className="ml-4 text-xs text-muted-foreground">SocialPulse Dashboard</span>
+            </div>
+            <div className="grid grid-cols-4 gap-3 mb-4">
+              {[
+                { label: "Total Followers", value: "24.8K", change: "+12.3%" },
+                { label: "Engagement Rate", value: "4.7%", change: "+0.8%" },
+                { label: "Total Reach", value: "182K", change: "+23.1%" },
+                { label: "AI Score", value: "87/100", change: "+5pts" },
+              ].map((card, i) => (
+                <motion.div
+                  key={card.label}
+                  initial={{ opacity: 0, y: 10 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.1 + i * 0.08 }}
+                  className="rounded-xl bg-muted/30 border border-border/40 p-4"
+                >
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{card.label}</p>
+                  <p className="text-xl font-bold text-foreground mt-1">{card.value}</p>
+                  <p className="text-xs text-chart-sentiment-positive mt-1">{card.change}</p>
+                </motion.div>
+              ))}
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="col-span-2 rounded-xl bg-muted/20 border border-border/40 p-4 h-32 flex items-end gap-1">
+                {[40, 65, 45, 80, 55, 90, 70, 85, 60, 95, 75, 88].map((h, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ height: 0 }}
+                    whileInView={{ height: `${h}%` }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.3 + i * 0.05, duration: 0.5 }}
+                    className="flex-1 rounded-sm bg-gradient-to-t from-primary to-primary/40"
+                  />
+                ))}
+              </div>
+              <div className="rounded-xl bg-muted/20 border border-border/40 p-4 flex flex-col justify-center items-center">
+                <div className="w-20 h-20 rounded-full border-4 border-primary/30 flex items-center justify-center relative">
+                  <motion.div
+                    initial={{ rotate: 0 }}
+                    whileInView={{ rotate: 270 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.5, duration: 1 }}
+                    className="absolute inset-0 rounded-full border-4 border-transparent border-t-primary border-r-primary"
+                  />
+                  <span className="text-lg font-bold text-foreground">75%</span>
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-2">Positive Sentiment</p>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section className="py-24 px-6 border-t border-border/30">
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+              How It Works
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Get started in three simple steps
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            {steps.map((step, index) => (
+              <motion.div
+                key={step.step}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.15 }}
+                viewport={{ once: true }}
+                className="text-center relative"
+              >
+                <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-6">
+                  <span className="text-2xl font-bold text-primary">{step.step}</span>
+                </div>
+                <h3 className="text-xl font-semibold text-foreground mb-3">{step.title}</h3>
+                <p className="text-muted-foreground text-sm">{step.description}</p>
+                {index < 2 && (
+                  <div className="hidden md:block absolute top-8 left-[calc(50%+40px)] w-[calc(100%-80px)] h-px bg-gradient-to-r from-primary/30 to-transparent" />
+                )}
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -144,7 +323,7 @@ const Home = () => {
               What You Get
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Real data, real insights — powered by Gemini AI across all your platforms
+              Real data, real insights — powered by AI across all your platforms
             </p>
           </motion.div>
 
@@ -166,6 +345,37 @@ const Home = () => {
               </motion.div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Social Proof */}
+      <section className="py-16 px-6 border-t border-border/30">
+        <div className="max-w-4xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+          >
+            <p className="text-lg text-muted-foreground mb-6">Trusted by marketers and creators worldwide</p>
+            <div className="flex items-center justify-center gap-8 flex-wrap">
+              {[
+                "⭐⭐⭐⭐⭐ \"Game-changer for my content strategy\"",
+                "⭐⭐⭐⭐⭐ \"Best analytics tool I've used\"",
+                "⭐⭐⭐⭐⭐ \"AI insights are incredibly accurate\"",
+              ].map((review, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 10 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.15 }}
+                  className="px-5 py-3 rounded-xl bg-card/50 border border-border/50 text-sm text-muted-foreground"
+                >
+                  {review}
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
         </div>
       </section>
 

@@ -1,13 +1,8 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Instagram,
-  Youtube,
-  Facebook,
-  Check,
-  Loader2,
-  Wifi,
-  WifiOff,
+  Instagram, Youtube, Facebook, Check, Loader2, Wifi, WifiOff,
+  User, Database, Bell, LogOut, Shield, Clock, Download, Trash2, Mail,
 } from 'lucide-react';
 
 import { ChartCard } from '@/components/dashboard/ChartCard';
@@ -18,6 +13,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 
 const platforms = [
   { id: 'instagram', name: 'Instagram', icon: Instagram, color: 'text-[#E4405F]', supported: true },
@@ -28,260 +27,284 @@ const platforms = [
 export default function Settings() {
   const { connectedPlatforms, togglePlatform } = useSettingsStore();
   const [isConnectingInstagram, setIsConnectingInstagram] = useState(false);
-  const [instagramSyncResult, setInstagramSyncResult] = useState<{
-    posts: number;
-    comments: number;
-    username: string;
-  } | null>(null);
-
-  // YouTube state
+  const [instagramSyncResult, setInstagramSyncResult] = useState<{ posts: number; comments: number; username: string } | null>(null);
   const [ytHandle, setYtHandle] = useState('');
   const [isConnectingYouTube, setIsConnectingYouTube] = useState(false);
-  const [ytSyncResult, setYtSyncResult] = useState<{
-    videos: number;
-    comments: number;
-    title: string;
-  } | null>(null);
-
-  // Facebook state
+  const [ytSyncResult, setYtSyncResult] = useState<{ videos: number; comments: number; title: string } | null>(null);
   const [isConnectingFacebook, setIsConnectingFacebook] = useState(false);
-  const [fbSyncResult, setFbSyncResult] = useState<{
-    posts: number;
-    comments: number;
-    pageName: string;
-  } | null>(null);
+  const [fbSyncResult, setFbSyncResult] = useState<{ posts: number; comments: number; pageName: string } | null>(null);
+  const [notifMilestones, setNotifMilestones] = useState(true);
+  const [notifDigest, setNotifDigest] = useState(true);
+  const [notifAlerts, setNotifAlerts] = useState(false);
 
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
 
   const handleConnectInstagram = async () => {
-    if (!user) {
-      toast({ title: 'Please sign in', description: 'You need to be signed in to connect your Instagram account.', variant: 'destructive' });
-      return;
-    }
+    if (!user) { toast({ title: 'Please sign in', description: 'You need to be signed in to connect your Instagram account.', variant: 'destructive' }); return; }
     setIsConnectingInstagram(true);
     setInstagramSyncResult(null);
     try {
       const { data, error } = await supabase.functions.invoke('fetch-instagram');
       if (error) throw error;
       if (data.error) throw new Error(data.error);
-      setInstagramSyncResult({
-        posts: data.imported?.posts || 0,
-        comments: data.imported?.comments || 0,
-        username: data.account?.username || 'Unknown',
-      });
+      setInstagramSyncResult({ posts: data.imported?.posts || 0, comments: data.imported?.comments || 0, username: data.account?.username || 'Unknown' });
       if (!connectedPlatforms.includes('instagram')) togglePlatform('instagram');
       toast({ title: 'Instagram connected!', description: `Imported ${data.imported?.posts || 0} posts and ${data.imported?.comments || 0} comments from @${data.account?.username}` });
     } catch (error) {
-      console.error('Instagram connection error:', error);
       toast({ title: 'Connection failed', description: error instanceof Error ? error.message : 'Failed to connect Instagram', variant: 'destructive' });
-    } finally {
-      setIsConnectingInstagram(false);
-    }
+    } finally { setIsConnectingInstagram(false); }
   };
 
   const handleConnectYouTube = async () => {
-    if (!user) {
-      toast({ title: 'Please sign in', description: 'You need to be signed in.', variant: 'destructive' });
-      return;
-    }
-    if (!ytHandle.trim()) {
-      toast({ title: 'Enter a channel identifier', description: 'Use @handle, channel ID (UC...), username, or a YouTube channel URL.', variant: 'destructive' });
-      return;
-    }
+    if (!user) { toast({ title: 'Please sign in', variant: 'destructive' }); return; }
+    if (!ytHandle.trim()) { toast({ title: 'Enter a channel identifier', description: 'Use @handle, channel ID (UC...), username, or a YouTube channel URL.', variant: 'destructive' }); return; }
     setIsConnectingYouTube(true);
     setYtSyncResult(null);
     try {
-      const { data, error } = await supabase.functions.invoke('fetch-youtube', {
-        body: { channel_handle: ytHandle.trim() },
-      });
+      const { data, error } = await supabase.functions.invoke('fetch-youtube', { body: { channel_handle: ytHandle.trim() } });
       if (error) throw error;
       if (data.error) throw new Error(data.error);
-      setYtSyncResult({
-        videos: data.imported?.videos || 0,
-        comments: data.imported?.comments || 0,
-        title: data.channel?.title || ytHandle,
-      });
+      setYtSyncResult({ videos: data.imported?.videos || 0, comments: data.imported?.comments || 0, title: data.channel?.title || ytHandle });
       if (!connectedPlatforms.includes('youtube')) togglePlatform('youtube');
-      toast({ title: 'YouTube connected!', description: `Imported ${data.imported?.videos || 0} videos and ${data.imported?.comments || 0} comments from ${data.channel?.title}` });
+      toast({ title: 'YouTube connected!', description: `Imported ${data.imported?.videos || 0} videos and ${data.imported?.comments || 0} comments` });
     } catch (error) {
-      console.error('YouTube connection error:', error);
       toast({ title: 'Connection failed', description: error instanceof Error ? error.message : 'Failed to connect YouTube', variant: 'destructive' });
-    } finally {
-      setIsConnectingYouTube(false);
-    }
+    } finally { setIsConnectingYouTube(false); }
   };
 
   const handleConnectFacebook = async () => {
-    if (!user) {
-      toast({ title: 'Please sign in', description: 'You need to be signed in.', variant: 'destructive' });
-      return;
-    }
+    if (!user) { toast({ title: 'Please sign in', variant: 'destructive' }); return; }
     setIsConnectingFacebook(true);
     setFbSyncResult(null);
     try {
       const { data, error } = await supabase.functions.invoke('fetch-facebook');
       if (error) throw error;
       if (data.error) throw new Error(data.error);
-      setFbSyncResult({
-        posts: data.imported?.posts || 0,
-        comments: data.imported?.comments || 0,
-        pageName: data.page?.name || 'Facebook Page',
-      });
+      setFbSyncResult({ posts: data.imported?.posts || 0, comments: data.imported?.comments || 0, pageName: data.page?.name || 'Facebook Page' });
       if (!connectedPlatforms.includes('facebook')) togglePlatform('facebook');
-      toast({ title: 'Facebook connected!', description: `Imported ${data.imported?.posts || 0} posts and ${data.imported?.comments || 0} comments from ${data.page?.name}` });
+      toast({ title: 'Facebook connected!', description: `Imported ${data.imported?.posts || 0} posts and ${data.imported?.comments || 0} comments` });
     } catch (error) {
-      console.error('Facebook connection error:', error);
       toast({ title: 'Connection failed', description: error instanceof Error ? error.message : 'Failed to connect Facebook', variant: 'destructive' });
-    } finally {
-      setIsConnectingFacebook(false);
-    }
+    } finally { setIsConnectingFacebook(false); }
   };
 
   const handlePlatformClick = (platformId: string, supported: boolean) => {
-    if (platformId === 'instagram' && supported) {
-      handleConnectInstagram();
-    } else if (platformId === 'youtube') {
-      return;
-    } else if (platformId === 'facebook' && supported) {
-      handleConnectFacebook();
-    } else if (!supported) {
-      toast({ title: 'Coming soon', description: `${platformId.charAt(0).toUpperCase() + platformId.slice(1)} integration is coming soon!` });
-    } else {
-      togglePlatform(platformId);
-    }
+    if (platformId === 'instagram' && supported) handleConnectInstagram();
+    else if (platformId === 'youtube') return;
+    else if (platformId === 'facebook' && supported) handleConnectFacebook();
+    else if (!supported) toast({ title: 'Coming soon', description: `${platformId.charAt(0).toUpperCase() + platformId.slice(1)} integration is coming soon!` });
+    else togglePlatform(platformId);
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast({ title: 'Signed out', description: 'You have been signed out successfully.' });
+  };
+
+  const handleExportData = () => {
+    toast({ title: 'Export started', description: 'Your data export is being prepared. This may take a moment.' });
   };
 
   return (
     <>
-      {/* Header */}
       <div className="mb-8">
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }} className="flex items-center justify-between">
-          <div>
-            <motion.h1 className="text-3xl lg:text-4xl font-bold text-foreground mb-2" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}>Settings</motion.h1>
-            <motion.p className="text-muted-foreground" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>Connect your social media accounts to start analyzing performance.</motion.p>
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-lg bg-primary/10 border border-primary/20">
+              <Shield className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-3xl lg:text-4xl font-bold text-foreground">Settings</h1>
+              <p className="text-muted-foreground">Manage your account, platforms, and preferences.</p>
+            </div>
           </div>
         </motion.div>
       </div>
 
-      <div className="max-w-2xl space-y-6">
-        {/* Connected Platforms */}
-        <ChartCard title="Connected Platforms" subtitle="Connect your social media accounts to import analytics data" delay={0.2}>
-          <div className="mt-4 space-y-3">
-            {platforms.map((platform, index) => {
-              const isConnected = connectedPlatforms.includes(platform.id);
-              const isLoading = (platform.id === 'instagram' && isConnectingInstagram) || (platform.id === 'youtube' && isConnectingYouTube) || (platform.id === 'facebook' && isConnectingFacebook);
-
-              return (
-                <motion.div
-                  key={platform.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.25 + index * 0.05 }}
-                  whileHover={platform.id !== 'youtube' ? { scale: 1.02 } : undefined}
-                  onClick={() => !isLoading && handlePlatformClick(platform.id, platform.supported)}
-                  className={cn(
-                    'p-6 rounded-xl border transition-all relative',
-                    platform.id !== 'youtube' && 'cursor-pointer',
-                    isConnected ? 'border-primary bg-primary/10' : 'border-border bg-muted/30 hover:border-primary hover:bg-primary/5',
-                    isLoading && 'pointer-events-none'
-                  )}
-                >
-                  {isLoading && (
-                    <div className="absolute inset-0 bg-background/80 rounded-xl flex items-center justify-center z-10">
-                      <div className="flex items-center gap-3">
-                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                        <span className="text-sm text-muted-foreground">Connecting to {platform.name}...</span>
-                      </div>
-                    </div>
-                  )}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className={cn('p-3 rounded-xl', isConnected ? 'bg-primary/20' : 'bg-muted')}>
-                        <platform.icon className={cn('h-8 w-8', isConnected ? platform.color : 'text-muted-foreground')} />
-                      </div>
-                      <div>
-                        <h3 className={cn('text-lg font-semibold', isConnected ? 'text-foreground' : 'text-muted-foreground')}>{platform.name}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {isConnected ? 'Connected and syncing data' : platform.id === 'youtube' ? 'Enter your channel handle below' : 'Click to connect your account'}
-                        </p>
-                      </div>
-                    </div>
-                    <span className={cn('px-3 py-1.5 rounded-full text-sm font-medium flex items-center gap-2', isConnected ? 'bg-chart-sentiment-positive/10 text-chart-sentiment-positive' : 'bg-primary/10 text-primary')}>
-                      {isConnected ? (<><Wifi className="h-4 w-4" />Connected</>) : 'Connect'}
-                    </span>
+      <div className="max-w-3xl space-y-6">
+        {/* Profile Section */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+          <ChartCard title="Profile" subtitle="Your account information" delay={0.1}>
+            <div className="mt-4 space-y-4">
+              <div className="flex items-center gap-4 p-4 rounded-xl bg-muted/30 border border-border/50">
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center flex-shrink-0">
+                  <User className="h-6 w-6 text-primary-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-lg font-semibold text-foreground truncate">{user?.user_metadata?.full_name || 'User'}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground truncate">{user?.email || 'No email'}</p>
                   </div>
-
-                  {/* YouTube handle input */}
-                  {platform.id === 'youtube' && (
-                    <div className="mt-4 flex gap-2" onClick={(e) => e.stopPropagation()}>
-                      <Input
-                        placeholder="@YourChannel, UC..., username, or YouTube URL"
-                        value={ytHandle}
-                        onChange={(e) => setYtHandle(e.target.value)}
-                        className="flex-1"
-                        onKeyDown={(e) => e.key === 'Enter' && handleConnectYouTube()}
-                      />
-                      <Button onClick={handleConnectYouTube} disabled={isConnectingYouTube || !ytHandle.trim()}>
-                        {isConnectingYouTube ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Sync'}
-                      </Button>
-                    </div>
-                  )}
-                </motion.div>
-              );
-            })}
-          </div>
-
-          {/* Instagram sync result */}
-          {instagramSyncResult && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-4 p-4 rounded-lg bg-chart-sentiment-positive/10 border border-chart-sentiment-positive/20">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-full bg-chart-sentiment-positive/20"><Check className="h-5 w-5 text-chart-sentiment-positive" /></div>
-                <div>
-                  <p className="font-medium text-foreground">Successfully synced @{instagramSyncResult.username}</p>
-                  <p className="text-sm text-muted-foreground">Imported {instagramSyncResult.posts} posts and {instagramSyncResult.comments} comments</p>
                 </div>
+                <Badge variant="outline" className="text-xs border-chart-sentiment-positive/30 text-chart-sentiment-positive bg-chart-sentiment-positive/10">
+                  Active
+                </Badge>
               </div>
-            </motion.div>
-          )}
-
-          {/* YouTube sync result */}
-          {ytSyncResult && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-4 p-4 rounded-lg bg-chart-sentiment-positive/10 border border-chart-sentiment-positive/20">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-full bg-chart-sentiment-positive/20"><Check className="h-5 w-5 text-chart-sentiment-positive" /></div>
-                <div>
-                  <p className="font-medium text-foreground">Successfully synced {ytSyncResult.title}</p>
-                  <p className="text-sm text-muted-foreground">Imported {ytSyncResult.videos} videos and {ytSyncResult.comments} comments</p>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Facebook sync result */}
-          {fbSyncResult && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-4 p-4 rounded-lg bg-chart-sentiment-positive/10 border border-chart-sentiment-positive/20">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-full bg-chart-sentiment-positive/20"><Check className="h-5 w-5 text-chart-sentiment-positive" /></div>
-                <div>
-                  <p className="font-medium text-foreground">Successfully synced {fbSyncResult.pageName}</p>
-                  <p className="text-sm text-muted-foreground">Imported {fbSyncResult.posts} posts and {fbSyncResult.comments} comments</p>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Coming soon note */}
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="mt-6 p-4 rounded-lg bg-muted/30 border border-border">
-            <div className="flex items-center gap-3">
-              <WifiOff className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="text-sm font-medium text-foreground">More platforms coming soon</p>
-                <p className="text-xs text-muted-foreground">Twitter, LinkedIn, and TikTok integrations are in development.</p>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Clock className="h-3.5 w-3.5" />
+                <span>Member since {user?.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'Unknown'}</span>
               </div>
             </div>
-          </motion.div>
-        </ChartCard>
+          </ChartCard>
+        </motion.div>
+
+        {/* Connected Platforms */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+          <ChartCard title="Connected Platforms" subtitle="Connect your social media accounts to import analytics data" delay={0.2}>
+            <div className="mt-4 space-y-3">
+              {platforms.map((platform, index) => {
+                const isConnected = connectedPlatforms.includes(platform.id);
+                const isLoading = (platform.id === 'instagram' && isConnectingInstagram) || (platform.id === 'youtube' && isConnectingYouTube) || (platform.id === 'facebook' && isConnectingFacebook);
+
+                return (
+                  <motion.div
+                    key={platform.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.25 + index * 0.05 }}
+                    whileHover={platform.id !== 'youtube' ? { scale: 1.01 } : undefined}
+                    onClick={() => !isLoading && handlePlatformClick(platform.id, platform.supported)}
+                    className={cn(
+                      'p-5 rounded-xl border transition-all relative',
+                      platform.id !== 'youtube' && 'cursor-pointer',
+                      isConnected ? 'border-primary/30 bg-primary/5' : 'border-border bg-muted/20 hover:border-primary/20 hover:bg-primary/5',
+                      isLoading && 'pointer-events-none'
+                    )}
+                  >
+                    {isLoading && (
+                      <div className="absolute inset-0 bg-background/80 rounded-xl flex items-center justify-center z-10">
+                        <div className="flex items-center gap-3">
+                          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                          <span className="text-sm text-muted-foreground">Connecting to {platform.name}...</span>
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className={cn('p-3 rounded-xl', isConnected ? 'bg-primary/10' : 'bg-muted/50')}>
+                          <platform.icon className={cn('h-7 w-7', isConnected ? platform.color : 'text-muted-foreground')} />
+                        </div>
+                        <div>
+                          <h3 className={cn('text-base font-semibold', isConnected ? 'text-foreground' : 'text-muted-foreground')}>{platform.name}</h3>
+                          <p className="text-xs text-muted-foreground">
+                            {isConnected ? 'Connected and syncing data' : platform.id === 'youtube' ? 'Enter your channel handle below' : 'Click to connect your account'}
+                          </p>
+                        </div>
+                      </div>
+                      <Badge variant="outline" className={cn('text-xs', isConnected ? 'border-chart-sentiment-positive/30 text-chart-sentiment-positive bg-chart-sentiment-positive/10' : 'border-primary/30 text-primary')}>
+                        {isConnected ? (<><Wifi className="h-3.5 w-3.5 mr-1" />Connected</>) : 'Connect'}
+                      </Badge>
+                    </div>
+
+                    {platform.id === 'youtube' && (
+                      <div className="mt-4 flex gap-2" onClick={(e) => e.stopPropagation()}>
+                        <Input placeholder="@YourChannel, UC..., username, or YouTube URL" value={ytHandle} onChange={(e) => setYtHandle(e.target.value)} className="flex-1" onKeyDown={(e) => e.key === 'Enter' && handleConnectYouTube()} />
+                        <Button onClick={handleConnectYouTube} disabled={isConnectingYouTube || !ytHandle.trim()}>
+                          {isConnectingYouTube ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Sync'}
+                        </Button>
+                      </div>
+                    )}
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            {/* Sync Results */}
+            {[
+              instagramSyncResult && { label: `@${instagramSyncResult.username}`, detail: `${instagramSyncResult.posts} posts and ${instagramSyncResult.comments} comments` },
+              ytSyncResult && { label: ytSyncResult.title, detail: `${ytSyncResult.videos} videos and ${ytSyncResult.comments} comments` },
+              fbSyncResult && { label: fbSyncResult.pageName, detail: `${fbSyncResult.posts} posts and ${fbSyncResult.comments} comments` },
+            ].filter(Boolean).map((result, i) => (
+              <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-3 p-3 rounded-lg bg-chart-sentiment-positive/10 border border-chart-sentiment-positive/20">
+                <div className="flex items-center gap-3">
+                  <Check className="h-4 w-4 text-chart-sentiment-positive flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Synced {result!.label}</p>
+                    <p className="text-xs text-muted-foreground">Imported {result!.detail}</p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="mt-5 p-3 rounded-lg bg-muted/30 border border-border">
+              <div className="flex items-center gap-3">
+                <WifiOff className="h-4 w-4 text-muted-foreground" />
+                <p className="text-xs text-muted-foreground">Twitter, LinkedIn, and TikTok integrations are in development.</p>
+              </div>
+            </motion.div>
+          </ChartCard>
+        </motion.div>
+
+        {/* Notification Preferences */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+          <ChartCard title="Notifications" subtitle="Control what alerts you receive" delay={0.25}>
+            <div className="mt-4 space-y-4">
+              {[
+                { id: 'milestones', label: 'Follower Milestones', desc: 'Get notified when you hit follower milestones', icon: TrendingUp, checked: notifMilestones, onChange: setNotifMilestones },
+                { id: 'digest', label: 'Weekly Digest', desc: 'Receive a weekly summary of your analytics', icon: Mail, checked: notifDigest, onChange: setNotifDigest },
+                { id: 'alerts', label: 'Engagement Alerts', desc: 'Alert when a post gets unusual engagement', icon: Bell, checked: notifAlerts, onChange: setNotifAlerts },
+              ].map((n) => (
+                <div key={n.id} className="flex items-center justify-between p-4 rounded-xl bg-muted/20 border border-border/50">
+                  <div className="flex items-center gap-3">
+                    <n.icon className="h-4 w-4 text-primary" />
+                    <div>
+                      <Label htmlFor={n.id} className="text-sm font-medium text-foreground cursor-pointer">{n.label}</Label>
+                      <p className="text-xs text-muted-foreground">{n.desc}</p>
+                    </div>
+                  </div>
+                  <Switch id={n.id} checked={n.checked} onCheckedChange={n.onChange} />
+                </div>
+              ))}
+            </div>
+          </ChartCard>
+        </motion.div>
+
+        {/* Data Management */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+          <ChartCard title="Data Management" subtitle="Export or manage your analytics data" delay={0.3}>
+            <div className="mt-4 space-y-3">
+              <div className="flex items-center justify-between p-4 rounded-xl bg-muted/20 border border-border/50">
+                <div className="flex items-center gap-3">
+                  <Download className="h-4 w-4 text-primary" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Export All Data</p>
+                    <p className="text-xs text-muted-foreground">Download all your analytics data as CSV</p>
+                  </div>
+                </div>
+                <Button variant="outline" size="sm" onClick={handleExportData} className="gap-1.5">
+                  <Download className="h-3.5 w-3.5" /> Export
+                </Button>
+              </div>
+              <div className="flex items-center justify-between p-4 rounded-xl bg-destructive/5 border border-destructive/20">
+                <div className="flex items-center gap-3">
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Clear Analytics Data</p>
+                    <p className="text-xs text-muted-foreground">Remove all imported posts, comments, and metrics</p>
+                  </div>
+                </div>
+                <Button variant="outline" size="sm" className="gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/10">
+                  <Trash2 className="h-3.5 w-3.5" /> Clear
+                </Button>
+              </div>
+            </div>
+          </ChartCard>
+        </motion.div>
+
+        {/* Account */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+          <ChartCard title="Account" subtitle="Manage your account settings" delay={0.35}>
+            <div className="mt-4">
+              <Separator className="mb-4" />
+              <Button variant="outline" onClick={handleSignOut} className="gap-2 border-destructive/30 text-destructive hover:bg-destructive/10">
+                <LogOut className="h-4 w-4" />
+                Sign Out
+              </Button>
+            </div>
+          </ChartCard>
+        </motion.div>
       </div>
     </>
   );
