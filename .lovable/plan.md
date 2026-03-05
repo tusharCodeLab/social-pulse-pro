@@ -1,47 +1,76 @@
 
 
-## Fix: Clean Up Stale YouTube Data When Switching Channels
+# Sidebar Restructure and Cleanup
 
-### Root Cause
+## What Changes
 
-The user's actual channel is `@studywithfun4065` (2 subscribers), but the database contains videos from a previously synced channel (Raj Shamani -- millions of views). This happened because:
+### 1. Remove Non-Working Features
+- **Remove the Reports page** (`/reports` route, `Reports.tsx`) -- it's a "Coming Soon" placeholder with no functionality
+- **Remove the Reports entry** from the sidebar navigation
 
-1. The `social_accounts` table upserts on `user_id,platform`, so switching channels correctly updates the account record
-2. But the `posts` table upserts on `user_id,external_post_id` -- old posts from the previous channel are never deleted, they just accumulate
-3. The YouTube Overview page aggregates ALL YouTube posts for the user, so it shows totals from both channels combined
+### 2. Reorganize Sidebar into Grouped Sections
+Instead of a flat list of 7 items, organize into logical groups with section labels:
 
-The displayed 30.3M views, 885.2K likes, etc. are from the old Raj Shamani sync, not from the user's actual channel.
-
-### Fix
-
-**`supabase/functions/fetch-youtube/index.ts`** -- Add a cleanup step after upserting the social account but before inserting new posts:
-
-1. After Step 2 (social account upsert), delete all existing YouTube posts for this user that were created before the current sync. This ensures that when a user switches channels, stale data from the previous channel is removed.
-2. Also delete associated comments for those posts (cascade should handle this if FK is set, but explicit delete as safety).
-
-Specifically, add between Step 3 and Step 4:
+```text
++-------------------------------+
+|  [Logo] Analytics             |
+|          Social Dashboard     |
++-------------------------------+
+|  [AI-Powered badge]           |
++-------------------------------+
+|                               |
+|  OVERVIEW                     |
+|    Dashboard                  |
+|                               |
+|  ANALYTICS                    |
+|    Posts Analysis              |
+|    Audience Insights           |
+|    Sentiment                   |
+|                               |
+|  AI & TOOLS                   |
+|    AI Tools                    |
+|                               |
+|  ACCOUNT                      |
+|    Settings                    |
+|                               |
++-------------------------------+
+|  [User info]                  |
+|  [Sign Out]                   |
+|  [Collapse]                   |
++-------------------------------+
 ```
-// Step 3.5: Clean up old posts from previous channel syncs
-await supabase.from('post_comments')
-  .delete()
-  .eq('user_id', userId)
-  .in('post_id', 
-    (select post IDs where platform = youtube and user_id = userId)
-  );
 
-await supabase.from('posts')
-  .delete()
-  .eq('user_id', userId)
-  .eq('platform', 'youtube');
-```
+### 3. Files to Modify
+- **`src/components/navigation/AppSidebar.tsx`** -- Replace flat `navItems` array with grouped sections; add section labels that hide when collapsed
+- **`src/App.tsx`** -- Remove the `/reports` route
+- **`src/pages/Reports.tsx`** -- Delete this file
 
-This is a simple delete-before-insert pattern. Since we're about to upsert all current videos anyway, clearing old data first ensures only real data from the currently connected channel exists.
+### 4. Files Unchanged
+- `SidebarNavLink.tsx` -- Works as-is, no changes needed
+- `DashboardLayout.tsx` -- No changes needed
+- All other pages remain intact
 
-### What This Fixes
-- YouTube Overview metrics (views, likes, comments, video count) will only reflect the user's actual connected channel
-- Charts and tables will show correct per-video data
-- Dashboard cross-platform cards will show accurate YouTube numbers
+## Technical Details
 
-### No Frontend Changes Needed
-The `YouTubeAnalytics.tsx` page and hooks are correct -- they simply aggregate whatever is in the `posts` table. The problem is the data, not the display logic.
+**AppSidebar.tsx changes:**
+- Replace the single `navItems` array with a grouped structure:
+  ```ts
+  const navGroups = [
+    { label: 'Overview', items: [{ to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' }] },
+    { label: 'Analytics', items: [
+      { to: '/posts', icon: FileText, label: 'Posts Analysis' },
+      { to: '/audience', icon: Users, label: 'Audience Insights' },
+      { to: '/sentiment', icon: Heart, label: 'Sentiment' },
+    ]},
+    { label: 'AI & Tools', items: [{ to: '/ai-tools', icon: Brain, label: 'AI Tools' }] },
+    { label: 'Account', items: [{ to: '/settings', icon: Settings, label: 'Settings' }] },
+  ];
+  ```
+- Render each group with a small uppercase label (hidden when sidebar is collapsed) and its nav items below
+- Remove `BarChart3` import (was for Reports)
 
+**App.tsx changes:**
+- Remove `import Reports` and the `/reports` route
+
+**Reports.tsx:**
+- Delete the file entirely
