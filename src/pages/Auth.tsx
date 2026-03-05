@@ -91,7 +91,10 @@ const Auth = () => {
       const passwordResult = passwordSchema.safeParse(password);
       if (!passwordResult.success) newErrors.password = passwordResult.error.errors[0].message;
       else if (!isStrongPassword(password)) {
-      newErrors.password = "Password must meet all requirements above";
+        newErrors.password = "Password must meet all requirements above";
+      }
+    } else if (!password) {
+      newErrors.password = "Password is required";
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
