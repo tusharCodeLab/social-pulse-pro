@@ -146,8 +146,8 @@ export function useSentimentStatsApi(platform?: SocialPlatform) {
 export function useAnalyzeSentimentApi() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async () => {
-      const response = await socialApi.comments.analyzeSentiment();
+    mutationFn: async (platform?: SocialPlatform) => {
+      const response = await socialApi.comments.analyzeSentiment(platform);
       return response.data;
     },
     onSuccess: () => {

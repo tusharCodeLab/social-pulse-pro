@@ -309,13 +309,19 @@ export const commentsApi = {
     };
   },
 
-  async analyzeSentiment(): Promise<APIResponse<{ analyzed: number }>> {
-    // Get unanalyzed comments
-    const { data: comments, error: fetchError } = await supabase
+  async analyzeSentiment(platform?: SocialPlatform): Promise<APIResponse<{ analyzed: number }>> {
+    // Get unanalyzed comments, optionally filtered by platform
+    let query = supabase
       .from('post_comments')
-      .select('id, content')
+      .select('id, content, posts!inner(platform)')
       .is('sentiment', null)
       .limit(50);
+
+    if (platform) {
+      query = query.eq('posts.platform', platform);
+    }
+
+    const { data: comments, error: fetchError } = await query;
 
     if (fetchError) throw fetchError;
 
