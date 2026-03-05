@@ -58,19 +58,6 @@ export default function YouTubePostsAnalysis() {
       }));
   }, [videos]);
 
-  // Content type breakdown
-  const contentTypes = useMemo(() => {
-    const types: Record<string, { count: number; views: number; likes: number }> = {};
-    videos.forEach(v => {
-      const t = v.post_type || 'video';
-      if (!types[t]) types[t] = { count: 0, views: 0, likes: 0 };
-      types[t].count++;
-      types[t].views += v.reach || 0;
-      types[t].likes += v.likes_count || 0;
-    });
-    return Object.entries(types).map(([name, d]) => ({ name, ...d }));
-  }, [videos]);
-
   // Upload frequency (per week)
   const uploadFreq = useMemo(() => {
     const weeks: Record<string, number> = {};
