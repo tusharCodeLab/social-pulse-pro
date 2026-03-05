@@ -10,6 +10,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import Home from "./pages/Home";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import InstagramOverview from "./pages/InstagramOverview";
 import PostsAnalysis from "./pages/PostsAnalysis";
 import AudienceInsights from "./pages/AudienceInsights";
 import Sentiment from "./pages/Sentiment";
