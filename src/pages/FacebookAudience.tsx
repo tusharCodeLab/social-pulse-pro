@@ -11,10 +11,11 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import {
   useAudienceGrowthApi,
-  useAudienceSummaryApi,
   useBestPostingTimesApi,
 } from '@/hooks/useSocialApi';
 import { useCalculateBestTimes } from '@/hooks/useAIFeatures';
+import { useFacebookAccount } from '@/hooks/useFacebookData';
+import { useAudienceMetrics } from '@/hooks/useAudienceMetrics';
 
 const COLORS = {
   primary: 'hsl(214, 89%, 52%)',
@@ -25,11 +26,28 @@ const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 export default function FacebookAudience() {
   const { toast } = useToast();
   const { data: growth, isLoading: loadingGrowth } = useAudienceGrowthApi(30, 'facebook');
-  const { data: summary, isLoading: loadingSummary } = useAudienceSummaryApi();
+  const { data: fbAccount, isLoading: loadingAccount } = useFacebookAccount();
+  const { data: fbMetrics, isLoading: loadingMetrics } = useAudienceMetrics('facebook', 30);
   const { data: bestTimes, isLoading: loadingTimes } = useBestPostingTimesApi('facebook');
   const calculateBestTimes = useCalculateBestTimes();
 
-  const isLoading = loadingGrowth || loadingSummary || loadingTimes;
+  const isLoading = loadingGrowth || loadingAccount || loadingMetrics || loadingTimes;
+
+  // Compute Facebook-specific summary from account + metrics
+  const totalFollowers = fbAccount?.followers_count || 0;
+  const totalFollowing = fbAccount?.following_count || 0;
+  const newFollowersWeek = (fbMetrics || [])
+    .slice(-7)
+    .reduce((sum, m) => sum + (m.new_followers || 0), 0);
+  
+  const oldestMetric = (fbMetrics || [])[0];
+  const growthRate = oldestMetric?.followers_count && oldestMetric.followers_count > 0
+    ? ((totalFollowers - oldestMetric.followers_count) / oldestMetric.followers_count) * 100
+    : 0;
+
+  const growthRateDisplay = growthRate
+    ? `${growthRate > 0 ? '+' : ''}${growthRate.toFixed(1)}%`
+    : '0%';
 
   const growthData = growth?.map(g => ({
     date: new Date(g.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
@@ -52,10 +70,6 @@ export default function FacebookAudience() {
       toast({ title: 'Calculation failed', description: error instanceof Error ? error.message : 'Failed to calculate best posting times.', variant: 'destructive' });
     }
   };
-
-  const growthRateDisplay = summary?.growthRate
-    ? `${summary.growthRate > 0 ? '+' : ''}${summary.growthRate.toFixed(1)}%`
-    : '0%';
 
   return (
     <>
@@ -80,9 +94,9 @@ export default function FacebookAudience() {
         <>
           {/* Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <MetricCard title="Total Followers" value={summary?.totalFollowers.toLocaleString() || '0'} icon={Users} delay={0.1} />
-            <MetricCard title="New This Week" value={`+${summary?.newFollowersWeek.toLocaleString() || '0'}`} icon={UserPlus} delay={0.15} />
-            <MetricCard title="Following" value={summary?.totalFollowing.toLocaleString() || '0'} icon={TrendingUp} delay={0.2} />
+            <MetricCard title="Total Followers" value={totalFollowers.toLocaleString()} icon={Users} delay={0.1} />
+            <MetricCard title="New This Week" value={`+${newFollowersWeek.toLocaleString()}`} icon={UserPlus} delay={0.15} />
+            <MetricCard title="Following" value={totalFollowing.toLocaleString()} icon={TrendingUp} delay={0.2} />
             <MetricCard title="Growth Rate" value={growthRateDisplay} icon={Percent} delay={0.25} />
           </div>
 
