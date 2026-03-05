@@ -57,6 +57,8 @@ const App = () => (
                 <Route path="/facebook-analytics" element={<FacebookAnalytics />} />
                 <Route path="/facebook-posts" element={<FacebookPosts />} />
                 <Route path="/facebook-audience" element={<FacebookAudience />} />
+                <Route path="/facebook-sentiment" element={<FacebookSentiment />} />
+                <Route path="/facebook-trends" element={<FacebookTrends />} />
                 <Route path="/content-calendar" element={<ContentCalendar />} />
                 <Route path="/settings" element={<Settings />} />
               </Route>
