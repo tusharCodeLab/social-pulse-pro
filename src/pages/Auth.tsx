@@ -9,35 +9,58 @@ import { useAuth } from "@/contexts/AuthContext";
 import { LineChart, ArrowLeft, Mail, Lock, User, Loader2, Users, TrendingUp, Shield, Sparkles } from "lucide-react";
 import { z } from "zod";
 
+import { Check, X } from "lucide-react";
+
 const emailSchema = z.string().email("Please enter a valid email address");
-const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
+const passwordSchema = z.string().min(8, "Password must be at least 8 characters");
+
+const PASSWORD_REQUIREMENTS = [
+  { label: "At least 8 characters", test: (p: string) => p.length >= 8 },
+  { label: "Uppercase letter (A-Z)", test: (p: string) => /[A-Z]/.test(p) },
+  { label: "Lowercase letter (a-z)", test: (p: string) => /[a-z]/.test(p) },
+  { label: "Number (0-9)", test: (p: string) => /[0-9]/.test(p) },
+  { label: "Special character (!@#$...)", test: (p: string) => /[^A-Za-z0-9]/.test(p) },
+];
+
+function isStrongPassword(password: string) {
+  return PASSWORD_REQUIREMENTS.every((req) => req.test(password));
+}
 
 function PasswordStrength({ password }: { password: string }) {
-  const strength = useMemo(() => {
-    if (!password) return { score: 0, label: "", color: "" };
-    let score = 0;
-    if (password.length >= 6) score++;
-    if (password.length >= 10) score++;
-    if (/[A-Z]/.test(password)) score++;
-    if (/[0-9]/.test(password)) score++;
-    if (/[^A-Za-z0-9]/.test(password)) score++;
-    
-    if (score <= 1) return { score: 1, label: "Weak", color: "bg-destructive" };
-    if (score <= 2) return { score: 2, label: "Fair", color: "bg-chart-impressions" };
-    if (score <= 3) return { score: 3, label: "Good", color: "bg-primary" };
-    return { score: 4, label: "Strong", color: "bg-chart-sentiment-positive" };
-  }, [password]);
-
   if (!password) return null;
 
+  const metCount = PASSWORD_REQUIREMENTS.filter((r) => r.test(password)).length;
+  const total = PASSWORD_REQUIREMENTS.length;
+  const strength =
+    metCount <= 2
+      ? { label: "Weak", color: "bg-destructive" }
+      : metCount <= 3
+        ? { label: "Fair", color: "bg-chart-impressions" }
+        : metCount <= 4
+          ? { label: "Good", color: "bg-primary" }
+          : { label: "Strong", color: "bg-chart-sentiment-positive" };
+
   return (
-    <div className="space-y-1.5 mt-2">
+    <div className="space-y-2.5 mt-3">
       <div className="flex gap-1">
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className={`h-1 flex-1 rounded-full transition-colors ${i <= strength.score ? strength.color : 'bg-muted'}`} />
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className={`h-1 flex-1 rounded-full transition-colors ${i <= metCount ? strength.color : 'bg-muted'}`} />
         ))}
       </div>
-      <p className="text-[10px] text-muted-foreground">Password strength: <span className="font-medium text-foreground">{strength.label}</span></p>
+      <p className="text-[10px] text-muted-foreground mb-1">
+        Password strength: <span className="font-medium text-foreground">{strength.label}</span> ({metCount}/{total})
+      </p>
+      <ul className="space-y-1">
+        {PASSWORD_REQUIREMENTS.map((req) => {
+          const met = req.test(password);
+          return (
+            <li key={req.label} className={`flex items-center gap-1.5 text-[11px] transition-colors ${met ? "text-chart-sentiment-positive" : "text-muted-foreground"}`}>
+              {met ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+              {req.label}
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
