@@ -1,76 +1,27 @@
 
 
-# Sidebar Restructure and Cleanup
+## Fix: Prevent Sidebar from Remounting on Navigation
 
-## What Changes
+### Problem
+Every page renders `<DashboardLayout>` individually, which contains `<AppSidebar>`. When navigating between routes, React unmounts the old page and mounts the new one, causing the entire sidebar to remount -- resetting its state (collapsed, expanded platforms) and replaying its entry animation. This feels like a "refresh."
 
-### 1. Remove Non-Working Features
-- **Remove the Reports page** (`/reports` route, `Reports.tsx`) -- it's a "Coming Soon" placeholder with no functionality
-- **Remove the Reports entry** from the sidebar navigation
+### Solution
+Move `DashboardLayout` into a shared layout route in `App.tsx` using React Router's `<Outlet>`, so it mounts once and persists across all dashboard pages. Remove `<DashboardLayout>` wrapping from every individual page component.
 
-### 2. Reorganize Sidebar into Grouped Sections
-Instead of a flat list of 7 items, organize into logical groups with section labels:
+### Changes
 
-```text
-+-------------------------------+
-|  [Logo] Analytics             |
-|          Social Dashboard     |
-+-------------------------------+
-|  [AI-Powered badge]           |
-+-------------------------------+
-|                               |
-|  OVERVIEW                     |
-|    Dashboard                  |
-|                               |
-|  ANALYTICS                    |
-|    Posts Analysis              |
-|    Audience Insights           |
-|    Sentiment                   |
-|                               |
-|  AI & TOOLS                   |
-|    AI Tools                    |
-|                               |
-|  ACCOUNT                      |
-|    Settings                    |
-|                               |
-+-------------------------------+
-|  [User info]                  |
-|  [Sign Out]                   |
-|  [Collapse]                   |
-+-------------------------------+
-```
+**1. `src/components/DashboardLayout.tsx`**
+- Import `Outlet` from `react-router-dom`
+- Remove `children` prop; render `<Outlet />` instead
+- Remove the `initial` animation on `motion.main` (no fade-in on every navigation) -- keep it as a plain `div` or use `layout` animation only
 
-### 3. Files to Modify
-- **`src/components/navigation/AppSidebar.tsx`** -- Replace flat `navItems` array with grouped sections; add section labels that hide when collapsed
-- **`src/App.tsx`** -- Remove the `/reports` route
-- **`src/pages/Reports.tsx`** -- Delete this file
+**2. `src/App.tsx`**
+- Create a layout route: `<Route element={<DashboardLayout />}>` that wraps all protected dashboard routes
+- Each child route renders just `<ProtectedRoute><PageComponent /></ProtectedRoute>`
 
-### 4. Files Unchanged
-- `SidebarNavLink.tsx` -- Works as-is, no changes needed
-- `DashboardLayout.tsx` -- No changes needed
-- All other pages remain intact
+**3. All 15 page files** (Dashboard, PostsAnalysis, AudienceInsights, Sentiment, Trends, YouTubeAnalytics, YouTubePostsAnalysis, YouTubeAudience, YouTubeSentiment, YouTubeTrends, FacebookAnalytics, FacebookPosts, FacebookAudience, Settings, ContentCalendar)
+- Remove `import { DashboardLayout }` 
+- Remove the `<DashboardLayout>` / `</DashboardLayout>` wrapper, keeping the inner content as-is
 
-## Technical Details
+This ensures the sidebar is rendered once and never remounts during navigation, preserving its state (collapsed, expanded sections, scroll position).
 
-**AppSidebar.tsx changes:**
-- Replace the single `navItems` array with a grouped structure:
-  ```ts
-  const navGroups = [
-    { label: 'Overview', items: [{ to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' }] },
-    { label: 'Analytics', items: [
-      { to: '/posts', icon: FileText, label: 'Posts Analysis' },
-      { to: '/audience', icon: Users, label: 'Audience Insights' },
-      { to: '/sentiment', icon: Heart, label: 'Sentiment' },
-    ]},
-    { label: 'AI & Tools', items: [{ to: '/ai-tools', icon: Brain, label: 'AI Tools' }] },
-    { label: 'Account', items: [{ to: '/settings', icon: Settings, label: 'Settings' }] },
-  ];
-  ```
-- Render each group with a small uppercase label (hidden when sidebar is collapsed) and its nav items below
-- Remove `BarChart3` import (was for Reports)
-
-**App.tsx changes:**
-- Remove `import Reports` and the `/reports` route
-
-**Reports.tsx:**
-- Delete the file entirely
