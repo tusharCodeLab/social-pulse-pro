@@ -96,7 +96,7 @@ export default function FacebookSentiment() {
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 rounded-lg bg-[#1877F2]/10"><MessageCircle className="h-5 w-5 text-[#1877F2]" /></div>
               <h1 className="text-3xl font-bold text-foreground">Sentiment Analysis</h1>
-              <Badge variant="outline" className="text-xs border-[#1877F2]/30 text-[#1877F2] gap-1"><Facebook className="h-3 w-3" /> Facebook</Badge>
+              <Badge variant="outline" className="text-xs border-[#1877F2]/30 text-[#1877F2] gap-1"><FacebookIcon className="h-3 w-3" /> Facebook</Badge>
             </div>
             <p className="text-muted-foreground">AI-powered analysis of Facebook comment reactions.{stats.total > 0 && <span className="text-foreground font-medium"> {stats.total} comments imported.</span>}</p>
           </div>

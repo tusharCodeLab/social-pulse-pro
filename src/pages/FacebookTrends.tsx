@@ -112,7 +112,7 @@ export default function FacebookTrends() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-3xl font-bold text-foreground">Trend Intelligence</h1>
-                <Badge variant="outline" className="text-xs border-[#1877F2]/30 text-[#1877F2] gap-1"><Facebook className="h-3 w-3" /> Facebook</Badge>
+                <Badge variant="outline" className="text-xs border-[#1877F2]/30 text-[#1877F2] gap-1"><FacebookIcon className="h-3 w-3" /> Facebook</Badge>
               </div>
               <p className="text-muted-foreground">
                 AI-detected patterns in your Facebook performance.

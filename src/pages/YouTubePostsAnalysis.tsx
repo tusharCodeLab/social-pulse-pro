@@ -90,7 +90,7 @@ export default function YouTubePostsAnalysis() {
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 rounded-lg bg-[#FF0000]/10"><Film className="h-5 w-5 text-[#FF0000]" /></div>
             <h1 className="text-3xl font-bold text-foreground">Video Analysis</h1>
-            <Badge variant="outline" className="text-xs border-[#FF0000]/30 text-[#FF0000] gap-1"><Youtube className="h-3 w-3" /> YouTube</Badge>
+            <Badge variant="outline" className="text-xs border-[#FF0000]/30 text-[#FF0000] gap-1"><YouTubeIcon className="h-3 w-3" /> YouTube</Badge>
           </div>
           <p className="text-muted-foreground">Track and analyze the performance of your YouTube videos.</p>
         </motion.div>

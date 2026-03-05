@@ -100,7 +100,7 @@ export default function InstagramOverview() {
           </div>
         </div>
         <Badge variant="outline" className="gap-1.5 text-xs border-[#E4405F]/30 text-[#E4405F]">
-          <Instagram className="h-3 w-3" /> Instagram
+          <InstagramIcon className="h-3 w-3" /> Instagram
         </Badge>
       </motion.div>
 

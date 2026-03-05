@@ -45,7 +45,7 @@ export default function YouTubeTrends() {
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 rounded-lg bg-[#FF0000]/10"><Activity className="h-5 w-5 text-[#FF0000]" /></div>
             <h1 className="text-3xl font-bold text-foreground">Trend Intelligence</h1>
-            <Badge variant="outline" className="text-xs border-[#FF0000]/30 text-[#FF0000] gap-1"><Youtube className="h-3 w-3" /> YouTube</Badge>
+            <Badge variant="outline" className="text-xs border-[#FF0000]/30 text-[#FF0000] gap-1"><YouTubeIcon className="h-3 w-3" /> YouTube</Badge>
           </div>
           <p className="text-muted-foreground">AI-detected patterns in your YouTube channel performance.</p>
         </motion.div>
