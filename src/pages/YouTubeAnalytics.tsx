@@ -66,7 +66,7 @@ export default function YouTubeAnalytics() {
 
   const emptyChartMessage = (
     <div className="flex flex-col items-center justify-center h-full gap-2 text-center py-8">
-      <Youtube className="h-8 w-8 text-muted-foreground/40" />
+      <YouTubeIcon className="h-8 w-8 text-muted-foreground/40" />
       <p className="text-sm text-muted-foreground">Connect your YouTube channel to see analytics</p>
       <p className="text-xs text-muted-foreground/60">Go to Settings → Connect YouTube</p>
     </div>
