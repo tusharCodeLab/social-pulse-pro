@@ -23,6 +23,8 @@ import YouTubeTrends from "./pages/YouTubeTrends";
 import FacebookAnalytics from "./pages/FacebookAnalytics";
 import FacebookPosts from "./pages/FacebookPosts";
 import FacebookAudience from "./pages/FacebookAudience";
+import FacebookSentiment from "./pages/FacebookSentiment";
+import FacebookTrends from "./pages/FacebookTrends";
 
 import Settings from "./pages/Settings";
 import ContentCalendar from "./pages/ContentCalendar";
@@ -55,6 +57,8 @@ const App = () => (
                 <Route path="/facebook-analytics" element={<FacebookAnalytics />} />
                 <Route path="/facebook-posts" element={<FacebookPosts />} />
                 <Route path="/facebook-audience" element={<FacebookAudience />} />
+                <Route path="/facebook-sentiment" element={<FacebookSentiment />} />
+                <Route path="/facebook-trends" element={<FacebookTrends />} />
                 <Route path="/content-calendar" element={<ContentCalendar />} />
                 <Route path="/settings" element={<Settings />} />
               </Route>

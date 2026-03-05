@@ -77,6 +77,8 @@ const platformGroups: PlatformGroup[] = [
       { to: '/facebook-analytics', icon: LayoutDashboard, label: 'Page Overview' },
       { to: '/facebook-posts', icon: FileText, label: 'Posts Analysis' },
       { to: '/facebook-audience', icon: Users, label: 'Audience' },
+      { to: '/facebook-sentiment', icon: Heart, label: 'Sentiment' },
+      { to: '/facebook-trends', icon: Activity, label: 'Trend Intelligence' },
     ],
   },
 ];

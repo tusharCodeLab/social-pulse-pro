@@ -1,36 +1,76 @@
 
 
-## Add Missing Facebook Sub-Pages (Sentiment + Trends)
+# Sidebar Restructure and Cleanup
 
-Instagram has 4 sub-pages: Posts Analysis, Audience Insights, Sentiment, Trend Intelligence.
-YouTube already matches this (plus an Overview page).
-Facebook is missing **Sentiment** and **Trend Intelligence**.
+## What Changes
 
-### Changes
+### 1. Remove Non-Working Features
+- **Remove the Reports page** (`/reports` route, `Reports.tsx`) -- it's a "Coming Soon" placeholder with no functionality
+- **Remove the Reports entry** from the sidebar navigation
 
-**1. Create `src/pages/FacebookSentiment.tsx`**
-- Mirror the YouTube Sentiment page structure but for Facebook data
-- Use `useFacebookComments()` from `useFacebookData.ts`
-- Include "Analyze Comments" button (calls `useAnalyzeSentimentApi`)
-- Include "Scan for Spam" button (calls `useDetectSpam`)
-- Show sentiment metrics (Positive %, Neutral %, Negative %, Total Comments)
-- Show spam filter section and recent comments list
-- Facebook blue branding (#1877F2)
+### 2. Reorganize Sidebar into Grouped Sections
+Instead of a flat list of 7 items, organize into logical groups with section labels:
 
-**2. Create `src/pages/FacebookTrends.tsx`**
-- Mirror the YouTube Trends page structure but for Facebook data
-- Use `usePersonalTrends('facebook')` and `useDetectTrends()` with `'facebook'` platform
-- Include "Detect Trends" button
-- Show trend cards with direction, confidence, type
-- Include AI Content Strategy section
-- Facebook blue branding
+```text
++-------------------------------+
+|  [Logo] Analytics             |
+|          Social Dashboard     |
++-------------------------------+
+|  [AI-Powered badge]           |
++-------------------------------+
+|                               |
+|  OVERVIEW                     |
+|    Dashboard                  |
+|                               |
+|  ANALYTICS                    |
+|    Posts Analysis              |
+|    Audience Insights           |
+|    Sentiment                   |
+|                               |
+|  AI & TOOLS                   |
+|    AI Tools                    |
+|                               |
+|  ACCOUNT                      |
+|    Settings                    |
+|                               |
++-------------------------------+
+|  [User info]                  |
+|  [Sign Out]                   |
+|  [Collapse]                   |
++-------------------------------+
+```
 
-**3. Update `src/App.tsx`**
-- Add routes: `/facebook-sentiment` and `/facebook-trends`
+### 3. Files to Modify
+- **`src/components/navigation/AppSidebar.tsx`** -- Replace flat `navItems` array with grouped sections; add section labels that hide when collapsed
+- **`src/App.tsx`** -- Remove the `/reports` route
+- **`src/pages/Reports.tsx`** -- Delete this file
 
-**4. Update `src/components/navigation/AppSidebar.tsx`**
-- Add Sentiment (`Heart`) and Trend Intelligence (`Activity`) sub-items to the Facebook platform group
+### 4. Files Unchanged
+- `SidebarNavLink.tsx` -- Works as-is, no changes needed
+- `DashboardLayout.tsx` -- No changes needed
+- All other pages remain intact
 
-**5. Update `src/hooks/useFacebookData.ts`**
-- The `useFacebookComments` hook already exists and works. No changes needed.
+## Technical Details
 
+**AppSidebar.tsx changes:**
+- Replace the single `navItems` array with a grouped structure:
+  ```ts
+  const navGroups = [
+    { label: 'Overview', items: [{ to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' }] },
+    { label: 'Analytics', items: [
+      { to: '/posts', icon: FileText, label: 'Posts Analysis' },
+      { to: '/audience', icon: Users, label: 'Audience Insights' },
+      { to: '/sentiment', icon: Heart, label: 'Sentiment' },
+    ]},
+    { label: 'AI & Tools', items: [{ to: '/ai-tools', icon: Brain, label: 'AI Tools' }] },
+    { label: 'Account', items: [{ to: '/settings', icon: Settings, label: 'Settings' }] },
+  ];
+  ```
+- Render each group with a small uppercase label (hidden when sidebar is collapsed) and its nav items below
+- Remove `BarChart3` import (was for Reports)
+
+**App.tsx changes:**
+- Remove `import Reports` and the `/reports` route
+
+**Reports.tsx:**
+- Delete the file entirely
