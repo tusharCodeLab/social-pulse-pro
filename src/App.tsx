@@ -46,6 +46,7 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
                 <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/instagram-overview" element={<InstagramOverview />} />
                 <Route path="/posts" element={<PostsAnalysis />} />
                 <Route path="/audience" element={<AudienceInsights />} />
                 <Route path="/sentiment" element={<Sentiment />} />

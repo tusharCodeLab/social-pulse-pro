@@ -49,6 +49,7 @@ const platformGroups: PlatformGroup[] = [
     label: 'Instagram',
     color: 'text-[#E4405F]',
     items: [
+      { to: '/instagram-overview', icon: LayoutDashboard, label: 'Instagram Overview' },
       { to: '/posts', icon: FileText, label: 'Posts Analysis' },
       { to: '/audience', icon: Users, label: 'Audience Insights' },
       { to: '/sentiment', icon: Heart, label: 'Sentiment' },
