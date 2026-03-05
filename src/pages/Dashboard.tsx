@@ -3,8 +3,9 @@ import { motion } from 'framer-motion';
 import {
   Users, Heart, Eye, Sparkles, RefreshCw,
   TrendingUp, Loader2, Activity, AlertTriangle, Target,
-  Instagram, Youtube, Facebook, MessageCircle, BarChart3, Wifi, Clock,
+  MessageCircle, BarChart3, Wifi, Clock,
 } from 'lucide-react';
+import { InstagramIcon, YouTubeIcon, FacebookIcon } from '@/components/icons/PlatformIcons';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell,
