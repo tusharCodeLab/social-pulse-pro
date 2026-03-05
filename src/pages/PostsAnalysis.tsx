@@ -494,9 +494,20 @@ export default function PostsAnalysis() {
                         >
                           <td className="py-3 px-4 text-xs text-muted-foreground font-medium">{index + 1}</td>
                           <td className="py-3 px-4">
-                            <div className="flex items-start gap-2">
-                              <PostIcon className="h-3.5 w-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
-                              <div>
+                            <div className="flex items-start gap-3">
+                              {post.mediaUrl ? (
+                                <img
+                                  src={post.mediaUrl}
+                                  alt=""
+                                  loading="lazy"
+                                  onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }}
+                                  className="w-12 h-12 rounded-lg object-cover border border-border flex-shrink-0"
+                                />
+                              ) : null}
+                              <div className={`flex items-center justify-center w-12 h-12 rounded-lg bg-muted/50 border border-border flex-shrink-0 ${post.mediaUrl ? 'hidden' : ''}`}>
+                                <PostIcon className="h-5 w-5 text-muted-foreground" />
+                              </div>
+                              <div className="min-w-0">
                                 <p className="text-sm text-foreground line-clamp-2 max-w-[280px]">
                                   {formatPostContent(post.content, post.type)}
                                 </p>

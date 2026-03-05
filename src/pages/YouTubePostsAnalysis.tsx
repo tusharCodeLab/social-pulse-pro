@@ -151,7 +151,23 @@ export default function YouTubePostsAnalysis() {
                     .slice(0, 15)
                     .map(v => (
                       <tr key={v.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                        <td className="py-2.5 px-3 text-sm text-foreground max-w-xs truncate">{v.content || 'Untitled'}</td>
+                        <td className="py-2.5 px-3">
+                          <div className="flex items-center gap-3">
+                            {v.media_url ? (
+                              <img
+                                src={v.media_url}
+                                alt=""
+                                loading="lazy"
+                                onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }}
+                                className="w-20 h-11 rounded-md object-cover border border-border flex-shrink-0"
+                              />
+                            ) : null}
+                            <div className={`flex items-center justify-center w-20 h-11 rounded-md bg-muted/50 border border-border flex-shrink-0 ${v.media_url ? 'hidden' : ''}`}>
+                              <Film className="h-5 w-5 text-muted-foreground/50" />
+                            </div>
+                            <span className="text-sm text-foreground max-w-xs truncate">{v.content || 'Untitled'}</span>
+                          </div>
+                        </td>
                         <td className="py-2.5 px-3 text-sm text-right text-foreground">{formatNum(v.reach || 0)}</td>
                         <td className="py-2.5 px-3 text-sm text-right text-foreground">{formatNum(v.likes_count || 0)}</td>
                         <td className="py-2.5 px-3 text-sm text-right text-foreground">{formatNum(v.comments_count || 0)}</td>
