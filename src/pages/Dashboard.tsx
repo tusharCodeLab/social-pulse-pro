@@ -211,8 +211,8 @@ export default function Dashboard() {
                 <TrendingUp className="h-4 w-4 text-primary" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-foreground">Combined User Reach</h3>
-                <p className="text-[10px] text-muted-foreground">Reach across all platforms over time</p>
+                <h3 className="text-sm font-bold text-foreground">Reach & Interactions</h3>
+                <p className="text-[10px] text-muted-foreground">Reach / interactions across all platforms over time</p>
               </div>
             </div>
             <div className="flex items-center gap-3">

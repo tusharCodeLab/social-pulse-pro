@@ -224,20 +224,29 @@ serve(async (req) => {
       console.error("Failed to fetch media:", mediaError);
     }
 
-    // Step 5: Save posts to database
-    const postsToUpsert = mediaData.map((media) => ({
-      user_id: user.id,
-      platform: "instagram" as const,
-      external_post_id: media.id,
-      content: media.caption || "",
-      media_url: media.media_url || null,
-      post_type: media.media_type?.toLowerCase() || "image",
-      published_at: media.timestamp,
-      likes_count: media.like_count || 0,
-      comments_count: media.comments_count || 0,
-      social_account_id: socialAccount?.id || null,
-      updated_at: new Date().toISOString(),
-    }));
+    // Step 5: Save posts to database (with calculated engagement rate)
+    const postsToUpsert = mediaData.map((media) => {
+      const likes = media.like_count || 0;
+      const comments = media.comments_count || 0;
+      const engagementRate = instagramFollowersCount > 0
+        ? Math.round(((likes + comments) / instagramFollowersCount) * 100 * 100) / 100
+        : 0;
+
+      return {
+        user_id: user.id,
+        platform: "instagram" as const,
+        external_post_id: media.id,
+        content: media.caption || "",
+        media_url: media.media_url || null,
+        post_type: media.media_type?.toLowerCase() || "image",
+        published_at: media.timestamp,
+        likes_count: likes,
+        comments_count: comments,
+        engagement_rate: engagementRate,
+        social_account_id: socialAccount?.id || null,
+        updated_at: new Date().toISOString(),
+      };
+    });
 
     if (postsToUpsert.length > 0) {
       const { error: postsError } = await supabase

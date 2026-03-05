@@ -652,7 +652,7 @@ export const analyticsApi = {
         })()
       : 0;
 
-    // Get followers from social accounts
+    // Get followers from social accounts (fetch before reach calc uses it)
     const { data: accounts } = await supabase
       .from('social_accounts')
       .select('followers_count');

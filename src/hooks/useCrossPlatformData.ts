@@ -95,7 +95,7 @@ export function useReachTrends() {
 
       const { data: posts } = await supabase
         .from('posts')
-        .select('platform, reach, published_at')
+        .select('platform, reach, published_at, likes_count, comments_count')
         .eq('user_id', user.id)
         .not('published_at', 'is', null)
         .order('published_at', { ascending: true });
@@ -110,8 +110,10 @@ export function useReachTrends() {
           grouped[date] = { date, instagram: 0, youtube: 0, facebook: 0 };
         }
         const platform = post.platform as Platform;
+        // Smart fallback: use interactions when reach is 0
+        const value = (post.reach || 0) > 0 ? post.reach! : (post.likes_count || 0) + (post.comments_count || 0);
         if (platform in grouped[date]) {
-          grouped[date][platform] += post.reach || 0;
+          grouped[date][platform] += value;
         }
       }
 
