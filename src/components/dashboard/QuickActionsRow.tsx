@@ -43,10 +43,10 @@ export function QuickActionsRow() {
       preview: null,
       onClick: async () => {
         try {
-          const result = await detectTrends.mutateAsync();
+          const result = await detectTrends.mutateAsync(undefined);
           setTrendsResult(result.trends?.length || 0);
           toast({ title: 'Trends detected', description: `Found ${result.trends?.length || 0} trends.` });
-        } catch { toast({ title: 'Failed', variant: 'destructive' }); }
+        } catch { toast({ title: 'Failed', description: 'Could not detect trends.', variant: 'destructive' }); }
       },
     },
     {
