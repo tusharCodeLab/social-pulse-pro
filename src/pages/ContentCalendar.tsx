@@ -225,6 +225,43 @@ export default function ContentCalendar() {
           </Button>
         </div>
 
+        {/* Platform Filters */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-muted-foreground mr-1">Filter:</span>
+          {platformFilterOptions.map((p) => {
+            const PIcon = p === 'all' ? Calendar : (platformIcons[p] || Calendar);
+            return (
+              <Button
+                key={p}
+                variant={platformFilter === p ? "default" : "outline"}
+                size="sm"
+                onClick={() => setPlatformFilter(p)}
+                className={cn("gap-1.5 h-8 text-xs capitalize", platformFilter === p && "bg-primary text-primary-foreground")}
+              >
+                <PIcon className="h-3.5 w-3.5" />
+                {p === 'all' ? 'All' : p}
+              </Button>
+            );
+          })}
+        </div>
+
+        {/* Week Summary */}
+        {rawItems.length > 0 && Object.keys(weekSummary).length > 0 && (
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/20 border border-border/50">
+            <span className="text-xs text-muted-foreground">This week:</span>
+            {Object.entries(weekSummary).map(([type, count]) => {
+              const TypeIcon = contentTypeIcons[type] || MessageSquare;
+              return (
+                <Badge key={type} variant="outline" className="gap-1 text-xs capitalize">
+                  <TypeIcon className="h-3 w-3" />
+                  {count} {type}{count !== 1 ? 's' : ''}
+                </Badge>
+              );
+            })}
+            <span className="text-xs text-muted-foreground ml-auto">{rawItems.length} total</span>
+          </div>
+        )}
+
         {/* Calendar Grid */}
         <div className="grid grid-cols-7 gap-3">
           {weekDates.map((date, i) => {
