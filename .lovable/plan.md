@@ -1,76 +1,32 @@
 
 
-# Sidebar Restructure and Cleanup
+## Plan: Display Post Images Professionally Across All 3 Platforms
 
-## What Changes
+### Current State
+All three post analysis pages (Instagram `PostsAnalysis.tsx`, Facebook `FacebookPosts.tsx`, YouTube `YouTubePostsAnalysis.tsx`) display posts as plain text rows in tables. The `media_url` field exists in the database and is mapped to `mediaUrl` in the API layer, but none of the pages render the actual post image/thumbnail.
 
-### 1. Remove Non-Working Features
-- **Remove the Reports page** (`/reports` route, `Reports.tsx`) -- it's a "Coming Soon" placeholder with no functionality
-- **Remove the Reports entry** from the sidebar navigation
+### Changes
 
-### 2. Reorganize Sidebar into Grouped Sections
-Instead of a flat list of 7 items, organize into logical groups with section labels:
+#### 1. Instagram Posts (`src/pages/PostsAnalysis.tsx`)
+Update the "Top Performing Posts" table (line ~496-506) to show a thumbnail image next to the post content:
+- Add an image thumbnail column (48x48 rounded) before the text content
+- Use `post.mediaUrl` with a fallback placeholder icon when no image
+- Use `aspect-ratio` for consistent sizing
 
-```text
-+-------------------------------+
-|  [Logo] Analytics             |
-|          Social Dashboard     |
-+-------------------------------+
-|  [AI-Powered badge]           |
-+-------------------------------+
-|                               |
-|  OVERVIEW                     |
-|    Dashboard                  |
-|                               |
-|  ANALYTICS                    |
-|    Posts Analysis              |
-|    Audience Insights           |
-|    Sentiment                   |
-|                               |
-|  AI & TOOLS                   |
-|    AI Tools                    |
-|                               |
-|  ACCOUNT                      |
-|    Settings                    |
-|                               |
-+-------------------------------+
-|  [User info]                  |
-|  [Sign Out]                   |
-|  [Collapse]                   |
-+-------------------------------+
-```
+#### 2. Facebook Posts (`src/pages/FacebookPosts.tsx`)
+Redesign from a plain table to a card grid layout matching the premium aesthetic:
+- Each post as a card with image thumbnail (if `media_url` exists), content preview, type badge, and metrics row (likes, comments, shares, date)
+- Fallback to a platform icon placeholder when no image
 
-### 3. Files to Modify
-- **`src/components/navigation/AppSidebar.tsx`** -- Replace flat `navItems` array with grouped sections; add section labels that hide when collapsed
-- **`src/App.tsx`** -- Remove the `/reports` route
-- **`src/pages/Reports.tsx`** -- Delete this file
+#### 3. YouTube Posts (`src/pages/YouTubePostsAnalysis.tsx`)
+Update the "Top Performing Videos" table (line ~148-163) to show video thumbnails:
+- Add thumbnail column using `media_url` (YouTube stores thumbnail URLs)
+- Show a 16:9 aspect ratio thumbnail before video title
+- Fallback to a Film icon placeholder
 
-### 4. Files Unchanged
-- `SidebarNavLink.tsx` -- Works as-is, no changes needed
-- `DashboardLayout.tsx` -- No changes needed
-- All other pages remain intact
+#### Shared Pattern
+All three pages will use the same thumbnail rendering approach:
+- If `media_url`/`mediaUrl` exists: render `<img>` with `object-cover`, rounded corners, subtle border
+- If not: render a styled placeholder with the platform icon
+- Images use `loading="lazy"` and `onError` fallback to placeholder
 
-## Technical Details
-
-**AppSidebar.tsx changes:**
-- Replace the single `navItems` array with a grouped structure:
-  ```ts
-  const navGroups = [
-    { label: 'Overview', items: [{ to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' }] },
-    { label: 'Analytics', items: [
-      { to: '/posts', icon: FileText, label: 'Posts Analysis' },
-      { to: '/audience', icon: Users, label: 'Audience Insights' },
-      { to: '/sentiment', icon: Heart, label: 'Sentiment' },
-    ]},
-    { label: 'AI & Tools', items: [{ to: '/ai-tools', icon: Brain, label: 'AI Tools' }] },
-    { label: 'Account', items: [{ to: '/settings', icon: Settings, label: 'Settings' }] },
-  ];
-  ```
-- Render each group with a small uppercase label (hidden when sidebar is collapsed) and its nav items below
-- Remove `BarChart3` import (was for Reports)
-
-**App.tsx changes:**
-- Remove `import Reports` and the `/reports` route
-
-**Reports.tsx:**
-- Delete the file entirely
