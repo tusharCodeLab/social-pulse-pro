@@ -1,76 +1,39 @@
 
 
-# Sidebar Restructure and Cleanup
+## Redesign Dashboard Layout (Reference-Inspired)
 
-## What Changes
+Inspired by the uploaded reference, the dashboard will be restructured into a more polished, information-dense layout while keeping the existing data hooks and strict real-data policy.
 
-### 1. Remove Non-Working Features
-- **Remove the Reports page** (`/reports` route, `Reports.tsx`) -- it's a "Coming Soon" placeholder with no functionality
-- **Remove the Reports entry** from the sidebar navigation
+### Key Layout Changes
 
-### 2. Reorganize Sidebar into Grouped Sections
-Instead of a flat list of 7 items, organize into logical groups with section labels:
+**1. Enhanced Header Row**
+- Keep welcome message + sentiment donut, but make the sentiment display larger and more prominent with a label like "Overall Sentiment: Positive (X%)"
+- Make the top metrics row (Followers, Engagement, Reach, Posts) use pill/rounded-card styling with larger typography
 
-```text
-+-------------------------------+
-|  [Logo] Analytics             |
-|          Social Dashboard     |
-+-------------------------------+
-|  [AI-Powered badge]           |
-+-------------------------------+
-|                               |
-|  OVERVIEW                     |
-|    Dashboard                  |
-|                               |
-|  ANALYTICS                    |
-|    Posts Analysis              |
-|    Audience Insights           |
-|    Sentiment                   |
-|                               |
-|  AI & TOOLS                   |
-|    AI Tools                    |
-|                               |
-|  ACCOUNT                      |
-|    Settings                    |
-|                               |
-+-------------------------------+
-|  [User info]                  |
-|  [Sign Out]                   |
-|  [Collapse]                   |
-+-------------------------------+
-```
+**2. Main Content: 2-Column Layout (65/35 split)**
+- **Left column**: "Combined User Reach" area chart, taller (350px), with a time period selector dropdown ("Last 30 Days") in the card header
+- **Right column**: Richer platform cards stacked vertically, each with:
+  - Platform-colored left border/accent
+  - Platform-specific metrics (Likes, Comments, Engagement %, Followers)
+  - Post count badge in top-right corner
+  - More detailed stats grid (3-4 metrics per card instead of current 2+1)
 
-### 3. Files to Modify
-- **`src/components/navigation/AppSidebar.tsx`** -- Replace flat `navItems` array with grouped sections; add section labels that hide when collapsed
-- **`src/App.tsx`** -- Remove the `/reports` route
-- **`src/pages/Reports.tsx`** -- Delete this file
+**3. Improved Platform Cards**
+- Instagram card: Show Likes total, Comments total, Engagement %, posts count badge
+- YouTube card: Show Subscribers, Views (impressions), Engagement %
+- Facebook card: Show Page Likes (followers), Reach, Engagement %
+- Each card gets a subtle platform-colored border on the left side for visual distinction
 
-### 4. Files Unchanged
-- `SidebarNavLink.tsx` -- Works as-is, no changes needed
-- `DashboardLayout.tsx` -- No changes needed
-- All other pages remain intact
+**4. AI Performance Digest** stays below the main grid, unchanged.
 
-## Technical Details
+**5. Remove the 5th "Positive" metric** from top row (already shown in sentiment donut), replace with "Avg Engagement" rate.
 
-**AppSidebar.tsx changes:**
-- Replace the single `navItems` array with a grouped structure:
-  ```ts
-  const navGroups = [
-    { label: 'Overview', items: [{ to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' }] },
-    { label: 'Analytics', items: [
-      { to: '/posts', icon: FileText, label: 'Posts Analysis' },
-      { to: '/audience', icon: Users, label: 'Audience Insights' },
-      { to: '/sentiment', icon: Heart, label: 'Sentiment' },
-    ]},
-    { label: 'AI & Tools', items: [{ to: '/ai-tools', icon: Brain, label: 'AI Tools' }] },
-    { label: 'Account', items: [{ to: '/settings', icon: Settings, label: 'Settings' }] },
-  ];
-  ```
-- Render each group with a small uppercase label (hidden when sidebar is collapsed) and its nav items below
-- Remove `BarChart3` import (was for Reports)
+### Files to Change
 
-**App.tsx changes:**
-- Remove `import Reports` and the `/reports` route
+- **`src/pages/Dashboard.tsx`**: Restructure layout, enhance MiniStat styling to pill/rounded look, redesign PlatformCard with richer metrics and post count badge, add time period selector UI element to reach chart header, increase chart height, improve sentiment donut display.
 
-**Reports.tsx:**
-- Delete the file entirely
+### Data — No Hook Changes Needed
+All data is already available from existing hooks (`usePlatformComparison`, `useReachTrends`, `useDashboardSummaryApi`, `useSentimentStatsApi`). The `PlatformMetrics` interface already includes `totalReach`, `totalImpressions`, `postsCount`, `avgEngagementRate`, `followers`. We also have `likes_count` and `comments_count` totals available. We'll add those to the platform comparison query select to show per-platform likes/comments totals.
+
+- **`src/hooks/useCrossPlatformData.ts`**: Add `totalLikes` and `totalComments` to `PlatformMetrics` and compute them in `usePlatformComparison`.
+
