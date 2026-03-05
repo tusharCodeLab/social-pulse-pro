@@ -92,7 +92,7 @@ export function useReachTrends() {
 
       const { data: posts } = await supabase
         .from('posts')
-        .select('platform, reach, published_at, likes_count, comments_count')
+        .select('platform, reach, published_at')
         .eq('user_id', user.id)
         .not('published_at', 'is', null)
         .order('published_at', { ascending: true });
