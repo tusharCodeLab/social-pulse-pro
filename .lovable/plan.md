@@ -1,76 +1,21 @@
 
 
-# Sidebar Restructure and Cleanup
+## Remove Smart Fallbacks, Use Strict Real Data
 
-## What Changes
+The previous implementation added "smart fallback" logic in three places that substitutes interactions (likes+comments) when reach is 0. You want strict real data only -- if reach is 0, show 0.
 
-### 1. Remove Non-Working Features
-- **Remove the Reports page** (`/reports` route, `Reports.tsx`) -- it's a "Coming Soon" placeholder with no functionality
-- **Remove the Reports entry** from the sidebar navigation
+### Changes
 
-### 2. Reorganize Sidebar into Grouped Sections
-Instead of a flat list of 7 items, organize into logical groups with section labels:
+**1. `src/hooks/useCrossPlatformData.ts`**
+- `usePlatformComparison` (line 63-66): Remove `totalInteractions` fallback. Use `rawReach` directly as `totalReach`.
+- `useReachTrends` (line 113-114): Remove fallback. Use `post.reach || 0` directly as the chart value. Also remove `likes_count, comments_count` from the select query (line 98).
 
-```text
-+-------------------------------+
-|  [Logo] Analytics             |
-|          Social Dashboard     |
-+-------------------------------+
-|  [AI-Powered badge]           |
-+-------------------------------+
-|                               |
-|  OVERVIEW                     |
-|    Dashboard                  |
-|                               |
-|  ANALYTICS                    |
-|    Posts Analysis              |
-|    Audience Insights           |
-|    Sentiment                   |
-|                               |
-|  AI & TOOLS                   |
-|    AI Tools                    |
-|                               |
-|  ACCOUNT                      |
-|    Settings                    |
-|                               |
-+-------------------------------+
-|  [User info]                  |
-|  [Sign Out]                   |
-|  [Collapse]                   |
-+-------------------------------+
-```
+**2. `src/services/api/socialApi.ts`**
+- `getDashboardSummary` (line 644-646): Remove fallback. Use `rawReach` directly as `totalReach`.
+- `avgEngagementRate` (line 648-652): Remove the `totalFollowers`-based fallback calculation. Use only the stored `engagement_rate` from the database.
 
-### 3. Files to Modify
-- **`src/components/navigation/AppSidebar.tsx`** -- Replace flat `navItems` array with grouped sections; add section labels that hide when collapsed
-- **`src/App.tsx`** -- Remove the `/reports` route
-- **`src/pages/Reports.tsx`** -- Delete this file
+**3. `src/pages/Dashboard.tsx`**
+- Line 199: Change label back from "Reach / Interactions" to "Reach".
+- Line 214: Change title back from "Reach & Interactions" to "Reach Trends".
+- Line 215: Update subtitle to "Reach across all platforms over time".
 
-### 4. Files Unchanged
-- `SidebarNavLink.tsx` -- Works as-is, no changes needed
-- `DashboardLayout.tsx` -- No changes needed
-- All other pages remain intact
-
-## Technical Details
-
-**AppSidebar.tsx changes:**
-- Replace the single `navItems` array with a grouped structure:
-  ```ts
-  const navGroups = [
-    { label: 'Overview', items: [{ to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' }] },
-    { label: 'Analytics', items: [
-      { to: '/posts', icon: FileText, label: 'Posts Analysis' },
-      { to: '/audience', icon: Users, label: 'Audience Insights' },
-      { to: '/sentiment', icon: Heart, label: 'Sentiment' },
-    ]},
-    { label: 'AI & Tools', items: [{ to: '/ai-tools', icon: Brain, label: 'AI Tools' }] },
-    { label: 'Account', items: [{ to: '/settings', icon: Settings, label: 'Settings' }] },
-  ];
-  ```
-- Render each group with a small uppercase label (hidden when sidebar is collapsed) and its nav items below
-- Remove `BarChart3` import (was for Reports)
-
-**App.tsx changes:**
-- Remove `import Reports` and the `/reports` route
-
-**Reports.tsx:**
-- Delete the file entirely
