@@ -9,7 +9,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { usePersonalTrends, useDetectTrends } from '@/hooks/useAIFeatures';
 import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 
 const directionIcon = {
@@ -25,8 +24,9 @@ export default function YouTubeTrends() {
 
   const handleDetect = async () => {
     try {
-      await detectTrends.mutateAsync();
-      toast({ title: 'Trends analyzed', description: 'AI has detected new patterns in your YouTube data.' });
+      const result = await detectTrends.mutateAsync('youtube');
+      const count = result?.trends?.length || 0;
+      toast({ title: 'Trends analyzed', description: count > 0 ? `Detected ${count} trend${count !== 1 ? 's' : ''} in your YouTube data.` : 'No significant trends found yet.' });
     } catch {
       toast({ title: 'Analysis failed', description: 'Could not detect trends. Try again later.', variant: 'destructive' });
     }

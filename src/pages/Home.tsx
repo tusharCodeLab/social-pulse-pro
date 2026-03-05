@@ -16,28 +16,28 @@ import {
 const features = [
   {
     icon: BarChart3,
-    title: "Post Analytics",
-    description: "Track likes, comments, reach, and engagement rates for every Instagram post."
+    title: "Multi-Platform Analytics",
+    description: "Track likes, comments, reach, and engagement across Instagram, YouTube, and Facebook in one dashboard."
   },
   {
     icon: Brain,
     title: "AI-Powered Insights",
-    description: "Get personalized recommendations from Gemini AI to improve your content strategy."
+    description: "Get personalized recommendations from Gemini AI to improve your content strategy across all platforms."
   },
   {
     icon: TrendingUp,
     title: "Trend Detection",
-    description: "Automatically detect performance trends and content patterns in your account."
+    description: "Automatically detect performance trends and content patterns for each connected platform."
   },
   {
     icon: MessageSquare,
     title: "Sentiment Analysis",
-    description: "Understand how your audience feels about your content with AI comment analysis."
+    description: "Understand how your audience feels about your content with AI comment analysis on every platform."
   },
   {
     icon: Shield,
     title: "Spam Detection",
-    description: "AI-powered spam filter to identify bot comments, phishing, and promotional spam."
+    description: "AI-powered spam filter to identify bot comments, phishing, and promotional spam across all channels."
   },
   {
     icon: Clock,
@@ -101,17 +101,17 @@ const Home = () => {
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-8"
             >
               <Sparkles className="w-4 h-4 text-primary" />
-              <span className="text-sm text-primary font-medium">AI-Powered Instagram Analytics</span>
+              <span className="text-sm text-primary font-medium">AI-Powered Social Media Analytics</span>
             </motion.div>
 
             <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
               <span className="text-foreground">Understand Your</span>
               <br />
-              <span className="gradient-text">Instagram Performance</span>
+              <span className="gradient-text">Social Media Performance</span>
             </h1>
 
             <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
-              Connect your Instagram account and unlock AI-powered analytics — sentiment analysis, 
+              Connect Instagram, YouTube, and Facebook — unlock AI-powered analytics with sentiment analysis, 
               trend detection, spam filtering, and optimal posting times.
             </p>
 
@@ -144,7 +144,7 @@ const Home = () => {
               What You Get
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Real data, real insights — powered by Gemini AI
+              Real data, real insights — powered by Gemini AI across all your platforms
             </p>
           </motion.div>
 
@@ -185,11 +185,11 @@ const Home = () => {
               <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-4">
                 Ready to Grow Your
                 <br />
-                <span className="gradient-text">Instagram Presence?</span>
+                <span className="gradient-text">Social Media Presence?</span>
               </h2>
               
               <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto">
-                Sign up, connect your Instagram account, and start getting AI-powered insights in minutes.
+                Sign up, connect your accounts, and start getting AI-powered insights in minutes.
               </p>
               
               <Link to="/auth?mode=signup">

@@ -277,7 +277,7 @@ export default function Settings() {
               <WifiOff className="h-5 w-5 text-muted-foreground" />
               <div>
                 <p className="text-sm font-medium text-foreground">More platforms coming soon</p>
-                <p className="text-xs text-muted-foreground">Twitter, Facebook, LinkedIn, and TikTok integrations are in development.</p>
+                <p className="text-xs text-muted-foreground">Twitter, LinkedIn, and TikTok integrations are in development.</p>
               </div>
             </div>
           </motion.div>

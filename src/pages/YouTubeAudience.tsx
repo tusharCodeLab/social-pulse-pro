@@ -1,12 +1,13 @@
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Youtube, Users, UserPlus, TrendingUp, Percent } from 'lucide-react';
+import { Youtube, Users, UserPlus, TrendingUp, Percent, Eye } from 'lucide-react';
 
 import { MetricCard } from '@/components/dashboard/MetricCard';
 import { ChartCard } from '@/components/dashboard/ChartCard';
 import { Badge } from '@/components/ui/badge';
-import { useYouTubeAccount, useYouTubeAudienceMetrics } from '@/hooks/useYouTubeData';
+import { useYouTubeAccount, useYouTubeAudienceMetrics, useYouTubeVideos } from '@/hooks/useYouTubeData';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
-import { format } from 'date-fns';
+import { format, subDays, isAfter } from 'date-fns';
 
 const tooltipStyle = {
   backgroundColor: 'hsl(222, 47%, 10%)',
@@ -32,6 +33,30 @@ const emptyState = (
 export default function YouTubeAudience() {
   const { data: account } = useYouTubeAccount();
   const { data: metrics = [] } = useYouTubeAudienceMetrics();
+  const { data: videos = [] } = useYouTubeVideos();
+
+  const computed = useMemo(() => {
+    // New subscribers this week from audience_metrics
+    const oneWeekAgo = subDays(new Date(), 7);
+    const recentMetrics = metrics.filter(m => isAfter(new Date(m.date), oneWeekAgo));
+    const newThisWeek = recentMetrics.reduce((sum, m) => sum + (m.new_followers || 0), 0);
+
+    // Growth rate: compare oldest vs newest subscriber count in metrics
+    let growthRate = 0;
+    if (metrics.length >= 2) {
+      const oldest = metrics[0]?.followers_count || 0;
+      const newest = metrics[metrics.length - 1]?.followers_count || 0;
+      if (oldest > 0) {
+        growthRate = ((newest - oldest) / oldest) * 100;
+      }
+    }
+
+    // Avg views per video from impressions (views) data
+    const totalViews = videos.reduce((sum, v) => sum + (v.impressions || 0), 0);
+    const avgViews = videos.length > 0 ? Math.round(totalViews / videos.length) : 0;
+
+    return { newThisWeek, growthRate, avgViews };
+  }, [metrics, videos]);
 
   const chartData = metrics.map(m => ({
     date: format(new Date(m.date), 'MMM d'),
@@ -53,9 +78,9 @@ export default function YouTubeAudience() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <MetricCard title="Total Subscribers" value={formatNum(account?.followers_count || 0)} icon={Users} delay={0.1} />
-        <MetricCard title="New This Week" value="+0" icon={UserPlus} delay={0.15} />
-        <MetricCard title="Growth Rate" value="0%" icon={Percent} delay={0.2} />
-        <MetricCard title="Avg Views/Video" value="0" icon={TrendingUp} delay={0.25} />
+        <MetricCard title="New This Week" value={computed.newThisWeek > 0 ? `+${formatNum(computed.newThisWeek)}` : '0'} icon={UserPlus} delay={0.15} />
+        <MetricCard title="Growth Rate" value={`${computed.growthRate >= 0 ? '+' : ''}${computed.growthRate.toFixed(1)}%`} icon={Percent} delay={0.2} />
+        <MetricCard title="Avg Views/Video" value={formatNum(computed.avgViews)} icon={Eye} delay={0.25} />
       </div>
 
       <ChartCard title="Subscriber Growth" subtitle="Subscriber count snapshots" delay={0.3}>

@@ -42,7 +42,7 @@ export default function Sentiment() {
   const { data: comments, isLoading: loadingComments, refetch: refetchComments } = useCommentsApi(undefined, 'instagram');
   const analyzeSentiment = useAnalyzeSentimentApi();
 
-  const { data: spamComments, isLoading: loadingSpam } = useSpamComments();
+  const { data: spamComments, isLoading: loadingSpam } = useSpamComments('instagram');
   const detectSpam = useDetectSpam();
 
   const isLoading = loadingStats || loadingTrend || loadingComments;

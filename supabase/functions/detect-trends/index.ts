@@ -38,19 +38,39 @@ serve(async (req) => {
     }
     const userId = claimsData.claims.sub as string;
 
-    // Fetch posts, comments, and metrics
+    // Parse optional platform from request body
+    let platform: string | null = null;
+    try {
+      const body = await req.json();
+      if (body?.platform) platform = body.platform;
+    } catch {
+      // no body is fine
+    }
+
+    // Fetch posts, comments, and metrics — filter by platform if provided
+    let postsQuery = supabase.from("posts").select("*").eq("user_id", userId).order("published_at", { ascending: false }).limit(50);
+    let commentsQuery = supabase.from("post_comments").select("content, sentiment, created_at").eq("user_id", userId).limit(200);
+    let metricsQuery = supabase.from("audience_metrics").select("*").eq("user_id", userId).order("date", { ascending: false }).limit(30);
+
+    if (platform) {
+      postsQuery = postsQuery.eq("platform", platform);
+      metricsQuery = metricsQuery.eq("platform", platform);
+    }
+
     const [postsRes, commentsRes, metricsRes] = await Promise.all([
-      supabase.from("posts").select("*").eq("user_id", userId).order("published_at", { ascending: false }).limit(50),
-      supabase.from("post_comments").select("content, sentiment, created_at").eq("user_id", userId).limit(200),
-      supabase.from("audience_metrics").select("*").eq("user_id", userId).order("date", { ascending: false }).limit(30),
+      postsQuery,
+      commentsQuery,
+      metricsQuery,
     ]);
 
     const posts = postsRes.data || [];
     const comments = commentsRes.data || [];
     const metrics = metricsRes.data || [];
 
+    const platformLabel = platform || "instagram";
+
     if (posts.length === 0) {
-      return new Response(JSON.stringify({ success: true, trends: [], message: "No posts data to analyze" }), {
+      return new Response(JSON.stringify({ success: true, trends: [], message: `No ${platformLabel} posts data to analyze` }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -77,7 +97,7 @@ serve(async (req) => {
       newFollowers: m.new_followers,
     }));
 
-    const prompt = `Analyze this Instagram account's data and detect personal trends:
+    const prompt = `Analyze this ${platformLabel} account's data and detect personal trends:
 
 Posts (recent ${postSummary.length}):
 ${JSON.stringify(postSummary, null, 1)}
@@ -96,7 +116,7 @@ Detect 3-5 specific, data-backed trends about this account's performance, conten
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [
-          { role: "system", content: "You are an Instagram analytics trend detector. Identify personal performance trends from real data. Be specific and data-driven." },
+          { role: "system", content: `You are a ${platformLabel} analytics trend detector. Identify personal performance trends from real data. Be specific and data-driven.` },
           { role: "user", content: prompt },
         ],
         tools: [{
@@ -145,7 +165,12 @@ Detect 3-5 specific, data-backed trends about this account's performance, conten
 
     const trendsData = JSON.parse(toolCall.function.arguments);
 
-    await supabase.from("personal_trends").delete().eq("user_id", userId);
+    // Delete old trends for this platform only
+    let deleteQuery = supabase.from("personal_trends").delete().eq("user_id", userId);
+    if (platform) {
+      deleteQuery = deleteQuery.eq("platform", platform);
+    }
+    await deleteQuery;
 
     const trendsToInsert = trendsData.trends.map((t: any) => ({
       user_id: userId,
@@ -154,13 +179,13 @@ Detect 3-5 specific, data-backed trends about this account's performance, conten
       description: String(t.description).slice(0, 500),
       direction: t.direction,
       confidence_score: t.confidence,
-      platform: "instagram",
+      platform: platformLabel,
     }));
 
     const { error: insertError } = await supabase.from("personal_trends").insert(trendsToInsert);
     if (insertError) throw insertError;
 
-    console.log(`Detected ${trendsData.trends.length} trends for user ${userId}`);
+    console.log(`Detected ${trendsData.trends.length} ${platformLabel} trends for user ${userId}`);
 
     return new Response(JSON.stringify({
       success: true,

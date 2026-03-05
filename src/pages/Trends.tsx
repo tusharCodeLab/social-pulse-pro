@@ -47,7 +47,7 @@ function formatConfidence(score: number): { label: string; className: string } {
 
 export default function Trends() {
   const { toast } = useToast();
-  const { data: trends, isLoading: loadingTrends, error: trendsError } = usePersonalTrends();
+  const { data: trends, isLoading: loadingTrends, error: trendsError } = usePersonalTrends('instagram');
   const detectTrends = useDetectTrends();
   const aiContentIdeas = useAIContentIdeas();
   const [contentIdeas, setContentIdeas] = useState<ContentIdea[] | null>(null);
@@ -55,12 +55,12 @@ export default function Trends() {
 
   const handleDetectTrends = async () => {
     try {
-      const result = await detectTrends.mutateAsync();
+      const result = await detectTrends.mutateAsync('instagram');
       const count = result?.trends?.length || 0;
       toast({ 
         title: 'Analysis complete', 
         description: count > 0 
-          ? `Detected ${count} trend${count !== 1 ? 's' : ''} in your performance data.`
+          ? `Detected ${count} trend${count !== 1 ? 's' : ''} in your Instagram performance data.`
           : 'No significant trends found. Try again after more data accumulates.',
       });
     } catch (error) {

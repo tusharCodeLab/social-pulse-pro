@@ -6,12 +6,24 @@ import { useAuth } from "@/contexts/AuthContext";
 // ============================================================================
 // Spam Detection
 // ============================================================================
-export function useSpamComments() {
+export function useSpamComments(platform?: string) {
   const { user } = useAuth();
   return useQuery({
-    queryKey: ["spam-comments", user?.id],
+    queryKey: ["spam-comments", user?.id, platform],
     queryFn: async () => {
       if (!user) return [];
+      if (platform) {
+        // Filter spam comments by platform via posts join
+        const { data, error } = await supabase
+          .from("post_comments")
+          .select("id, content, author_name, is_spam, spam_reason, created_at, posts!inner(platform)")
+          .eq("is_spam", true)
+          .eq("posts.platform", platform as any)
+          .order("created_at", { ascending: false })
+          .limit(50);
+        if (error) throw error;
+        return data || [];
+      }
       const { data, error } = await supabase
         .from("post_comments")
         .select("id, content, author_name, is_spam, spam_reason, created_at")
@@ -67,8 +79,10 @@ export function usePersonalTrends(platform?: string) {
 export function useDetectTrends() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke("detect-trends");
+    mutationFn: async (platform?: string) => {
+      const { data, error } = await supabase.functions.invoke("detect-trends", {
+        body: platform ? { platform } : undefined,
+      });
       if (error) throw error;
       return data as { success: boolean; trends: any[] };
     },
