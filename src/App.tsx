@@ -22,6 +22,7 @@ import YouTubeTrends from "./pages/YouTubeTrends";
 import FacebookAnalytics from "./pages/FacebookAnalytics";
 import FacebookPosts from "./pages/FacebookPosts";
 import FacebookAudience from "./pages/FacebookAudience";
+import CrossPlatformAnalytics from "./pages/CrossPlatformAnalytics";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
@@ -52,6 +53,7 @@ const App = () => (
               <Route path="/facebook-analytics" element={<ProtectedRoute><FacebookAnalytics /></ProtectedRoute>} />
               <Route path="/facebook-posts" element={<ProtectedRoute><FacebookPosts /></ProtectedRoute>} />
               <Route path="/facebook-audience" element={<ProtectedRoute><FacebookAudience /></ProtectedRoute>} />
+              <Route path="/cross-platform" element={<ProtectedRoute><CrossPlatformAnalytics /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
