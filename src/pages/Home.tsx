@@ -54,10 +54,10 @@ const features = [
 ];
 
 const stats = [
-  { value: 10000, suffix: "+", label: "Active Users", icon: Users },
-  { value: 3, suffix: "", label: "Platforms", icon: Zap },
-  { value: 50, suffix: "M+", label: "Posts Analyzed", icon: BarChart3 },
-  { value: 99, suffix: "%", label: "Uptime", icon: CheckCircle2 },
+  { value: 3, suffix: "", label: "Platforms Supported", icon: Zap },
+  { value: 6, suffix: "+", label: "AI-Powered Features", icon: Brain },
+  { value: 100, suffix: "%", label: "Free to Use", icon: CheckCircle2 },
+  { value: 24, suffix: "/7", label: "Real-Time Analytics", icon: BarChart3 },
 ];
 
 const steps = [
@@ -348,7 +348,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Social Proof */}
+      {/* Why SocialPulse */}
       <section className="py-16 px-6 border-t border-border/30">
         <div className="max-w-4xl mx-auto text-center">
           <motion.div
@@ -356,13 +356,13 @@ const Home = () => {
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
           >
-            <p className="text-lg text-muted-foreground mb-6">Trusted by marketers and creators worldwide</p>
+            <p className="text-lg text-muted-foreground mb-6">Why creators choose SocialPulse</p>
             <div className="flex items-center justify-center gap-8 flex-wrap">
               {[
-                "⭐⭐⭐⭐⭐ \"Game-changer for my content strategy\"",
-                "⭐⭐⭐⭐⭐ \"Best analytics tool I've used\"",
-                "⭐⭐⭐⭐⭐ \"AI insights are incredibly accurate\"",
-              ].map((review, i) => (
+                "🔒 100% Free — No hidden fees or subscriptions",
+                "🤖 AI-powered insights from your real data",
+                "📊 Cross-platform analytics in one dashboard",
+              ].map((item, i) => (
                 <motion.div
                   key={i}
                   initial={{ opacity: 0, y: 10 }}
@@ -371,7 +371,7 @@ const Home = () => {
                   transition={{ delay: i * 0.15 }}
                   className="px-5 py-3 rounded-xl bg-card/50 border border-border/50 text-sm text-muted-foreground"
                 >
-                  {review}
+                  {item}
                 </motion.div>
               ))}
             </div>
