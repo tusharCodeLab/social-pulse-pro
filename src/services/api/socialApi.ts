@@ -641,15 +641,9 @@ export const analyticsApi = {
     const totalFollowers = (accounts || []).reduce((sum, a) => sum + (a.followers_count || 0), 0);
     const totalEngagement = postList.reduce((sum, p) => 
       sum + (p.likes_count || 0) + (p.comments_count || 0) + (p.shares_count || 0), 0);
-    const rawReach = postList.reduce((sum, p) => sum + (p.reach || 0), 0);
-    // Smart fallback: use interactions as reach when API doesn't provide reach data
-    const totalReach = rawReach > 0 ? rawReach : totalEngagement;
+    const totalReach = postList.reduce((sum, p) => sum + (p.reach || 0), 0);
     const avgEngagementRate = postList.length > 0 
-      ? (() => {
-          const storedRate = postList.reduce((sum, p) => sum + Number(p.engagement_rate || 0), 0) / postList.length;
-          if (storedRate > 0) return storedRate;
-          return totalFollowers > 0 ? (totalEngagement / totalFollowers) * 100 : 0;
-        })()
+      ? postList.reduce((sum, p) => sum + Number(p.engagement_rate || 0), 0) / postList.length
       : 0;
 
     // Get sentiment stats
