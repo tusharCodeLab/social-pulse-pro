@@ -1,8 +1,10 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useSettingsStore } from "@/stores/settingsStore";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { InstagramSyncProvider } from "@/components/InstagramSyncProvider";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -33,7 +35,16 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => (
+const App = () => {
+  const theme = useSettingsStore((s) => s.theme);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.remove('dark', 'light');
+    root.classList.add(theme);
+  }, [theme]);
+
+  return (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <InstagramSyncProvider>
@@ -72,6 +83,7 @@ const App = () => (
       </InstagramSyncProvider>
     </AuthProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;

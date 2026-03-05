@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import {
   Check, Loader2, Wifi, WifiOff, TrendingUp,
   User, Database, Bell, LogOut, Shield, Clock, Download, Trash2, Mail,
+  Sun, Moon, Monitor,
 } from 'lucide-react';
 import { InstagramIcon, YouTubeIcon, FacebookIcon } from '@/components/icons/PlatformIcons';
 
@@ -26,7 +27,7 @@ const platforms = [
 ];
 
 export default function Settings() {
-  const { connectedPlatforms, togglePlatform } = useSettingsStore();
+  const { connectedPlatforms, togglePlatform, theme, setTheme } = useSettingsStore();
   const [isConnectingInstagram, setIsConnectingInstagram] = useState(false);
   const [instagramSyncResult, setInstagramSyncResult] = useState<{ posts: number; comments: number; username: string } | null>(null);
   const [ytHandle, setYtHandle] = useState('');
@@ -146,6 +147,30 @@ export default function Settings() {
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Clock className="h-3.5 w-3.5" />
                 <span>Member since {user?.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'Unknown'}</span>
+              </div>
+            </div>
+          </ChartCard>
+        </motion.div>
+
+        {/* Appearance */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}>
+          <ChartCard title="Appearance" subtitle="Customize the look and feel" delay={0.15}>
+            <div className="mt-4">
+              <div className="flex items-center justify-between p-4 rounded-xl bg-muted/20 border border-border/50">
+                <div className="flex items-center gap-3">
+                  {theme === 'dark' ? <Moon className="h-4 w-4 text-primary" /> : <Sun className="h-4 w-4 text-primary" />}
+                  <div>
+                    <Label htmlFor="theme-toggle" className="text-sm font-medium text-foreground cursor-pointer">
+                      {theme === 'dark' ? 'Dark Mode' : 'Light Mode'}
+                    </Label>
+                    <p className="text-xs text-muted-foreground">Switch between light and dark theme</p>
+                  </div>
+                </div>
+                <Switch
+                  id="theme-toggle"
+                  checked={theme === 'light'}
+                  onCheckedChange={(checked) => setTheme(checked ? 'light' : 'dark')}
+                />
               </div>
             </div>
           </ChartCard>

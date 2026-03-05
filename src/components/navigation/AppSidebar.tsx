@@ -16,11 +16,14 @@ import {
   LogOut,
   Zap,
   Plus,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { InstagramIcon, YouTubeIcon, FacebookIcon } from '@/components/icons/PlatformIcons';
 import { SidebarNavLink } from './SidebarNavLink';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSettingsStore } from '@/stores/settingsStore';
 
 interface NavItem {
   to: string;
@@ -92,6 +95,7 @@ export function AppSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [expandedPlatforms, setExpandedPlatforms] = useState<Record<string, boolean>>({ instagram: true, youtube: true, facebook: true });
   const { signOut, user } = useAuth();
+  const { theme, setTheme } = useSettingsStore();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -278,6 +282,22 @@ export function AppSidebar() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Theme Toggle */}
+        <motion.button
+          whileHover={{ scale: 1.02, x: 2 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          className={cn(
+            'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl',
+            'text-muted-foreground hover:text-foreground hover:bg-sidebar-accent',
+            'transition-all duration-200',
+            collapsed && 'justify-center'
+          )}
+        >
+          {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          {!collapsed && <span className="text-sm font-medium">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>}
+        </motion.button>
 
         <motion.button
           whileHover={{ scale: 1.02, x: 2 }}

@@ -68,8 +68,66 @@
     --sidebar-ring: 173 80% 45%;
   }
 
-  .dark {
-    /* Already dark by default */
+  .light {
+    --background: 210 20% 98%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 173 80% 36%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 20% 94%;
+    --secondary-foreground: 222 30% 30%;
+
+    --muted: 210 20% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 210 20% 93%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 20% 88%;
+    --input: 214 20% 88%;
+    --ring: 173 80% 36%;
+
+    /* Chart Colors */
+    --chart-engagement: 173 80% 36%;
+    --chart-reach: 262 83% 58%;
+    --chart-impressions: 38 92% 50%;
+    --chart-sentiment-positive: 142 71% 40%;
+    --chart-sentiment-negative: 0 72% 51%;
+    --chart-sentiment-neutral: 215 16% 47%;
+
+    /* Premium Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(173 80% 36%), hsl(173 80% 28%));
+    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(210 20% 98%));
+    --gradient-glass: linear-gradient(135deg, rgba(255,255,255,0.8), rgba(255,255,255,0.5));
+    --gradient-accent: linear-gradient(135deg, hsl(173 80% 36% / 0.1), hsl(262 83% 58% / 0.05));
+    --gradient-premium: linear-gradient(135deg, hsl(173 80% 36%), hsl(262 83% 58%));
+    --gradient-warm: linear-gradient(135deg, hsl(38 92% 50%), hsl(0 72% 51%));
+
+    /* Premium Shadows */
+    --shadow-glow: 0 0 40px -10px hsl(173 80% 36% / 0.15);
+    --shadow-card: 0 1px 3px 0 hsl(222 47% 11% / 0.06), 0 1px 2px -1px hsl(222 47% 11% / 0.06);
+    --shadow-elevated: 0 4px 12px -2px hsl(222 47% 11% / 0.08);
+    --shadow-premium: 0 20px 50px -15px hsl(173 80% 36% / 0.1);
+
+    /* Sidebar */
+    --sidebar-background: 210 20% 97%;
+    --sidebar-foreground: 215 16% 47%;
+    --sidebar-primary: 173 80% 36%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 20% 93%;
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 214 20% 91%;
+    --sidebar-ring: 173 80% 36%;
   }
 }
 
