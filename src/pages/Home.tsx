@@ -54,10 +54,10 @@ const features = [
 ];
 
 const stats = [
-  { value: 10000, suffix: "+", label: "Active Users", icon: Users },
-  { value: 3, suffix: "", label: "Platforms", icon: Zap },
-  { value: 50, suffix: "M+", label: "Posts Analyzed", icon: BarChart3 },
-  { value: 99, suffix: "%", label: "Uptime", icon: CheckCircle2 },
+  { value: 3, suffix: "", label: "Platforms Supported", icon: Zap },
+  { value: 6, suffix: "+", label: "AI-Powered Features", icon: Brain },
+  { value: 100, suffix: "%", label: "Free to Use", icon: CheckCircle2 },
+  { value: 24, suffix: "/7", label: "Real-Time Analytics", icon: BarChart3 },
 ];
 
 const steps = [
