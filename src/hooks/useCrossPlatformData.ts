@@ -60,10 +60,7 @@ export function usePlatformComparison() {
         ]);
 
         const posts = postsRes.data || [];
-        const rawReach = posts.reduce((sum, p) => sum + (p.reach || 0), 0);
-        const totalInteractions = posts.reduce((sum, p) => sum + (p.likes_count || 0) + (p.comments_count || 0), 0);
-        // Smart fallback: use interactions when reach is 0
-        const totalReach = rawReach > 0 ? rawReach : totalInteractions;
+        const totalReach = posts.reduce((sum, p) => sum + (p.reach || 0), 0);
         const totalImpressions = posts.reduce((sum, p) => sum + (p.impressions || 0), 0);
         const avgEngagement = posts.length
           ? posts.reduce((sum, p) => sum + (Number(p.engagement_rate) || 0), 0) / posts.length
