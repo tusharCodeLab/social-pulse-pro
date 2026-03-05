@@ -30,7 +30,7 @@ export function QuickActionsRow() {
           const result = await contentIdeas.mutateAsync();
           if (result.ideas) setIdeasResult(result.ideas);
           else toast({ title: 'No ideas', description: result.message || 'Import data first.' });
-        } catch { toast({ title: 'Failed', variant: 'destructive' }); }
+        } catch { toast({ title: 'Failed', description: 'Could not generate ideas.', variant: 'destructive' }); }
       },
     },
     {
