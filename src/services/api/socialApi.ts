@@ -639,9 +639,17 @@ export const analyticsApi = {
     const postList = posts || [];
     const totalEngagement = postList.reduce((sum, p) => 
       sum + (p.likes_count || 0) + (p.comments_count || 0) + (p.shares_count || 0), 0);
-    const totalReach = postList.reduce((sum, p) => sum + (p.reach || 0), 0);
+    const rawReach = postList.reduce((sum, p) => sum + (p.reach || 0), 0);
+    // Smart fallback: use interactions as reach when API doesn't provide reach data
+    const totalReach = rawReach > 0 ? rawReach : totalEngagement;
     const avgEngagementRate = postList.length > 0 
-      ? postList.reduce((sum, p) => sum + Number(p.engagement_rate || 0), 0) / postList.length 
+      ? (() => {
+          const storedRate = postList.reduce((sum, p) => sum + Number(p.engagement_rate || 0), 0) / postList.length;
+          if (storedRate > 0) return storedRate;
+          // Fallback: calculate from interactions
+          const totalFollowersForRate = (accounts || []).reduce((sum, a) => sum + (a.followers_count || 0), 0);
+          return totalFollowersForRate > 0 ? (totalEngagement / totalFollowersForRate) * 100 : 0;
+        })()
       : 0;
 
     // Get followers from social accounts
