@@ -38,6 +38,13 @@ export function useInstagramSync() {
     lastSyncRef.current = now;
 
     try {
+      // Refresh session to ensure a valid JWT is sent
+      const { data: { session } } = await supabase.auth.refreshSession();
+      if (!session) {
+        console.log('[InstagramSync] No valid session after refresh, skipping sync');
+        return;
+      }
+
       console.log('[InstagramSync] Triggering Instagram data sync...');
       
       const { data, error } = await supabase.functions.invoke('fetch-instagram', {

@@ -67,21 +67,21 @@ serve(async (req) => {
 
     const token = authHeader.replace("Bearer ", "");
 
-    // Use anon key client with getClaims for signing-keys auth validation
+    // Use anon key client with getUser for robust auth validation
     const authClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(token);
-    const userId = claimsData?.claims?.sub;
+    const { data: { user: authUser }, error: authError } = await authClient.auth.getUser(token);
 
-    if (claimsError || !userId) {
+    if (authError || !authUser) {
+      console.error("Auth validation error:", authError?.message);
       return new Response(
-        JSON.stringify({ error: "Invalid token" }),
+        JSON.stringify({ error: authError?.message || "Invalid token" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const user = { id: userId };
+    const user = { id: authUser.id };
 
     // Use service role client for DB operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
