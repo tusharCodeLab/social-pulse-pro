@@ -4,7 +4,7 @@ import {
 } from 'recharts';
 import { Users, TrendingUp, UserPlus, Loader2, Clock, Zap, Percent, Facebook } from 'lucide-react';
 
-import { MetricCard } from '@/components/dashboard/MetricCard';
+import { EnhancedMetricCard } from '@/components/dashboard/EnhancedMetricCard';
 import { ChartCard } from '@/components/dashboard/ChartCard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
