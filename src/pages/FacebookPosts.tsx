@@ -9,7 +9,7 @@ import {
   Image, Video, Layers, Type, PenTool, Copy, Check, Star, Facebook, Eye,
 } from 'lucide-react';
 
-import { MetricCard } from '@/components/dashboard/MetricCard';
+import { EnhancedMetricCard } from '@/components/dashboard/EnhancedMetricCard';
 import { ChartCard } from '@/components/dashboard/ChartCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
