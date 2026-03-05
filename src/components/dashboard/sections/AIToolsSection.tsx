@@ -121,7 +121,7 @@ export function AIToolsSection() {
           subtitle="AI-detected performance patterns"
           delay={1.1}
           action={
-            <Button size="sm" variant="outline" onClick={() => handleAction(() => detectTrends.mutateAsync(), 'Trends detected!')} disabled={detectTrends.isPending}>
+            <Button size="sm" variant="outline" onClick={() => handleAction(() => detectTrends.mutateAsync('instagram'), 'Trends detected!')} disabled={detectTrends.isPending}>
               {detectTrends.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <TrendingUp className="h-3.5 w-3.5 mr-1.5" />}
               Detect
             </Button>

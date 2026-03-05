@@ -18,7 +18,7 @@ export function useSpamComments(platform?: string) {
           .from("post_comments")
           .select("id, content, author_name, is_spam, spam_reason, created_at, posts!inner(platform)")
           .eq("is_spam", true)
-          .eq("posts.platform", platform)
+          .eq("posts.platform", platform as any)
           .order("created_at", { ascending: false })
           .limit(50);
         if (error) throw error;
