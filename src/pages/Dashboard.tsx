@@ -139,7 +139,7 @@ export default function Dashboard() {
 
   if (isLoading) {
     return (
-      <DashboardLayout>
+      <>
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
           {[...Array(5)].map((_, i) => <PremiumSkeleton key={i} variant="metric" />)}
         </div>
@@ -147,7 +147,7 @@ export default function Dashboard() {
           <PremiumSkeleton variant="chart" className="lg:col-span-2" />
           <PremiumSkeleton variant="chart" />
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
