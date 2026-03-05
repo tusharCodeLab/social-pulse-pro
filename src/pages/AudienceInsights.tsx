@@ -3,7 +3,7 @@ import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
 } from 'recharts';
 import { Users, TrendingUp, UserPlus, Loader2, Clock, Zap, Percent } from 'lucide-react';
-import { DashboardLayout } from '@/components/DashboardLayout';
+
 import { MetricCard } from '@/components/dashboard/MetricCard';
 import { ChartCard } from '@/components/dashboard/ChartCard';
 import { Button } from '@/components/ui/button';
