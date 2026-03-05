@@ -23,6 +23,7 @@ import {
   Zap,
 } from "lucide-react";
 
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -105,16 +106,24 @@ function ScoreRing({ score }: { score: number }) {
   );
 }
 
+const platformFilterOptions = ['all', 'instagram', 'twitter', 'facebook', 'linkedin'] as const;
+
 export default function ContentCalendar() {
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedItem, setSelectedItem] = useState<CalendarItem | null>(null);
+  const [platformFilter, setPlatformFilter] = useState<string>('all');
   const { toast } = useToast();
 
   const weekDates = useMemo(() => getWeekDates(weekOffset), [weekOffset]);
-  const { data: items = [], isLoading } = useCalendarItems(weekDates[0], weekDates[6]);
+  const { data: rawItems = [], isLoading } = useCalendarItems(weekDates[0], weekDates[6]);
   const generateCalendar = useGenerateCalendar();
   const updateItem = useUpdateCalendarItem();
   const deleteItem = useDeleteCalendarItem();
+
+  const items = useMemo(() => 
+    platformFilter === 'all' ? rawItems : rawItems.filter(i => i.platform === platformFilter),
+    [rawItems, platformFilter]
+  );
 
   const itemsByDate = useMemo(() => {
     const map: Record<string, CalendarItem[]> = {};
@@ -126,6 +135,15 @@ export default function ContentCalendar() {
   }, [items, weekDates]);
 
   const today = new Date().toISOString().split("T")[0];
+
+  // Content type breakdown for the week
+  const weekSummary = useMemo(() => {
+    const types: Record<string, number> = {};
+    rawItems.forEach(item => {
+      types[item.content_type] = (types[item.content_type] || 0) + 1;
+    });
+    return types;
+  }, [rawItems]);
 
   const handleGenerate = async () => {
     try {
@@ -207,6 +225,43 @@ export default function ContentCalendar() {
             <ChevronRight className="h-5 w-5" />
           </Button>
         </div>
+
+        {/* Platform Filters */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-muted-foreground mr-1">Filter:</span>
+          {platformFilterOptions.map((p) => {
+            const PIcon = p === 'all' ? Calendar : (platformIcons[p] || Calendar);
+            return (
+              <Button
+                key={p}
+                variant={platformFilter === p ? "default" : "outline"}
+                size="sm"
+                onClick={() => setPlatformFilter(p)}
+                className={cn("gap-1.5 h-8 text-xs capitalize", platformFilter === p && "bg-primary text-primary-foreground")}
+              >
+                <PIcon className="h-3.5 w-3.5" />
+                {p === 'all' ? 'All' : p}
+              </Button>
+            );
+          })}
+        </div>
+
+        {/* Week Summary */}
+        {rawItems.length > 0 && Object.keys(weekSummary).length > 0 && (
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/20 border border-border/50">
+            <span className="text-xs text-muted-foreground">This week:</span>
+            {Object.entries(weekSummary).map(([type, count]) => {
+              const TypeIcon = contentTypeIcons[type] || MessageSquare;
+              return (
+                <Badge key={type} variant="outline" className="gap-1 text-xs capitalize">
+                  <TypeIcon className="h-3 w-3" />
+                  {count} {type}{count !== 1 ? 's' : ''}
+                </Badge>
+              );
+            })}
+            <span className="text-xs text-muted-foreground ml-auto">{rawItems.length} total</span>
+          </div>
+        )}
 
         {/* Calendar Grid */}
         <div className="grid grid-cols-7 gap-3">
