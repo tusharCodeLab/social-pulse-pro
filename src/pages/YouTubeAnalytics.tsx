@@ -1,16 +1,17 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Youtube, Eye, ThumbsUp, MessageCircle, Users, Clock,
+  Youtube, Eye, ThumbsUp, MessageCircle, Users,
   TrendingUp, PlayCircle, BarChart3, Activity, Film,
 } from 'lucide-react';
 import {
-  AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer,
+  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { EnhancedMetricCard } from '@/components/dashboard/EnhancedMetricCard';
 import { cn } from '@/lib/utils';
 import { useYouTubeAccount, useYouTubeVideos, useYouTubeComments } from '@/hooks/useYouTubeData';
 import { format } from 'date-fns';
@@ -22,21 +23,7 @@ const tooltipStyle = {
   color: 'hsl(210, 40%, 98%)',
 };
 
-function MetricTile({ icon: Icon, label, value, color }: {
-  icon: any; label: string; value: string; color?: string;
-}) {
-  return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border bg-card p-4" style={{ boxShadow: 'var(--shadow-card)' }}>
-      <div className="flex items-center gap-2 mb-2">
-        <div className={cn('p-1.5 rounded-lg', color || 'bg-primary/10')}>
-          <Icon className="h-4 w-4 text-primary" />
-        </div>
-        <span className="text-xs text-muted-foreground">{label}</span>
-      </div>
-      <p className="text-2xl font-bold text-foreground">{value}</p>
-    </motion.div>
-  );
-}
+const PIE_COLORS = ['hsl(0,80%,50%)', 'hsl(210,80%,55%)', 'hsl(38,92%,50%)'];
 
 function formatNum(n: number) {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
@@ -67,8 +54,14 @@ export default function YouTubeAnalytics() {
         date: format(new Date(v.published_at!), 'MMM d'),
         views: v.reach || 0,
         likes: v.likes_count || 0,
+        comments: v.comments_count || 0,
       }));
   }, [videos]);
+
+  const engagementPieData = useMemo(() => [
+    { name: 'Likes', value: totals.totalLikes },
+    { name: 'Comments', value: totals.totalComments },
+  ].filter(d => d.value > 0), [totals]);
 
   const emptyChartMessage = (
     <div className="flex flex-col items-center justify-center h-full gap-2 text-center py-8">
@@ -95,14 +88,14 @@ export default function YouTubeAnalytics() {
         </Badge>
       </motion.div>
 
-      {/* Top Metrics */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.05 }} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
-        <MetricTile icon={Eye} label="Total Views" value={formatNum(totals.totalViews)} color="bg-[#FF0000]/10" />
-        <MetricTile icon={Users} label="Subscribers" value={formatNum(account?.followers_count || 0)} color="bg-chart-impressions/10" />
-        <MetricTile icon={ThumbsUp} label="Likes" value={formatNum(totals.totalLikes)} color="bg-primary/10" />
-        <MetricTile icon={MessageCircle} label="Comments" value={formatNum(totals.totalComments)} color="bg-chart-sentiment-positive/10" />
-        <MetricTile icon={Film} label="Videos" value={String(videos.length)} color="bg-chart-sentiment-neutral/10" />
-      </motion.div>
+      {/* Enhanced Metrics */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+        <EnhancedMetricCard label="Total Views" value={formatNum(totals.totalViews)} icon={Eye} color="hsl(0,80%,50%)" delay={0.05} sparkData={viewsTrend.slice(-7).map(v => v.views)} />
+        <EnhancedMetricCard label="Subscribers" value={formatNum(account?.followers_count || 0)} icon={Users} color="hsl(38,92%,50%)" delay={0.1} />
+        <EnhancedMetricCard label="Likes" value={formatNum(totals.totalLikes)} icon={ThumbsUp} color="hsl(var(--primary))" delay={0.15} sparkData={viewsTrend.slice(-7).map(v => v.likes)} />
+        <EnhancedMetricCard label="Comments" value={formatNum(totals.totalComments)} icon={MessageCircle} color="hsl(262,83%,58%)" delay={0.2} sparkData={viewsTrend.slice(-7).map(v => v.comments)} />
+        <EnhancedMetricCard label="Videos" value={String(videos.length)} icon={Film} color="hsl(173,80%,45%)" delay={0.25} />
+      </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-5 bg-muted/50">
@@ -112,47 +105,87 @@ export default function YouTubeAnalytics() {
         </TabsList>
 
         <TabsContent value="overview">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="rounded-xl border border-border bg-card p-5" style={{ boxShadow: 'var(--shadow-card)' }}>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="lg:col-span-2 rounded-xl border border-border/60 bg-card p-5" style={{ boxShadow: 'var(--shadow-card)' }}>
               <div className="flex items-center gap-2 mb-1"><Eye className="h-4 w-4 text-[#FF0000]" /><h3 className="text-sm font-semibold text-foreground">Views per Video</h3></div>
               <p className="text-[10px] text-muted-foreground mb-4">Views for each published video</p>
-              <div className="h-[220px]">
+              <div className="h-[240px]">
                 {hasData ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={viewsTrend}>
+                      <defs>
+                        <linearGradient id="ytViewsGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="hsl(0,80%,50%)" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="hsl(0,80%,50%)" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(222,30%,15%)" />
                       <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="hsl(215,20%,50%)" />
                       <YAxis tick={{ fontSize: 10 }} stroke="hsl(215,20%,50%)" />
                       <Tooltip contentStyle={tooltipStyle} />
-                      <Area type="monotone" dataKey="views" stroke="hsl(0,80%,50%)" fill="hsl(0,80%,50%)" fillOpacity={0.15} />
+                      <Area type="monotone" dataKey="views" stroke="hsl(0,80%,50%)" fill="url(#ytViewsGrad)" strokeWidth={2} />
                     </AreaChart>
                   </ResponsiveContainer>
                 ) : emptyChartMessage}
               </div>
             </motion.div>
 
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="rounded-xl border border-border bg-card p-5" style={{ boxShadow: 'var(--shadow-card)' }}>
-              <div className="flex items-center gap-2 mb-1"><ThumbsUp className="h-4 w-4 text-primary" /><h3 className="text-sm font-semibold text-foreground">Likes per Video</h3></div>
-              <p className="text-[10px] text-muted-foreground mb-4">Like counts across videos</p>
-              <div className="h-[220px]">
-                {hasData ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={viewsTrend}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(222,30%,15%)" />
-                      <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="hsl(215,20%,50%)" />
-                      <YAxis tick={{ fontSize: 10 }} stroke="hsl(215,20%,50%)" />
-                      <Tooltip contentStyle={tooltipStyle} />
-                      <Bar dataKey="likes" fill="hsl(210,80%,55%)" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
+            {/* Engagement Breakdown Pie */}
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="rounded-xl border border-border/60 bg-card p-5" style={{ boxShadow: 'var(--shadow-card)' }}>
+              <div className="flex items-center gap-2 mb-1"><Activity className="h-4 w-4 text-[#FF0000]" /><h3 className="text-sm font-semibold text-foreground">Engagement Split</h3></div>
+              <p className="text-[10px] text-muted-foreground mb-2">Likes vs Comments</p>
+              <div className="h-[200px] flex items-center justify-center relative">
+                {engagementPieData.length > 0 ? (
+                  <>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={engagementPieData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={4} dataKey="value">
+                          {engagementPieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i]} />)}
+                        </Pie>
+                        <Tooltip contentStyle={tooltipStyle} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="absolute flex flex-col items-center">
+                      <span className="text-xl font-bold text-foreground">{formatNum(totals.totalLikes + totals.totalComments)}</span>
+                      <span className="text-[10px] text-muted-foreground">Total</span>
+                    </div>
+                  </>
                 ) : emptyChartMessage}
               </div>
+              {engagementPieData.length > 0 && (
+                <div className="flex justify-center gap-4 mt-2">
+                  {engagementPieData.map((item, i) => (
+                    <div key={item.name} className="flex items-center gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: PIE_COLORS[i] }} />
+                      <span className="text-[10px] text-muted-foreground">{item.name}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </motion.div>
           </div>
+
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mt-5 rounded-xl border border-border/60 bg-card p-5" style={{ boxShadow: 'var(--shadow-card)' }}>
+            <div className="flex items-center gap-2 mb-1"><ThumbsUp className="h-4 w-4 text-primary" /><h3 className="text-sm font-semibold text-foreground">Likes per Video</h3></div>
+            <p className="text-[10px] text-muted-foreground mb-4">Like counts across videos</p>
+            <div className="h-[220px]">
+              {hasData ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={viewsTrend}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(222,30%,15%)" />
+                    <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="hsl(215,20%,50%)" />
+                    <YAxis tick={{ fontSize: 10 }} stroke="hsl(215,20%,50%)" />
+                    <Tooltip contentStyle={tooltipStyle} />
+                    <Bar dataKey="likes" fill="hsl(210,80%,55%)" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : emptyChartMessage}
+            </div>
+          </motion.div>
         </TabsContent>
 
         <TabsContent value="engagement">
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border bg-card p-5" style={{ boxShadow: 'var(--shadow-card)' }}>
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border/60 bg-card p-5" style={{ boxShadow: 'var(--shadow-card)' }}>
             <div className="flex items-center gap-2 mb-1"><TrendingUp className="h-4 w-4 text-chart-reach" /><h3 className="text-sm font-semibold text-foreground">Engagement Rate by Video</h3></div>
             <p className="text-[10px] text-muted-foreground mb-4">(Likes + Comments) / Views × 100</p>
             <div className="h-[280px]">
@@ -177,7 +210,7 @@ export default function YouTubeAnalytics() {
         </TabsContent>
 
         <TabsContent value="videos">
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border bg-card p-5" style={{ boxShadow: 'var(--shadow-card)' }}>
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border/60 bg-card p-5" style={{ boxShadow: 'var(--shadow-card)' }}>
             <div className="flex items-center gap-2 mb-4"><PlayCircle className="h-4 w-4 text-[#FF0000]" /><h3 className="text-sm font-semibold text-foreground">Top Performing Videos</h3></div>
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -195,7 +228,15 @@ export default function YouTubeAnalytics() {
                       .slice(0, 15)
                       .map(v => (
                         <tr key={v.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                          <td className="py-2.5 px-3 text-sm text-foreground max-w-xs truncate">{v.content || 'Untitled'}</td>
+                          <td className="py-2.5 px-3">
+                            <div className="flex items-center gap-3">
+                              {v.media_url && (
+                                <img src={v.media_url} alt="" loading="lazy" className="w-16 h-9 rounded-md object-cover border border-border flex-shrink-0"
+                                  onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                              )}
+                              <span className="text-sm text-foreground max-w-xs truncate">{v.content || 'Untitled'}</span>
+                            </div>
+                          </td>
                           <td className="py-2.5 px-3 text-sm text-right text-foreground">{formatNum(v.reach || 0)}</td>
                           <td className="py-2.5 px-3 text-sm text-right text-foreground">{formatNum(v.likes_count || 0)}</td>
                           <td className="py-2.5 px-3 text-sm text-right text-foreground">{formatNum(v.comments_count || 0)}</td>

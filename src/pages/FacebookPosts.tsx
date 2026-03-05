@@ -9,7 +9,7 @@ import {
   Image, Video, Layers, Type, PenTool, Copy, Check, Star, Facebook, Eye,
 } from 'lucide-react';
 
-import { MetricCard } from '@/components/dashboard/MetricCard';
+import { EnhancedMetricCard } from '@/components/dashboard/EnhancedMetricCard';
 import { ChartCard } from '@/components/dashboard/ChartCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -169,10 +169,10 @@ export default function FacebookPosts() {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <MetricCard title="Total Posts" value={stats?.totalPosts.toString() || '0'} icon={FileText} delay={0.1} />
-            <MetricCard title="Total Likes" value={formatNumber(stats?.totalLikes || 0)} icon={Heart} delay={0.15} />
-            <MetricCard title="Total Comments" value={formatNumber(stats?.totalComments || 0)} icon={MessageCircle} delay={0.2} />
-            <MetricCard title="Avg Engagement" value={`${(stats?.avgEngagement || 0).toFixed(1)}%`} icon={TrendingUp} delay={0.25} />
+            <EnhancedMetricCard label="Total Posts" value={stats?.totalPosts.toString() || '0'} icon={FileText} delay={0.1} color="hsl(214,89%,52%)" />
+            <EnhancedMetricCard label="Total Likes" value={formatNumber(stats?.totalLikes || 0)} icon={Heart} delay={0.15} color="hsl(var(--primary))" sparkData={trendData.map(d => d.likes)} />
+            <EnhancedMetricCard label="Total Comments" value={formatNumber(stats?.totalComments || 0)} icon={MessageCircle} delay={0.2} color="hsl(262,83%,58%)" sparkData={trendData.map(d => d.comments)} />
+            <EnhancedMetricCard label="Avg Engagement" value={`${(stats?.avgEngagement || 0).toFixed(1)}%`} icon={TrendingUp} delay={0.25} color="hsl(38,92%,50%)" />
           </div>
 
           {/* AI Post Coach */}

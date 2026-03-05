@@ -6,7 +6,7 @@ import {
   Smile, Frown, Meh, MessageCircle, Sparkles, Loader2, Shield, AlertTriangle, Clock,
 } from 'lucide-react';
 
-import { MetricCard } from '@/components/dashboard/MetricCard';
+import { EnhancedMetricCard } from '@/components/dashboard/EnhancedMetricCard';
 import { ChartCard } from '@/components/dashboard/ChartCard';
 import { SentimentBadge } from '@/components/dashboard/SentimentBadge';
 import { Button } from '@/components/ui/button';
@@ -130,10 +130,10 @@ export default function Sentiment() {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <MetricCard title="Positive" value={`${Math.round(stats?.positivePercent || 0)}%`} icon={Smile} delay={0.1} />
-            <MetricCard title="Neutral" value={`${Math.round(stats?.neutralPercent || 0)}%`} icon={Meh} delay={0.15} />
-            <MetricCard title="Negative" value={`${Math.round(stats?.negativePercent || 0)}%`} icon={Frown} delay={0.2} />
-            <MetricCard title="Total Comments" value={stats?.total.toString() || '0'} icon={MessageCircle} delay={0.25} />
+            <EnhancedMetricCard label="Positive" value={`${Math.round(stats?.positivePercent || 0)}%`} icon={Smile} delay={0.1} color="hsl(142,71%,45%)" />
+            <EnhancedMetricCard label="Neutral" value={`${Math.round(stats?.neutralPercent || 0)}%`} icon={Meh} delay={0.15} color="hsl(215,20%,55%)" />
+            <EnhancedMetricCard label="Negative" value={`${Math.round(stats?.negativePercent || 0)}%`} icon={Frown} delay={0.2} color="hsl(0,72%,51%)" />
+            <EnhancedMetricCard label="Total Comments" value={stats?.total.toString() || '0'} icon={MessageCircle} delay={0.25} color="hsl(var(--primary))" />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">

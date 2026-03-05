@@ -2,15 +2,16 @@ import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   Eye, ThumbsUp, MessageCircle, Users, Share2,
-  TrendingUp, BarChart3, Activity, FileText, Facebook, Image,
+  TrendingUp, BarChart3, Activity, FileText, Facebook,
 } from 'lucide-react';
 import {
-  AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer,
+  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { EnhancedMetricCard } from '@/components/dashboard/EnhancedMetricCard';
 import { cn } from '@/lib/utils';
 import { useFacebookAccount, useFacebookPosts, useFacebookComments } from '@/hooks/useFacebookData';
 import { format } from 'date-fns';
@@ -22,21 +23,7 @@ const tooltipStyle = {
   color: 'hsl(210, 40%, 98%)',
 };
 
-function MetricTile({ icon: Icon, label, value, color }: {
-  icon: any; label: string; value: string; color?: string;
-}) {
-  return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border bg-card p-4" style={{ boxShadow: 'var(--shadow-card)' }}>
-      <div className="flex items-center gap-2 mb-2">
-        <div className={cn('p-1.5 rounded-lg', color || 'bg-primary/10')}>
-          <Icon className="h-4 w-4 text-primary" />
-        </div>
-        <span className="text-xs text-muted-foreground">{label}</span>
-      </div>
-      <p className="text-2xl font-bold text-foreground">{value}</p>
-    </motion.div>
-  );
-}
+const PIE_COLORS = ['hsl(214,89%,52%)', 'hsl(262,83%,58%)', 'hsl(38,92%,50%)'];
 
 function formatNum(n: number) {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
@@ -73,6 +60,12 @@ export default function FacebookAnalytics() {
       }));
   }, [posts]);
 
+  const engagementPieData = useMemo(() => [
+    { name: 'Likes', value: totals.totalLikes },
+    { name: 'Comments', value: totals.totalComments },
+    { name: 'Shares', value: totals.totalShares },
+  ].filter(d => d.value > 0), [totals]);
+
   const emptyChartMessage = (
     <div className="flex flex-col items-center justify-center h-full gap-2 text-center py-8">
       <Facebook className="h-8 w-8 text-muted-foreground/40" />
@@ -98,14 +91,14 @@ export default function FacebookAnalytics() {
         </Badge>
       </motion.div>
 
-      {/* Top Metrics */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.05 }} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
-        <MetricTile icon={Users} label="Page Followers" value={formatNum(account?.followers_count || 0)} color="bg-[#1877F2]/10" />
-        <MetricTile icon={ThumbsUp} label="Total Likes" value={formatNum(totals.totalLikes)} color="bg-primary/10" />
-        <MetricTile icon={MessageCircle} label="Total Comments" value={formatNum(totals.totalComments)} color="bg-chart-sentiment-positive/10" />
-        <MetricTile icon={Share2} label="Total Shares" value={formatNum(totals.totalShares)} color="bg-chart-reach/10" />
-        <MetricTile icon={FileText} label="Posts" value={String(posts.length)} color="bg-chart-impressions/10" />
-      </motion.div>
+      {/* Enhanced Metrics */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+        <EnhancedMetricCard label="Page Followers" value={formatNum(account?.followers_count || 0)} icon={Users} color="hsl(214,89%,52%)" delay={0.05} />
+        <EnhancedMetricCard label="Total Likes" value={formatNum(totals.totalLikes)} icon={ThumbsUp} color="hsl(var(--primary))" delay={0.1} sparkData={postsTrend.slice(-7).map(p => p.likes)} />
+        <EnhancedMetricCard label="Total Comments" value={formatNum(totals.totalComments)} icon={MessageCircle} color="hsl(262,83%,58%)" delay={0.15} sparkData={postsTrend.slice(-7).map(p => p.comments)} />
+        <EnhancedMetricCard label="Total Shares" value={formatNum(totals.totalShares)} icon={Share2} color="hsl(173,80%,45%)" delay={0.2} sparkData={postsTrend.slice(-7).map(p => p.shares)} />
+        <EnhancedMetricCard label="Posts" value={String(posts.length)} icon={FileText} color="hsl(38,92%,50%)" delay={0.25} />
+      </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-5 bg-muted/50">
@@ -115,47 +108,87 @@ export default function FacebookAnalytics() {
         </TabsList>
 
         <TabsContent value="overview">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="rounded-xl border border-border bg-card p-5" style={{ boxShadow: 'var(--shadow-card)' }}>
-              <div className="flex items-center gap-2 mb-1"><ThumbsUp className="h-4 w-4 text-[#1877F2]" /><h3 className="text-sm font-semibold text-foreground">Likes per Post</h3></div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="lg:col-span-2 rounded-xl border border-border/60 bg-card p-5" style={{ boxShadow: 'var(--shadow-card)' }}>
+              <div className="flex items-center gap-2 mb-1"><ThumbsUp className="h-4 w-4 text-[#1877F2]" /><h3 className="text-sm font-semibold text-foreground">Likes Trend</h3></div>
               <p className="text-[10px] text-muted-foreground mb-4">Like counts across posts</p>
-              <div className="h-[220px]">
+              <div className="h-[240px]">
                 {hasData ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={postsTrend}>
+                      <defs>
+                        <linearGradient id="fbLikesGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="hsl(214,89%,52%)" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="hsl(214,89%,52%)" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(222,30%,15%)" />
                       <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="hsl(215,20%,50%)" />
                       <YAxis tick={{ fontSize: 10 }} stroke="hsl(215,20%,50%)" />
                       <Tooltip contentStyle={tooltipStyle} />
-                      <Area type="monotone" dataKey="likes" stroke="hsl(214,89%,52%)" fill="hsl(214,89%,52%)" fillOpacity={0.15} />
+                      <Area type="monotone" dataKey="likes" stroke="hsl(214,89%,52%)" fill="url(#fbLikesGrad)" strokeWidth={2} />
                     </AreaChart>
                   </ResponsiveContainer>
                 ) : emptyChartMessage}
               </div>
             </motion.div>
 
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="rounded-xl border border-border bg-card p-5" style={{ boxShadow: 'var(--shadow-card)' }}>
-              <div className="flex items-center gap-2 mb-1"><Share2 className="h-4 w-4 text-chart-reach" /><h3 className="text-sm font-semibold text-foreground">Shares per Post</h3></div>
-              <p className="text-[10px] text-muted-foreground mb-4">Share counts across posts</p>
-              <div className="h-[220px]">
-                {hasData ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={postsTrend}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(222,30%,15%)" />
-                      <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="hsl(215,20%,50%)" />
-                      <YAxis tick={{ fontSize: 10 }} stroke="hsl(215,20%,50%)" />
-                      <Tooltip contentStyle={tooltipStyle} />
-                      <Bar dataKey="shares" fill="hsl(262,83%,58%)" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
+            {/* Engagement Breakdown Pie */}
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="rounded-xl border border-border/60 bg-card p-5" style={{ boxShadow: 'var(--shadow-card)' }}>
+              <div className="flex items-center gap-2 mb-1"><Activity className="h-4 w-4 text-[#1877F2]" /><h3 className="text-sm font-semibold text-foreground">Engagement Split</h3></div>
+              <p className="text-[10px] text-muted-foreground mb-2">Likes vs Comments vs Shares</p>
+              <div className="h-[200px] flex items-center justify-center relative">
+                {engagementPieData.length > 0 ? (
+                  <>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={engagementPieData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={4} dataKey="value">
+                          {engagementPieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i]} />)}
+                        </Pie>
+                        <Tooltip contentStyle={tooltipStyle} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="absolute flex flex-col items-center">
+                      <span className="text-xl font-bold text-foreground">{formatNum(totals.totalLikes + totals.totalComments + totals.totalShares)}</span>
+                      <span className="text-[10px] text-muted-foreground">Total</span>
+                    </div>
+                  </>
                 ) : emptyChartMessage}
               </div>
+              {engagementPieData.length > 0 && (
+                <div className="flex justify-center gap-3 mt-2">
+                  {engagementPieData.map((item, i) => (
+                    <div key={item.name} className="flex items-center gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: PIE_COLORS[i] }} />
+                      <span className="text-[10px] text-muted-foreground">{item.name}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </motion.div>
           </div>
+
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mt-5 rounded-xl border border-border/60 bg-card p-5" style={{ boxShadow: 'var(--shadow-card)' }}>
+            <div className="flex items-center gap-2 mb-1"><Share2 className="h-4 w-4 text-chart-reach" /><h3 className="text-sm font-semibold text-foreground">Shares per Post</h3></div>
+            <p className="text-[10px] text-muted-foreground mb-4">Share counts across posts</p>
+            <div className="h-[220px]">
+              {hasData ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={postsTrend}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(222,30%,15%)" />
+                    <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="hsl(215,20%,50%)" />
+                    <YAxis tick={{ fontSize: 10 }} stroke="hsl(215,20%,50%)" />
+                    <Tooltip contentStyle={tooltipStyle} />
+                    <Bar dataKey="shares" fill="hsl(262,83%,58%)" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : emptyChartMessage}
+            </div>
+          </motion.div>
         </TabsContent>
 
         <TabsContent value="engagement">
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border bg-card p-5" style={{ boxShadow: 'var(--shadow-card)' }}>
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border/60 bg-card p-5" style={{ boxShadow: 'var(--shadow-card)' }}>
             <div className="flex items-center gap-2 mb-1"><TrendingUp className="h-4 w-4 text-chart-reach" /><h3 className="text-sm font-semibold text-foreground">Engagement Rate by Post</h3></div>
             <p className="text-[10px] text-muted-foreground mb-4">(Likes + Comments + Shares) / Reach × 100</p>
             <div className="h-[280px]">
@@ -164,10 +197,7 @@ export default function FacebookAnalytics() {
                   <BarChart data={postsTrend.map((v, i) => {
                     const post = posts.filter(p => p.published_at).sort((a, b) => new Date(a.published_at!).getTime() - new Date(b.published_at!).getTime())[i];
                     const reach = post?.reach || 0;
-                    return {
-                      ...v,
-                      engRate: reach > 0 ? (((post?.likes_count || 0) + (post?.comments_count || 0) + (post?.shares_count || 0)) / reach * 100).toFixed(2) : 0,
-                    };
+                    return { ...v, engRate: reach > 0 ? (((post?.likes_count || 0) + (post?.comments_count || 0) + (post?.shares_count || 0)) / reach * 100).toFixed(2) : 0 };
                   })}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(222,30%,15%)" />
                     <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="hsl(215,20%,50%)" />
@@ -182,7 +212,7 @@ export default function FacebookAnalytics() {
         </TabsContent>
 
         <TabsContent value="posts">
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border bg-card p-5" style={{ boxShadow: 'var(--shadow-card)' }}>
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border/60 bg-card p-5" style={{ boxShadow: 'var(--shadow-card)' }}>
             <div className="flex items-center gap-2 mb-4"><FileText className="h-4 w-4 text-[#1877F2]" /><h3 className="text-sm font-semibold text-foreground">Top Performing Posts</h3></div>
             <div className="overflow-x-auto">
               <table className="w-full">

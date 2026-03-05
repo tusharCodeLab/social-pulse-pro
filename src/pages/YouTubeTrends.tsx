@@ -1,9 +1,10 @@
 import { motion } from 'framer-motion';
 import {
-  Youtube, TrendingUp, Activity, Lightbulb, BarChart3,
-  ArrowUp, ArrowDown, Minus, Loader2,
+  Youtube, TrendingUp, TrendingDown, Activity, Lightbulb, BarChart3,
+  ArrowUp, ArrowDown, Minus, Loader2, Target,
 } from 'lucide-react';
 
+import { EnhancedMetricCard } from '@/components/dashboard/EnhancedMetricCard';
 import { ChartCard } from '@/components/dashboard/ChartCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -32,22 +33,32 @@ export default function YouTubeTrends() {
     }
   };
 
+  const improving = trends.filter(t => t.direction === 'up').length;
+  const declining = trends.filter(t => t.direction === 'down').length;
+  const avgConfidence = trends.length > 0 ? Math.round(trends.reduce((s, t) => s + (Number(t.confidence_score) || 0), 0) / trends.length * 100) : 0;
+
   return (
     <>
       <div className="mb-8">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 rounded-lg bg-[#FF0000]/10">
-              <Activity className="h-5 w-5 text-[#FF0000]" />
-            </div>
+            <div className="p-2 rounded-lg bg-[#FF0000]/10"><Activity className="h-5 w-5 text-[#FF0000]" /></div>
             <h1 className="text-3xl font-bold text-foreground">Trend Intelligence</h1>
-            <Badge variant="outline" className="text-xs border-[#FF0000]/30 text-[#FF0000] gap-1">
-              <Youtube className="h-3 w-3" /> YouTube
-            </Badge>
+            <Badge variant="outline" className="text-xs border-[#FF0000]/30 text-[#FF0000] gap-1"><Youtube className="h-3 w-3" /> YouTube</Badge>
           </div>
           <p className="text-muted-foreground">AI-detected patterns in your YouTube channel performance.</p>
         </motion.div>
       </div>
+
+      {/* Summary Metrics */}
+      {trends.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          <EnhancedMetricCard label="Total Trends" value={String(trends.length)} icon={BarChart3} color="hsl(0,80%,50%)" delay={0.05} />
+          <EnhancedMetricCard label="Improving" value={String(improving)} icon={TrendingUp} color="hsl(142,71%,45%)" delay={0.1} />
+          <EnhancedMetricCard label="Declining" value={String(declining)} icon={TrendingDown} color="hsl(0,72%,51%)" delay={0.15} />
+          <EnhancedMetricCard label="Avg Confidence" value={`${avgConfidence}%`} icon={Target} color="hsl(38,92%,50%)" delay={0.2} />
+        </div>
+      )}
 
       <div className="flex justify-end mb-4">
         <Button size="sm" variant="outline" onClick={handleDetect} disabled={detectTrends.isPending} className="gap-1.5 text-xs">
@@ -63,7 +74,7 @@ export default function YouTubeTrends() {
               key={trend.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="rounded-xl border border-border bg-card p-5"
+              className="rounded-xl border border-border/60 bg-card p-5"
               style={{ boxShadow: 'var(--shadow-card)' }}
             >
               <div className="flex items-start justify-between">
@@ -93,7 +104,7 @@ export default function YouTubeTrends() {
             <TrendingUp className="h-12 w-12 mx-auto mb-4 text-muted-foreground/30" />
             <p className="text-sm font-medium text-foreground mb-2">No performance trends yet</p>
             <p className="text-xs text-muted-foreground max-w-md mx-auto">
-              Connect your YouTube channel and click "Detect Trends" to let AI identify patterns like content performance shifts, audience growth trends, and engagement anomalies.
+              Connect your YouTube channel and click "Detect Trends" to let AI identify patterns.
             </p>
           </div>
         </ChartCard>

@@ -4,7 +4,7 @@ import {
 } from 'recharts';
 import { Users, TrendingUp, UserPlus, Loader2, Clock, Zap, Percent, Facebook } from 'lucide-react';
 
-import { MetricCard } from '@/components/dashboard/MetricCard';
+import { EnhancedMetricCard } from '@/components/dashboard/EnhancedMetricCard';
 import { ChartCard } from '@/components/dashboard/ChartCard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -94,10 +94,10 @@ export default function FacebookAudience() {
         <>
           {/* Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <MetricCard title="Total Followers" value={totalFollowers.toLocaleString()} icon={Users} delay={0.1} />
-            <MetricCard title="New This Week" value={`+${newFollowersWeek.toLocaleString()}`} icon={UserPlus} delay={0.15} />
-            <MetricCard title="Following" value={totalFollowing.toLocaleString()} icon={TrendingUp} delay={0.2} />
-            <MetricCard title="Growth Rate" value={growthRateDisplay} icon={Percent} delay={0.25} />
+            <EnhancedMetricCard label="Total Followers" value={totalFollowers.toLocaleString()} icon={Users} delay={0.1} color="hsl(214,89%,52%)" sparkData={growthData.map(g => g.followers)} />
+            <EnhancedMetricCard label="New This Week" value={`+${newFollowersWeek.toLocaleString()}`} icon={UserPlus} delay={0.15} color="hsl(142,71%,45%)" change={newFollowersWeek} />
+            <EnhancedMetricCard label="Following" value={totalFollowing.toLocaleString()} icon={TrendingUp} delay={0.2} color="hsl(262,83%,58%)" />
+            <EnhancedMetricCard label="Growth Rate" value={growthRateDisplay} icon={Percent} delay={0.25} color="hsl(38,92%,50%)" change={growthRate} />
           </div>
 
           {/* Follower Growth Chart */}
