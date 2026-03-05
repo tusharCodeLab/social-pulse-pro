@@ -1,76 +1,37 @@
 
 
-# Sidebar Restructure and Cleanup
+## Fix Instagram Sentiment Analysis
 
-## What Changes
+### Root Cause
 
-### 1. Remove Non-Working Features
-- **Remove the Reports page** (`/reports` route, `Reports.tsx`) -- it's a "Coming Soon" placeholder with no functionality
-- **Remove the Reports entry** from the sidebar navigation
+**Missing foreign key**: `post_comments.post_id` has no foreign key to `posts.id`. The Supabase JS client's `posts!inner(platform)` join syntax requires a declared FK relationship. Without it, all queries that filter comments by platform silently fail — meaning sentiment stats, comment lists, and sentiment trends return errors or empty data on the Instagram Sentiment page.
 
-### 2. Reorganize Sidebar into Grouped Sections
-Instead of a flat list of 7 items, organize into logical groups with section labels:
+**No platform filtering on analyze**: `analyzeSentiment()` fetches ALL unanalyzed comments across all platforms (395 total, 370 unanalyzed) without filtering by platform.
 
-```text
-+-------------------------------+
-|  [Logo] Analytics             |
-|          Social Dashboard     |
-+-------------------------------+
-|  [AI-Powered badge]           |
-+-------------------------------+
-|                               |
-|  OVERVIEW                     |
-|    Dashboard                  |
-|                               |
-|  ANALYTICS                    |
-|    Posts Analysis              |
-|    Audience Insights           |
-|    Sentiment                   |
-|                               |
-|  AI & TOOLS                   |
-|    AI Tools                    |
-|                               |
-|  ACCOUNT                      |
-|    Settings                    |
-|                               |
-+-------------------------------+
-|  [User info]                  |
-|  [Sign Out]                   |
-|  [Collapse]                   |
-+-------------------------------+
+### Plan
+
+**1. Database migration — Add foreign key**
+```sql
+ALTER TABLE post_comments 
+  ADD CONSTRAINT post_comments_post_id_fkey 
+  FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE;
 ```
+This enables all `posts!inner(platform)` joins to work correctly for sentiment stats, comment listing, and trend queries across all platform pages.
 
-### 3. Files to Modify
-- **`src/components/navigation/AppSidebar.tsx`** -- Replace flat `navItems` array with grouped sections; add section labels that hide when collapsed
-- **`src/App.tsx`** -- Remove the `/reports` route
-- **`src/pages/Reports.tsx`** -- Delete this file
+**2. `src/services/api/socialApi.ts` — Platform-aware analyze**
+- Update `analyzeSentiment(platform?: SocialPlatform)` to accept optional platform
+- When platform provided, join through `posts!inner(platform)` to fetch only unanalyzed comments for that platform
+- Pass platform to edge function body for logging
 
-### 4. Files Unchanged
-- `SidebarNavLink.tsx` -- Works as-is, no changes needed
-- `DashboardLayout.tsx` -- No changes needed
-- All other pages remain intact
+**3. `src/hooks/useSocialApi.ts` — Pass platform through**
+- Update `useAnalyzeSentimentApi()` to accept optional platform parameter
+- Pass it to `socialApi.comments.analyzeSentiment(platform)`
 
-## Technical Details
+**4. `src/pages/Sentiment.tsx` — Pass 'instagram'**
+- Call `useAnalyzeSentimentApi('instagram')` and pass platform to `mutateAsync`
 
-**AppSidebar.tsx changes:**
-- Replace the single `navItems` array with a grouped structure:
-  ```ts
-  const navGroups = [
-    { label: 'Overview', items: [{ to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' }] },
-    { label: 'Analytics', items: [
-      { to: '/posts', icon: FileText, label: 'Posts Analysis' },
-      { to: '/audience', icon: Users, label: 'Audience Insights' },
-      { to: '/sentiment', icon: Heart, label: 'Sentiment' },
-    ]},
-    { label: 'AI & Tools', items: [{ to: '/ai-tools', icon: Brain, label: 'AI Tools' }] },
-    { label: 'Account', items: [{ to: '/settings', icon: Settings, label: 'Settings' }] },
-  ];
-  ```
-- Render each group with a small uppercase label (hidden when sidebar is collapsed) and its nav items below
-- Remove `BarChart3` import (was for Reports)
+**5. Similarly update YouTube and Facebook sentiment pages**
+- `YouTubeSentiment.tsx` passes `'youtube'`
+- `FacebookSentiment.tsx` passes `'facebook'`
+- `SentimentSection.tsx` (dashboard) works without platform (all comments)
 
-**App.tsx changes:**
-- Remove `import Reports` and the `/reports` route
-
-**Reports.tsx:**
-- Delete the file entirely
