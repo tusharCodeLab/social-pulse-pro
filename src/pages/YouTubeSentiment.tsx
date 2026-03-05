@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Youtube, Smile, Frown, Meh, MessageCircle, Shield, Loader2, Sparkles, AlertTriangle } from 'lucide-react';
+import { Smile, Frown, Meh, MessageCircle, Shield, Loader2, Sparkles, AlertTriangle } from 'lucide-react';
+import { YouTubeIcon } from '@/components/icons/PlatformIcons';
 
 import { EnhancedMetricCard } from '@/components/dashboard/EnhancedMetricCard';
 import { ChartCard } from '@/components/dashboard/ChartCard';

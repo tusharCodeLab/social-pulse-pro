@@ -2,7 +2,8 @@ import { motion } from 'framer-motion';
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
 } from 'recharts';
-import { Users, TrendingUp, UserPlus, Loader2, Clock, Zap, Percent, Facebook } from 'lucide-react';
+import { Users, TrendingUp, UserPlus, Loader2, Clock, Zap, Percent } from 'lucide-react';
+import { FacebookIcon } from '@/components/icons/PlatformIcons';
 
 import { EnhancedMetricCard } from '@/components/dashboard/EnhancedMetricCard';
 import { ChartCard } from '@/components/dashboard/ChartCard';

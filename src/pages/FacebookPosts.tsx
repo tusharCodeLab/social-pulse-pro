@@ -6,8 +6,9 @@ import {
 import {
   FileText, TrendingUp, Heart, MessageCircle, Share2, Loader2,
   Wand2, Sparkles, Hash, Lightbulb, Target, Zap, ChevronRight, Brain,
-  Image, Video, Layers, Type, PenTool, Copy, Check, Star, Facebook, Eye,
+  Image, Video, Layers, Type, PenTool, Copy, Check, Star, Eye,
 } from 'lucide-react';
+import { FacebookIcon } from '@/components/icons/PlatformIcons';
 
 import { EnhancedMetricCard } from '@/components/dashboard/EnhancedMetricCard';
 import { ChartCard } from '@/components/dashboard/ChartCard';

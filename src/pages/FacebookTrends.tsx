@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   TrendingUp, Loader2, ArrowUp, ArrowDown, Minus, Activity, BarChart3,
-  Lightbulb, Calendar, Sparkles, Video, Image, Layers, Radio, MonitorPlay, Facebook,
+  Lightbulb, Calendar, Sparkles, Video, Image, Layers, Radio, MonitorPlay,
 } from 'lucide-react';
+import { FacebookIcon } from '@/components/icons/PlatformIcons';
 
 import { ChartCard } from '@/components/dashboard/ChartCard';
 import { Button } from '@/components/ui/button';

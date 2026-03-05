@@ -2,8 +2,9 @@ import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   Eye, ThumbsUp, MessageCircle, Users, Share2,
-  TrendingUp, BarChart3, Activity, FileText, Facebook,
+  TrendingUp, BarChart3, Activity, FileText,
 } from 'lucide-react';
+import { FacebookIcon } from '@/components/icons/PlatformIcons';
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,

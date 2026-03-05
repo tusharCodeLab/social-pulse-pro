@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Youtube, Eye, ThumbsUp, MessageCircle, Film, Clock,
+  Eye, ThumbsUp, MessageCircle, Film, Clock,
 } from 'lucide-react';
+import { YouTubeIcon } from '@/components/icons/PlatformIcons';
 
 import { EnhancedMetricCard } from '@/components/dashboard/EnhancedMetricCard';
 import { ChartCard } from '@/components/dashboard/ChartCard';

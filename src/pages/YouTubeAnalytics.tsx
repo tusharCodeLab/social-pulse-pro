@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Youtube, Eye, ThumbsUp, MessageCircle, Users,
+  Eye, ThumbsUp, MessageCircle, Users,
   TrendingUp, PlayCircle, BarChart3, Activity, Film,
 } from 'lucide-react';
+import { YouTubeIcon } from '@/components/icons/PlatformIcons';
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Youtube, Users, UserPlus, TrendingUp, Percent, Eye } from 'lucide-react';
+import { Users, UserPlus, TrendingUp, Percent, Eye } from 'lucide-react';
+import { YouTubeIcon } from '@/components/icons/PlatformIcons';
 
 import { EnhancedMetricCard } from '@/components/dashboard/EnhancedMetricCard';
 import { ChartCard } from '@/components/dashboard/ChartCard';

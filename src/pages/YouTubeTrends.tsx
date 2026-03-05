@@ -1,8 +1,9 @@
 import { motion } from 'framer-motion';
 import {
-  Youtube, TrendingUp, TrendingDown, Activity, Lightbulb, BarChart3,
+  TrendingUp, TrendingDown, Activity, Lightbulb, BarChart3,
   ArrowUp, ArrowDown, Minus, Loader2, Target,
 } from 'lucide-react';
+import { YouTubeIcon } from '@/components/icons/PlatformIcons';
 
 import { EnhancedMetricCard } from '@/components/dashboard/EnhancedMetricCard';
 import { ChartCard } from '@/components/dashboard/ChartCard';

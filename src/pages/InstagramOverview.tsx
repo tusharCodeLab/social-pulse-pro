@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Instagram, Eye, ThumbsUp, MessageCircle, Users,
+  Eye, ThumbsUp, MessageCircle, Users,
   TrendingUp, BarChart3, Activity, FileText, Image,
 } from 'lucide-react';
+import { InstagramIcon } from '@/components/icons/PlatformIcons';
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,

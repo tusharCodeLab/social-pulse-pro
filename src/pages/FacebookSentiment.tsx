@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Facebook, Smile, Frown, Meh, MessageCircle, Shield, Loader2, Sparkles, AlertTriangle, Activity } from 'lucide-react';
+import { Smile, Frown, Meh, MessageCircle, Shield, Loader2, Sparkles, AlertTriangle, Activity } from 'lucide-react';
+import { FacebookIcon } from '@/components/icons/PlatformIcons';
 
 import { EnhancedMetricCard } from '@/components/dashboard/EnhancedMetricCard';
 import { ChartCard } from '@/components/dashboard/ChartCard';
