@@ -15,11 +15,9 @@ import {
   TrendingUp,
   LogOut,
   Zap,
-  Youtube,
-  Instagram,
   Plus,
-  Facebook,
 } from 'lucide-react';
+import { InstagramIcon, YouTubeIcon, FacebookIcon } from '@/components/icons/PlatformIcons';
 import { SidebarNavLink } from './SidebarNavLink';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
