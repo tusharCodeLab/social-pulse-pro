@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Instagram, Youtube, Facebook, Check, Loader2, Wifi, WifiOff,
+  Instagram, Youtube, Facebook, Check, Loader2, Wifi, WifiOff, TrendingUp,
   User, Database, Bell, LogOut, Shield, Clock, Download, Trash2, Mail,
 } from 'lucide-react';
 
