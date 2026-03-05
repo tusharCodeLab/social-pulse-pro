@@ -219,10 +219,10 @@ const Home = () => {
             </div>
             <div className="grid grid-cols-4 gap-3 mb-4">
               {[
-                { label: "Total Followers", value: "24.8K", change: "+12.3%" },
-                { label: "Engagement Rate", value: "4.7%", change: "+0.8%" },
-                { label: "Total Reach", value: "182K", change: "+23.1%" },
-                { label: "AI Score", value: "87/100", change: "+5pts" },
+                { label: "Total Followers" },
+                { label: "Engagement Rate" },
+                { label: "Total Reach" },
+                { label: "AI Score" },
               ].map((card, i) => (
                 <motion.div
                   key={card.label}
@@ -233,8 +233,8 @@ const Home = () => {
                   className="rounded-xl bg-muted/30 border border-border/40 p-4"
                 >
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{card.label}</p>
-                  <p className="text-xl font-bold text-foreground mt-1">{card.value}</p>
-                  <p className="text-xs text-chart-sentiment-positive mt-1">{card.change}</p>
+                  <div className="h-6 w-20 rounded bg-muted/50 mt-2 animate-pulse" />
+                  <div className="h-3 w-12 rounded bg-primary/20 mt-2 animate-pulse" />
                 </motion.div>
               ))}
             </div>
@@ -260,9 +260,9 @@ const Home = () => {
                     transition={{ delay: 0.5, duration: 1 }}
                     className="absolute inset-0 rounded-full border-4 border-transparent border-t-primary border-r-primary"
                   />
-                  <span className="text-lg font-bold text-foreground">75%</span>
+                  <span className="text-sm font-medium text-muted-foreground">—</span>
                 </div>
-                <p className="text-[10px] text-muted-foreground mt-2">Positive Sentiment</p>
+                <p className="text-[10px] text-muted-foreground mt-2">Sentiment Score</p>
               </div>
             </div>
           </motion.div>
