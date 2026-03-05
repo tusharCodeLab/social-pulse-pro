@@ -4,7 +4,7 @@ import {
   TrendingUp, Loader2, ArrowUp, ArrowDown, Minus, Activity, BarChart3,
   Lightbulb, Calendar, Sparkles, Video, Image, Layers, Radio, MonitorPlay,
 } from 'lucide-react';
-import { DashboardLayout } from '@/components/DashboardLayout';
+
 import { ChartCard } from '@/components/dashboard/ChartCard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
