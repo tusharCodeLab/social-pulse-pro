@@ -1,76 +1,35 @@
 
 
-# Sidebar Restructure and Cleanup
+## Plan: Add Light/Dark Theme Toggle with Professional Light Theme
 
-## What Changes
+Currently the app is dark-only with no theme switching. Will add a proper light theme and a toggle in Settings + sidebar.
 
-### 1. Remove Non-Working Features
-- **Remove the Reports page** (`/reports` route, `Reports.tsx`) -- it's a "Coming Soon" placeholder with no functionality
-- **Remove the Reports entry** from the sidebar navigation
+### Changes
 
-### 2. Reorganize Sidebar into Grouped Sections
-Instead of a flat list of 7 items, organize into logical groups with section labels:
+**1. `src/index.css`** — Add a `.light` class (or default `:root` as light, `.dark` as dark)
+- Add complete light theme CSS variables under a `.light` selector covering all `--background`, `--card`, `--primary`, `--border`, `--sidebar-*`, `--chart-*`, `--shadow-*`, and `--gradient-*` variables
+- Professional light palette: clean whites, soft grays, maintain the teal primary accent
 
-```text
-+-------------------------------+
-|  [Logo] Analytics             |
-|          Social Dashboard     |
-+-------------------------------+
-|  [AI-Powered badge]           |
-+-------------------------------+
-|                               |
-|  OVERVIEW                     |
-|    Dashboard                  |
-|                               |
-|  ANALYTICS                    |
-|    Posts Analysis              |
-|    Audience Insights           |
-|    Sentiment                   |
-|                               |
-|  AI & TOOLS                   |
-|    AI Tools                    |
-|                               |
-|  ACCOUNT                      |
-|    Settings                    |
-|                               |
-+-------------------------------+
-|  [User info]                  |
-|  [Sign Out]                   |
-|  [Collapse]                   |
-+-------------------------------+
-```
+**2. `src/stores/settingsStore.ts`** — Add `theme` state
+- Add `theme: 'dark' | 'light'` with `setTheme` action
+- Persist in localStorage alongside existing settings
+- On load, apply the class to `document.documentElement`
 
-### 3. Files to Modify
-- **`src/components/navigation/AppSidebar.tsx`** -- Replace flat `navItems` array with grouped sections; add section labels that hide when collapsed
-- **`src/App.tsx`** -- Remove the `/reports` route
-- **`src/pages/Reports.tsx`** -- Delete this file
+**3. `src/App.tsx`** — Apply theme class on mount
+- Read theme from store and apply `dark`/`light` class to `<html>` element via a small `useEffect`
 
-### 4. Files Unchanged
-- `SidebarNavLink.tsx` -- Works as-is, no changes needed
-- `DashboardLayout.tsx` -- No changes needed
-- All other pages remain intact
+**4. `src/pages/Settings.tsx`** — Add "Appearance" section
+- New card between Profile and Connected Platforms with a toggle switch for Light/Dark mode
+- Include Sun/Moon icon indicator
 
-## Technical Details
+**5. `src/components/navigation/AppSidebar.tsx`** — Add quick theme toggle button
+- Small Sun/Moon icon button in the sidebar footer for fast switching
 
-**AppSidebar.tsx changes:**
-- Replace the single `navItems` array with a grouped structure:
-  ```ts
-  const navGroups = [
-    { label: 'Overview', items: [{ to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' }] },
-    { label: 'Analytics', items: [
-      { to: '/posts', icon: FileText, label: 'Posts Analysis' },
-      { to: '/audience', icon: Users, label: 'Audience Insights' },
-      { to: '/sentiment', icon: Heart, label: 'Sentiment' },
-    ]},
-    { label: 'AI & Tools', items: [{ to: '/ai-tools', icon: Brain, label: 'AI Tools' }] },
-    { label: 'Account', items: [{ to: '/settings', icon: Settings, label: 'Settings' }] },
-  ];
-  ```
-- Render each group with a small uppercase label (hidden when sidebar is collapsed) and its nav items below
-- Remove `BarChart3` import (was for Reports)
+### Light Theme Color Palette
+- Background: white/gray-50
+- Cards: white with subtle gray borders
+- Text: gray-900 foreground, gray-500 muted
+- Primary: same teal (173 80% 40%) adjusted for light contrast
+- Sidebar: gray-50/white with teal accents
+- Shadows: soft gray instead of dark
 
-**App.tsx changes:**
-- Remove `import Reports` and the `/reports` route
-
-**Reports.tsx:**
-- Delete the file entirely
