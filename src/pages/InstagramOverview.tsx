@@ -81,7 +81,7 @@ export default function InstagramOverview() {
 
   const emptyChartMessage = (
     <div className="flex flex-col items-center justify-center h-full gap-2 text-center py-8">
-      <Instagram className="h-8 w-8 text-muted-foreground/40" />
+      <InstagramIcon className="h-8 w-8 text-muted-foreground/40" />
       <p className="text-sm text-muted-foreground">Connect your Instagram account to see analytics</p>
       <p className="text-xs text-muted-foreground/60">Go to Settings → Connect Instagram</p>
     </div>
