@@ -196,7 +196,7 @@ export default function Dashboard() {
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-5">
         <MiniStat label="Followers" value={summary?.totalFollowers.toLocaleString() || '0'} icon={Users} />
         <MiniStat label="Engagement" value={summary?.totalEngagement.toLocaleString() || '0'} icon={Heart} />
-        <MiniStat label="Reach" value={summary?.totalReach >= 1000 ? `${(summary.totalReach / 1000).toFixed(1)}K` : summary?.totalReach?.toString() || '0'} icon={Eye} />
+        <MiniStat label="Reach / Interactions" value={summary?.totalReach >= 1000 ? `${(summary.totalReach / 1000).toFixed(1)}K` : summary?.totalReach?.toString() || '0'} icon={Eye} />
         <MiniStat label="Posts" value={summary?.totalPosts.toString() || '0'} icon={FileText} />
         <MiniStat label="Positive" value={`${Math.round(summary?.positiveSentimentPercent || 0)}%`} icon={Smile} />
       </motion.div>
