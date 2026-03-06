@@ -524,6 +524,11 @@ export default function InstagramContentStudio() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <h3 className="font-semibold text-foreground">{selectedVersion?.title}</h3>
+                {selectedTopic?.description && (
+                  <p className="text-sm text-muted-foreground bg-muted/30 rounded-lg p-3 -mt-1">
+                    {selectedTopic.description}
+                  </p>
+                )}
                 
                 <div>
                   <div className="flex items-center gap-1.5 mb-1.5">
