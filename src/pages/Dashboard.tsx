@@ -253,7 +253,7 @@ export default function Dashboard() {
                 <p className="text-[10px] text-muted-foreground">Cross-platform reach over time</p>
               </div>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 flex-wrap">
               {(['7d', '14d', '30d', 'all'] as const).map(p => (
                 <button
                   key={p} onClick={() => setPeriod(p)}
