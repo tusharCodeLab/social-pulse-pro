@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, ArrowRight, ArrowLeft, Check, Clock, Loader2, TrendingUp, Hash, FileText, Wand2, Search, PenLine, Copy, RotateCcw, Target, BarChart3, Users, Lightbulb, Award, Calendar, Zap, Star } from 'lucide-react';
+import { Sparkles, ArrowRight, ArrowLeft, Check, Clock, Loader2, TrendingUp, Hash, FileText, Wand2, Search, PenLine, Copy, RotateCcw, Target, BarChart3, Users, Lightbulb, Award, Calendar, Zap, Star, Cpu, Heart, Film, Briefcase, Plane, UtensilsCrossed, Shirt, GraduationCap, Trophy, Leaf } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -43,6 +43,25 @@ interface ContentIdeasResult {
   strategy: string;
 }
 
+interface TrendingWorldTopic {
+  title: string;
+  context: string;
+  whyTrending: string;
+}
+
+const CATEGORIES = [
+  { label: 'Technology', icon: Cpu, color: 'hsl(var(--primary))' },
+  { label: 'Health & Fitness', icon: Heart, color: 'hsl(0 84% 60%)' },
+  { label: 'Entertainment', icon: Film, color: 'hsl(280 84% 60%)' },
+  { label: 'Business & Finance', icon: Briefcase, color: 'hsl(45 93% 47%)' },
+  { label: 'Travel', icon: Plane, color: 'hsl(199 89% 48%)' },
+  { label: 'Food & Cooking', icon: UtensilsCrossed, color: 'hsl(25 95% 53%)' },
+  { label: 'Fashion & Beauty', icon: Shirt, color: 'hsl(330 81% 60%)' },
+  { label: 'Education', icon: GraduationCap, color: 'hsl(142 71% 45%)' },
+  { label: 'Sports', icon: Trophy, color: 'hsl(210 79% 46%)' },
+  { label: 'Science & Environment', icon: Leaf, color: 'hsl(160 84% 39%)' },
+] as const;
+
 interface BestTime {
   rank: number;
   day: string;
@@ -79,6 +98,9 @@ export default function InstagramContentStudio() {
   const [loadingStrategy, setLoadingStrategy] = useState(false);
   const [contentIdeas, setContentIdeas] = useState<ContentIdeasResult | null>(null);
   const [loadingIdeas, setLoadingIdeas] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [trendingWorldTopics, setTrendingWorldTopics] = useState<TrendingWorldTopic[]>([]);
+  const [loadingTrending, setLoadingTrending] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -169,7 +191,26 @@ export default function InstagramContentStudio() {
     }
   };
 
-  const generateForTopic = async (topicTitle: string) => {
+  const fetchTrendingForCategory = async (category: string) => {
+    setSelectedCategory(category);
+    setTrendingWorldTopics([]);
+    setLoadingTrending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-trending-topics', {
+        body: { category },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setTrendingWorldTopics(data.topics || []);
+    } catch (e: any) {
+      toast({ title: 'Failed to fetch trending topics', description: e.message, variant: 'destructive' });
+      setSelectedCategory(null);
+    } finally {
+      setLoadingTrending(false);
+    }
+  };
+
+
     setGenerating(true);
     setStep(2);
 
@@ -279,101 +320,90 @@ export default function InstagramContentStudio() {
               </CardContent>
             </Card>
 
-            {/* AI Content Suggestions */}
+            {/* Category-Based Trending Topics */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Lightbulb className="h-5 w-5 text-primary" />
-                <h2 className="text-lg font-semibold text-foreground">AI Content Suggestions</h2>
+                <h2 className="text-lg font-semibold text-foreground">Trending Topics by Category</h2>
               </div>
-              <Button variant="outline" size="sm" onClick={fetchContentIdeas} disabled={loadingIdeas} className="gap-1.5">
-                {loadingIdeas ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
-                {loadingIdeas ? 'Generating...' : 'Get AI Suggestions'}
-              </Button>
+              {selectedCategory && (
+                <Button variant="ghost" size="sm" onClick={() => { setSelectedCategory(null); setTrendingWorldTopics([]); }} className="gap-1.5">
+                  <ArrowLeft className="h-4 w-4" /> All Categories
+                </Button>
+              )}
             </div>
 
-            {contentIdeas?.strategy && (
-              <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-primary/10">
-                <CardContent className="p-4 flex items-start gap-3">
-                  <Target className="h-5 w-5 text-primary mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-sm font-semibold text-foreground mb-1">Strategy Recommendation</p>
-                    <p className="text-sm text-muted-foreground">{contentIdeas.strategy}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {loadingIdeas ? (
+            {!selectedCategory ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                {CATEGORIES.map((cat, idx) => {
+                  const Icon = cat.icon;
+                  return (
+                    <motion.div key={cat.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }} whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
+                      <Card
+                        className="cursor-pointer hover:border-primary/50 transition-all hover:shadow-lg group"
+                        onClick={() => fetchTrendingForCategory(cat.label)}
+                      >
+                        <CardContent className="p-4 flex flex-col items-center text-center gap-2">
+                          <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                            <Icon className="h-5 w-5 text-primary" />
+                          </div>
+                          <span className="text-sm font-medium text-foreground">{cat.label}</span>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            ) : loadingTrending ? (
               <div className="flex flex-col items-center justify-center py-16">
                 <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}>
                   <Sparkles className="h-10 w-10 text-primary" />
                 </motion.div>
-                <p className="text-foreground font-medium mt-4">Analyzing your data...</p>
-                <p className="text-sm text-muted-foreground mt-1">Generating strategic content ideas based on your trends & performance</p>
+                <p className="text-foreground font-medium mt-4">Finding trending topics...</p>
+                <p className="text-sm text-muted-foreground mt-1">Discovering what's hot in {selectedCategory}</p>
               </div>
-            ) : contentIdeas?.ideas ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {contentIdeas.ideas.map((idea, idx) => (
-                  <motion.div key={idx} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                    <Card
-                      className="cursor-pointer hover:border-primary/50 transition-all hover:shadow-lg hover:shadow-primary/5 h-full"
-                      onClick={() => {
-                        setSelectedTopic({ id: `idea-${idx}`, title: idea.title, description: idea.description, direction: 'up', confidence_score: null, trend_type: idea.format });
-                        generateForTopic(idea.title);
-                      }}
-                    >
-                      <CardContent className="p-5">
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="text-xs">{idea.format}</Badge>
-                            <Badge className={cn(
-                              'text-xs',
-                              idea.priority === 'High' ? 'bg-chart-sentiment-positive/10 text-chart-sentiment-positive border-chart-sentiment-positive/20' :
-                              idea.priority === 'Medium' ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' :
-                              'bg-muted text-muted-foreground border-border'
-                            )}>
-                              {idea.priority === 'High' ? <Star className="h-3 w-3 mr-1" /> : null}
-                              {idea.priority}
-                            </Badge>
+            ) : trendingWorldTopics.length > 0 ? (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">Trending in <strong className="text-foreground">{selectedCategory}</strong> — click any topic to create content</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {trendingWorldTopics.map((topic, idx) => (
+                    <motion.div key={idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <Card
+                        className="cursor-pointer hover:border-primary/50 transition-all hover:shadow-lg hover:shadow-primary/5 h-full"
+                        onClick={() => {
+                          setSelectedTopic({ id: `trending-${idx}`, title: topic.title, description: topic.context, direction: 'up', confidence_score: null, trend_type: selectedCategory || '' });
+                          generateForTopic(topic.title);
+                        }}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-2 mb-2">
+                            <TrendingUp className="h-4 w-4 text-primary shrink-0" />
+                            <h3 className="font-semibold text-foreground line-clamp-1">{topic.title}</h3>
                           </div>
-                          <Badge variant="secondary" className="text-xs gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {idea.bestDay}
-                          </Badge>
-                        </div>
-                        <h3 className="font-semibold text-foreground mb-2 line-clamp-2">{idea.title}</h3>
-                        <p className="text-sm text-muted-foreground mb-3 line-clamp-3">{idea.description}</p>
-                        <div className="space-y-2">
+                          <p className="text-sm text-muted-foreground mb-2 line-clamp-2">{topic.context}</p>
                           <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
-                            <BarChart3 className="h-3 w-3 mt-0.5 shrink-0 text-primary" />
-                            <span><strong className="text-foreground">Impact:</strong> {idea.estimatedImpact}</span>
+                            <Zap className="h-3 w-3 mt-0.5 shrink-0 text-primary" />
+                            <span>{topic.whyTrending}</span>
                           </div>
-                          <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
-                            <TrendingUp className="h-3 w-3 mt-0.5 shrink-0 text-primary" />
-                            <span><strong className="text-foreground">Based on:</strong> {idea.basedOn}</span>
+                          <div className="flex items-center gap-1 mt-3 text-xs text-primary font-medium">
+                            <Wand2 className="h-3 w-3" />
+                            <span>Create content</span>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-1 mt-4 text-xs text-primary font-medium">
-                          <Wand2 className="h-3 w-3" />
-                          <span>Click to generate posts</span>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                ))}
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  ))}
+                </div>
               </div>
-            ) : !contentIdeas && !loadingIdeas ? (
+            ) : (
               <Card className="border-dashed">
                 <CardContent className="flex flex-col items-center justify-center py-12 text-center">
                   <Lightbulb className="h-10 w-10 text-muted-foreground/40 mb-3" />
-                  <p className="text-base font-medium text-foreground">No suggestions yet</p>
-                  <p className="text-sm text-muted-foreground mt-1 mb-4">Click "Get AI Suggestions" to generate strategic content ideas based on your data</p>
-                  <Button onClick={fetchContentIdeas} disabled={loadingIdeas} className="gap-1.5">
-                    <Zap className="h-4 w-4" /> Get AI Suggestions
-                  </Button>
+                  <p className="text-base font-medium text-foreground">No topics found</p>
+                  <p className="text-sm text-muted-foreground mt-1">Try selecting another category</p>
                 </CardContent>
               </Card>
-            ) : null}
+            )}
 
             {/* Existing Trending Topics as secondary */}
             <div className="flex items-center justify-between mt-4">
