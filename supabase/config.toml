@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.fetch-facebook]
 verify_jwt = false
+
+[functions.ai-best-times]
+verify_jwt = false

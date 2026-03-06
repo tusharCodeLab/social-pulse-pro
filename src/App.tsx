@@ -17,6 +17,7 @@ import PostsAnalysis from "./pages/PostsAnalysis";
 import AudienceInsights from "./pages/AudienceInsights";
 import Sentiment from "./pages/Sentiment";
 import Trends from "./pages/Trends";
+import InstagramBestTime from "./pages/InstagramBestTime";
 
 import YouTubeAnalytics from "./pages/YouTubeAnalytics";
 import YouTubePostsAnalysis from "./pages/YouTubePostsAnalysis";
@@ -62,6 +63,7 @@ const App = () => {
                 <Route path="/audience" element={<AudienceInsights />} />
                 <Route path="/sentiment" element={<Sentiment />} />
                 <Route path="/trends" element={<Trends />} />
+                <Route path="/instagram-best-time" element={<InstagramBestTime />} />
                 <Route path="/youtube-analytics" element={<YouTubeAnalytics />} />
                 <Route path="/youtube-posts" element={<YouTubePostsAnalysis />} />
                 <Route path="/youtube-audience" element={<YouTubeAudience />} />

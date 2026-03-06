@@ -18,6 +18,7 @@ import {
   Plus,
   Sun,
   Moon,
+  Clock,
 } from 'lucide-react';
 import { InstagramIcon, YouTubeIcon, FacebookIcon } from '@/components/icons/PlatformIcons';
 import { SidebarNavLink } from './SidebarNavLink';
@@ -55,6 +56,7 @@ const platformGroups: PlatformGroup[] = [
       { to: '/audience', icon: Users, label: 'Audience Insights' },
       { to: '/sentiment', icon: Heart, label: 'Sentiment' },
       { to: '/trends', icon: Activity, label: 'Trend Intelligence' },
+      { to: '/instagram-best-time', icon: Clock, label: 'Best Time to Post' },
     ],
   },
   {
