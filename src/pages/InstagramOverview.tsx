@@ -89,17 +89,17 @@ export default function InstagramOverview() {
 
   return (
     <>
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-6">
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-xl bg-[#E4405F]/10"><InstagramIcon className="h-6 w-6" /></div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Instagram Overview</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Instagram Overview</h1>
             <p className="text-xs text-muted-foreground mt-0.5">
               {igAccount ? `@${igAccount.account_handle?.replace('@', '')} — ${formatNum(igAccount.followers_count || 0)} followers` : 'Account performance & post insights'}
             </p>
           </div>
         </div>
-        <Badge variant="outline" className="gap-1.5 text-xs border-[#E4405F]/30 text-[#E4405F]">
+        <Badge variant="outline" className="gap-1.5 text-xs border-[#E4405F]/30 text-[#E4405F] self-start sm:self-auto">
           <InstagramIcon className="h-3 w-3" /> Instagram
         </Badge>
       </motion.div>
