@@ -1,31 +1,35 @@
 
 
-## Add Average View Duration Chart to YouTube Posts Analysis
+## Replace AI Content Suggestions with Category-Based Trending Topics
 
-### Problem
-The `posts` table has no `duration_seconds` column, and the `fetch-youtube` edge function already fetches `contentDetails` (which includes ISO 8601 duration like `PT4M13S`) but doesn't store it.
+### What Changes
+Replace the current "AI Content Suggestions" (which generates content ideas from user data) with a **category browser** that shows real-world trending topics people are talking about globally.
 
-### Plan
+### Flow
+1. User sees a grid of **category cards** (Technology, Health & Fitness, Entertainment, Business, Travel, Food, Fashion, Education, Sports, Finance)
+2. Clicking a category calls a new edge function that uses AI to return **10 currently trending real-world topics** in that category
+3. Each topic displays as a card with title, brief context, and why it's trending
+4. Clicking a topic feeds it into `generateForTopic()` to proceed to Step 2
 
-#### 1. Database Migration
-Add a `duration_seconds` integer column to the `posts` table (nullable, default null). Only YouTube videos will populate this.
+### New Edge Function: `ai-trending-topics`
+- Accepts `{ category: string }` in the body
+- Uses Lovable AI gateway (`google/gemini-3-flash-preview`) to generate current trending topics for the given category
+- Uses structured output (tool calling) to return an array of topics with: `title`, `context` (1-2 sentences about the topic), `whyTrending` (why it's hot right now)
+- No database dependency — purely AI-generated based on current knowledge
 
-```sql
-ALTER TABLE public.posts ADD COLUMN duration_seconds integer;
-```
+### UI Changes in `InstagramContentStudio.tsx` (Step 1)
+- Keep the custom topic input at top
+- Replace the "AI Content Suggestions" section with:
+  - **Category grid**: 10 categories as clickable cards with icons
+  - **Selected category state**: When a category is clicked, show a loading state then display trending topic cards below
+  - **Topic cards**: Title, context, why trending, and "Create Content" action
+  - **Back to categories** button to browse another category
+- Keep the "Detected Trends" section below as secondary
 
-#### 2. Update `fetch-youtube` Edge Function
-- Parse the ISO 8601 duration from `v.contentDetails.duration` (e.g. `PT4M13S` → 253 seconds)
-- Store it in the new `duration_seconds` field during post upsert
-
-#### 3. Add Chart to `src/pages/YouTubePostsAnalysis.tsx`
-- Compute average view duration per video from `duration_seconds`
-- Add a new `AreaChart` or `BarChart` showing duration per video (formatted as `MM:SS`)
-- Place it in the charts grid alongside existing charts
-- Include proper empty state handling
+### Categories
+Technology, Health & Fitness, Entertainment, Business & Finance, Travel, Food & Cooking, Fashion & Beauty, Education, Sports, Science & Environment
 
 ### Files Modified
-- `posts` table — new column via migration
-- `supabase/functions/fetch-youtube/index.ts` — parse & store duration
-- `src/pages/YouTubePostsAnalysis.tsx` — new duration chart
+- `supabase/functions/ai-trending-topics/index.ts` — new edge function
+- `src/pages/InstagramContentStudio.tsx` — replace AI suggestions with category-based trending topics UI
 
