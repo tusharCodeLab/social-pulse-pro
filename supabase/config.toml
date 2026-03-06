@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.ai-best-times]
 verify_jwt = false
+
+[functions.ai-content-studio]
+verify_jwt = false
