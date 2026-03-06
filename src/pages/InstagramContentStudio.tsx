@@ -304,7 +304,7 @@ export default function InstagramContentStudio() {
               <CardContent className="p-5">
                 <div className="flex items-center gap-2 mb-3">
                   <PenLine className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-semibold text-foreground">Enter your own topic</span>
+                  <span className="text-sm font-semibold text-foreground">Describe the topic and niche you want to target so the system can generate more relevant content ideas.</span>
                 </div>
                 <div className="flex gap-2">
                   <Input
