@@ -191,7 +191,26 @@ export default function InstagramContentStudio() {
     }
   };
 
-  const generateForTopic = async (topicTitle: string) => {
+  const fetchTrendingForCategory = async (category: string) => {
+    setSelectedCategory(category);
+    setTrendingWorldTopics([]);
+    setLoadingTrending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-trending-topics', {
+        body: { category },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setTrendingWorldTopics(data.topics || []);
+    } catch (e: any) {
+      toast({ title: 'Failed to fetch trending topics', description: e.message, variant: 'destructive' });
+      setSelectedCategory(null);
+    } finally {
+      setLoadingTrending(false);
+    }
+  };
+
+
     setGenerating(true);
     setStep(2);
 
