@@ -233,6 +233,14 @@ serve(async (req) => {
         });
       }
       response = await handlePublishingStrategy(post, platform, LOVABLE_API_KEY);
+    } else if (action === "topic-explanation") {
+      if (!topic) {
+        return new Response(JSON.stringify({ error: "topic is required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      response = await handleTopicExplanation(topic, LOVABLE_API_KEY);
     } else {
       // Default: generate versions
       if (!topic) {
