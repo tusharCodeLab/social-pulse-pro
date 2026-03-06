@@ -80,6 +80,111 @@ const CATEGORIES = [
 
 type YouTubeFormat = 'video' | 'short';
 
+const SCRIPT_SECTION_ICONS: Record<string, { icon: React.ElementType; color: string }> = {
+  '🎣': { icon: Target, color: 'text-orange-500' },
+  '📖': { icon: FileText, color: 'text-blue-500' },
+  '💥': { icon: Zap, color: 'text-yellow-500' },
+  '📢': { icon: Volume2, color: 'text-green-500' },
+  '🎬': { icon: Clapperboard, color: 'text-destructive' },
+  '📋': { icon: FileText, color: 'text-sky-500' },
+  '📌': { icon: Target, color: 'text-primary' },
+  '💡': { icon: Lightbulb, color: 'text-amber-500' },
+  '🔄': { icon: RotateCcw, color: 'text-violet-500' },
+};
+
+function ScriptDisplay({ script, format }: { script: string; format: YouTubeFormat }) {
+  // Parse script into sections based on emoji markers
+  const sections = script.split(/\n(?=(?:🎣|📖|💥|📢|🎬|📋|📌|💡|🔄)\s)/).filter(Boolean);
+  
+  const hasSections = sections.length > 1;
+
+  if (!hasSections) {
+    return (
+      <div className="text-sm text-foreground bg-muted/30 rounded-xl p-4 whitespace-pre-line leading-relaxed">
+        {script}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {/* Format indicator */}
+      <div className="flex items-center gap-2">
+        {format === 'video' ? (
+          <Badge variant="outline" className="gap-1 text-xs border-destructive/30 text-destructive">
+            <Play className="h-3 w-3" /> Full Video Script
+          </Badge>
+        ) : (
+          <Badge variant="outline" className="gap-1 text-xs border-destructive/30 text-destructive">
+            <Smartphone className="h-3 w-3" /> Short Script
+          </Badge>
+        )}
+        <Badge variant="secondary" className="text-xs gap-1">
+          <Timer className="h-3 w-3" />
+          {format === 'video' ? '8-15 min' : '≤60 sec'}
+        </Badge>
+      </div>
+
+      {/* Script sections */}
+      <div className="border border-border/50 rounded-xl overflow-hidden divide-y divide-border/30">
+        {sections.map((section, idx) => {
+          const firstLine = section.split('\n')[0];
+          const emoji = firstLine.match(/^(🎣|📖|💥|📢|🎬|📋|📌|💡|🔄)/)?.[1] || '';
+          const sectionConfig = SCRIPT_SECTION_ICONS[emoji];
+          const Icon = sectionConfig?.icon || FileText;
+          const iconColor = sectionConfig?.color || 'text-muted-foreground';
+          
+          // Extract section header and body
+          const headerMatch = firstLine.match(/^(?:🎣|📖|💥|📢|🎬|📋|📌|💡|🔄)\s*(.+?)(?:\s*\([\d:]+.*?\))?\s*$/);
+          const sectionTitle = headerMatch?.[1] || firstLine.replace(/^(?:🎣|📖|💥|📢|🎬|📋|📌|💡|🔄)\s*/, '');
+          const timeMatch = firstLine.match(/\(([\d:]+[^)]*)\)/);
+          const timeCode = timeMatch?.[1] || '';
+          const bodyLines = section.split('\n').slice(1).join('\n').trim();
+
+          return (
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.06 }}
+              className="p-4 bg-muted/20 hover:bg-muted/40 transition-colors"
+            >
+              <div className="flex items-start gap-3">
+                <div className={cn("mt-0.5 flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center bg-background border border-border/50", iconColor)}>
+                  <Icon className="h-3.5 w-3.5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                    <span className="font-semibold text-sm text-foreground">{sectionTitle}</span>
+                    {timeCode && (
+                      <Badge variant="secondary" className="text-[10px] font-mono px-1.5 py-0">
+                        {timeCode}
+                      </Badge>
+                    )}
+                  </div>
+                  {bodyLines && (
+                    <div className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+                      {bodyLines.split(/(\[.*?\])/).map((part, i) => {
+                        if (part.startsWith('[') && part.endsWith(']')) {
+                          return <span key={i} className="text-xs italic text-destructive/70 bg-destructive/5 rounded px-1 py-0.5 mx-0.5">{part}</span>;
+                        }
+                        if (part.startsWith('(') && part.endsWith(')')) {
+                          return <span key={i} className="text-xs italic text-primary/70">{part}</span>;
+                        }
+                        return <span key={i}>{part}</span>;
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function YouTubeContentStudio() {
   const [step, setStep] = useState(1);
   const [selectedFormat, setSelectedFormat] = useState<YouTubeFormat | null>(null);
