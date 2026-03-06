@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, ArrowRight, ArrowLeft, Check, Clock, Loader2, TrendingUp, Hash, FileText, Wand2, Search, PenLine, Copy, RotateCcw, Target, BarChart3, Users, Lightbulb, Award, Calendar, Zap, Star, Cpu, Heart, Film, Briefcase, Plane, UtensilsCrossed, Shirt, GraduationCap, Trophy, Leaf, Play, Smartphone } from 'lucide-react';
+import { Sparkles, ArrowRight, ArrowLeft, Check, Clock, Loader2, TrendingUp, Hash, FileText, Wand2, Search, PenLine, Copy, RotateCcw, Target, BarChart3, Users, Lightbulb, Award, Calendar, Zap, Star, Cpu, Heart, Film, Briefcase, Plane, UtensilsCrossed, Shirt, GraduationCap, Trophy, Leaf, Play, Smartphone, Clapperboard, Timer, Volume2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
