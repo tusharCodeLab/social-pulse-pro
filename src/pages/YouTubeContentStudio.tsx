@@ -762,7 +762,9 @@ export default function YouTubeContentStudio() {
                       {selectedFormat === 'video' ? 'Full Video Script' : 'Short Script'}
                     </span>
                   </div>
-                  <ScriptDisplay script={selectedVersion?.script || ''} format={selectedFormat!} />
+                  <ExpandableSection maxHeight={200}>
+                    <ScriptDisplay script={selectedVersion?.script || ''} format={selectedFormat!} />
+                  </ExpandableSection>
                 </div>
 
                 <div className="flex gap-2 pt-2">
