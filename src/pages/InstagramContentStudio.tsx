@@ -1,16 +1,17 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, ArrowRight, ArrowLeft, Check, Calendar as CalendarIcon, Clock, Loader2, TrendingUp, Hash, FileText, Wand2 } from 'lucide-react';
+import { Sparkles, ArrowRight, ArrowLeft, Check, Calendar as CalendarIcon, Clock, Loader2, TrendingUp, Hash, FileText, Wand2, Search, PenLine } from 'lucide-react';
 import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
+import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 
 interface PostVersion {
@@ -38,11 +39,14 @@ export default function InstagramContentStudio() {
   const [versions, setVersions] = useState<PostVersion[]>([]);
   const [selectedVersion, setSelectedVersion] = useState<PostVersion | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [discovering, setDiscovering] = useState(false);
   const [scheduledDate, setScheduledDate] = useState<Date>();
   const [scheduledHour, setScheduledHour] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
+  const [customTopic, setCustomTopic] = useState('');
   const { toast } = useToast();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   // Fetch trending topics
   const { data: topics = [], isLoading: loadingTopics } = useQuery({
@@ -74,14 +78,33 @@ export default function InstagramContentStudio() {
     enabled: step === 3,
   });
 
-  const handleTopicSelect = async (topic: TrendingTopic) => {
-    setSelectedTopic(topic);
+  // Discover trending topics via AI
+  const handleDiscoverTopics = async () => {
+    setDiscovering(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('detect-trends', {
+        body: { platform: 'instagram' },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      const count = data?.trends?.length || 0;
+      toast({ title: 'Topics discovered!', description: `Found ${count} trending topics from your data` });
+      queryClient.invalidateQueries({ queryKey: ['trending-topics', 'instagram'] });
+    } catch (e: any) {
+      toast({ title: 'Discovery failed', description: e.message, variant: 'destructive' });
+    } finally {
+      setDiscovering(false);
+    }
+  };
+
+  const generateForTopic = async (topicTitle: string) => {
     setGenerating(true);
     setStep(2);
 
     try {
       const { data, error } = await supabase.functions.invoke('ai-content-studio', {
-        body: { topic: topic.title, platform: 'instagram' },
+        body: { topic: topicTitle, platform: 'instagram' },
       });
 
       if (error) throw error;
@@ -94,6 +117,18 @@ export default function InstagramContentStudio() {
     } finally {
       setGenerating(false);
     }
+  };
+
+  const handleTopicSelect = (topic: TrendingTopic) => {
+    setSelectedTopic(topic);
+    generateForTopic(topic.title);
+  };
+
+  const handleCustomTopicSubmit = () => {
+    if (!customTopic.trim()) return;
+    setSelectedTopic({ id: 'custom', title: customTopic.trim(), description: 'Custom topic', direction: 'up', confidence_score: null, trend_type: 'custom' });
+    generateForTopic(customTopic.trim());
+    setCustomTopic('');
   };
 
   const handleVersionSelect = (version: PostVersion) => {
@@ -123,7 +158,6 @@ export default function InstagramContentStudio() {
       if (error) throw error;
 
       toast({ title: 'Post scheduled!', description: `Scheduled for ${format(scheduledDate, 'PPP')} at ${scheduledHour}:00` });
-      // Reset
       setStep(1);
       setSelectedTopic(null);
       setVersions([]);
@@ -177,11 +211,46 @@ export default function InstagramContentStudio() {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            className="space-y-4"
+            className="space-y-6"
           >
-            <div className="flex items-center gap-2 mb-4">
-              <TrendingUp className="h-5 w-5 text-primary" />
-              <h2 className="text-lg font-semibold text-foreground">Select a Trending Topic</h2>
+            {/* Custom topic input */}
+            <Card className="border-primary/20 bg-primary/5">
+              <CardContent className="p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <PenLine className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-semibold text-foreground">Enter your own topic</span>
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="e.g. Summer fitness tips, AI in marketing, Travel hacks..."
+                    value={customTopic}
+                    onChange={e => setCustomTopic(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleCustomTopicSubmit()}
+                    className="flex-1"
+                  />
+                  <Button onClick={handleCustomTopicSubmit} disabled={!customTopic.trim()} className="gap-1.5">
+                    <Wand2 className="h-4 w-4" /> Generate
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Discover + topics header */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-primary" />
+                <h2 className="text-lg font-semibold text-foreground">Or pick a Trending Topic</h2>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDiscoverTopics}
+                disabled={discovering}
+                className="gap-1.5"
+              >
+                {discovering ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                {discovering ? 'Analyzing...' : 'Discover Topics'}
+              </Button>
             </div>
 
             {loadingTopics ? (
@@ -190,10 +259,14 @@ export default function InstagramContentStudio() {
               </div>
             ) : topics.length === 0 ? (
               <Card className="border-dashed">
-                <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-                  <TrendingUp className="h-12 w-12 text-muted-foreground/40 mb-4" />
-                  <p className="text-lg font-medium text-foreground">No trending topics yet</p>
-                  <p className="text-sm text-muted-foreground mt-1">Run Trend Intelligence first to discover topics</p>
+                <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                  <TrendingUp className="h-10 w-10 text-muted-foreground/40 mb-3" />
+                  <p className="text-base font-medium text-foreground">No trending topics yet</p>
+                  <p className="text-sm text-muted-foreground mt-1 mb-4">Click "Discover Topics" to analyze your Instagram data, or enter a custom topic above</p>
+                  <Button onClick={handleDiscoverTopics} disabled={discovering} className="gap-1.5">
+                    {discovering ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                    {discovering ? 'Analyzing your data...' : 'Discover Trending Topics'}
+                  </Button>
                 </CardContent>
               </Card>
             ) : (
@@ -272,7 +345,6 @@ export default function InstagramContentStudio() {
                         <CardTitle className="text-lg mt-2">{version.title}</CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-4">
-                        {/* Caption */}
                         <div>
                           <div className="flex items-center gap-1.5 mb-1.5">
                             <FileText className="h-3.5 w-3.5 text-muted-foreground" />
@@ -280,7 +352,6 @@ export default function InstagramContentStudio() {
                           </div>
                           <p className="text-sm text-foreground bg-muted/50 rounded-lg p-3">{version.caption}</p>
                         </div>
-                        {/* Hashtags */}
                         <div>
                           <div className="flex items-center gap-1.5 mb-1.5">
                             <Hash className="h-3.5 w-3.5 text-muted-foreground" />
@@ -292,7 +363,6 @@ export default function InstagramContentStudio() {
                             ))}
                           </div>
                         </div>
-                        {/* Script */}
                         <div>
                           <div className="flex items-center gap-1.5 mb-1.5">
                             <FileText className="h-3.5 w-3.5 text-muted-foreground" />
@@ -330,7 +400,6 @@ export default function InstagramContentStudio() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Post Preview */}
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">Post Preview</CardTitle>
@@ -346,7 +415,6 @@ export default function InstagramContentStudio() {
                 </CardContent>
               </Card>
 
-              {/* Schedule Picker */}
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
@@ -355,7 +423,6 @@ export default function InstagramContentStudio() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {/* Date */}
                   <div>
                     <label className="text-sm font-medium text-foreground mb-2 block">Pick a date</label>
                     <Popover>
@@ -377,7 +444,6 @@ export default function InstagramContentStudio() {
                     </Popover>
                   </div>
 
-                  {/* Time slots */}
                   <div>
                     <label className="text-sm font-medium text-foreground mb-2 block">
                       <Clock className="h-3.5 w-3.5 inline mr-1" />
