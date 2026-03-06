@@ -6,7 +6,14 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-async function handleGenerateVersions(topic: string, platform: string, apiKey: string) {
+async function handleGenerateVersions(topic: string, platform: string, apiKey: string, format?: string) {
+  let formatInstructions = '';
+  if (platform === 'youtube' && format === 'short') {
+    formatInstructions = `\n\nIMPORTANT: This is for a YouTube SHORT (≤60 seconds, vertical video). Generate punchy, hook-driven scripts optimized for short-form vertical content. Scripts should be concise (under 150 words), start with an attention-grabbing hook in the first 2 seconds, and end with a clear call-to-action. Captions should be optimized for YouTube Shorts discovery.`;
+  } else if (platform === 'youtube' && format === 'video') {
+    formatInstructions = `\n\nIMPORTANT: This is for a full-length YouTube VIDEO. Generate comprehensive scripts with a clear intro hook (first 30 seconds), structured body sections, and a strong outro with call-to-action. Scripts should be 300-500 words, designed for 8-15 minute videos. Include suggested timestamps/chapters. Captions should be optimized for YouTube search and suggested videos.`;
+  }
+
   const prompt = `You are a social media content strategist specializing in ${platform}. Given the trending topic below, generate exactly 2 post versions (A and B) for ${platform}.
 
 Trending Topic: "${topic}"
@@ -15,7 +22,7 @@ For each version provide:
 - title: A compelling post title (max 60 chars)
 - caption: An engaging caption (150-300 chars) with emojis
 - hashtags: Array of 5-8 relevant hashtags (without #)
-- script: A detailed script/body text (2-3 paragraphs) that could be used as a carousel script, reel script, or long-form caption
+- script: A detailed script/body text that could be used as content${formatInstructions}
 
 Version A should be more professional/educational.
 Version B should be more casual/entertaining.`;
