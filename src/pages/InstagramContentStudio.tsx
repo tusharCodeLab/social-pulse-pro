@@ -332,8 +332,8 @@ export default function InstagramContentStudio() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {versions.map(version => (
                   <motion.div key={version.id} whileHover={{ y: -4 }}>
-                    <Card className="h-full hover:border-primary/50 transition-all hover:shadow-lg hover:shadow-primary/5 overflow-hidden">
-                      <CardHeader className="pb-3">
+                    <Card className="h-[720px] flex flex-col hover:border-primary/50 transition-all hover:shadow-lg hover:shadow-primary/5 overflow-hidden">
+                      <CardHeader className="pb-3 shrink-0">
                         <div className="flex items-center justify-between">
                           <Badge className="bg-primary/10 text-primary border-primary/20 text-sm font-bold">
                             Version {version.id}
@@ -349,7 +349,7 @@ export default function InstagramContentStudio() {
                         </div>
                         <CardTitle className="text-lg mt-2">{version.title}</CardTitle>
                       </CardHeader>
-                      <CardContent className="space-y-4">
+                      <CardContent className="space-y-4 flex-1 overflow-y-auto min-h-0">
                         <div>
                           <div className="flex items-center gap-1.5 mb-1.5">
                             <FileText className="h-3.5 w-3.5 text-muted-foreground" />
