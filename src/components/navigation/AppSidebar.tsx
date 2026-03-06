@@ -68,7 +68,6 @@ const platformGroups: PlatformGroup[] = [
       { to: '/youtube-posts', icon: FileText, label: 'Posts Analysis' },
       { to: '/youtube-audience', icon: Users, label: 'Audience Insights' },
       { to: '/youtube-sentiment', icon: Heart, label: 'Sentiment' },
-      { to: '/youtube-trends', icon: Activity, label: 'Trend Intelligence' },
     ],
   },
   {
@@ -81,7 +80,6 @@ const platformGroups: PlatformGroup[] = [
       { to: '/facebook-posts', icon: FileText, label: 'Posts Analysis' },
       { to: '/facebook-audience', icon: Users, label: 'Audience' },
       { to: '/facebook-sentiment', icon: Heart, label: 'Sentiment' },
-      { to: '/facebook-trends', icon: Activity, label: 'Trend Intelligence' },
     ],
   },
 ];
