@@ -154,6 +154,65 @@ Analyze this content and provide:
   return response;
 }
 
+async function handleTopicExplanation(topic: string, apiKey: string) {
+  const prompt = `You are a knowledgeable content research assistant. A social media creator wants to create content about the following topic, but they may have little to no knowledge about it. Provide a clear, well-structured explanation that helps them deeply understand the topic so they can create informed, credible content.
+
+Topic: "${topic}"
+
+Provide:
+1. introduction: A brief 2-3 sentence overview that sets context — what this topic is and why it matters right now.
+2. key_points: An array of 3-5 important points. Each point should have a "heading" (short label) and "detail" (1-2 sentence explanation). Cover the core concepts, recent developments, and why people care.
+3. conclusion: A 2-3 sentence wrap-up summarizing the creator's takeaway — what angle they should consider and what makes this topic compelling for content.`;
+
+  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "google/gemini-3-flash-preview",
+      messages: [
+        { role: "system", content: "You are a content research assistant. Always respond using the provided tool." },
+        { role: "user", content: prompt },
+      ],
+      tools: [
+        {
+          type: "function",
+          function: {
+            name: "explain_topic",
+            description: "Return a structured explanation of a topic for a content creator.",
+            parameters: {
+              type: "object",
+              properties: {
+                introduction: { type: "string" },
+                key_points: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      heading: { type: "string" },
+                      detail: { type: "string" },
+                    },
+                    required: ["heading", "detail"],
+                    additionalProperties: false,
+                  },
+                },
+                conclusion: { type: "string" },
+              },
+              required: ["introduction", "key_points", "conclusion"],
+              additionalProperties: false,
+            },
+          },
+        },
+      ],
+      tool_choice: { type: "function", function: { name: "explain_topic" } },
+    }),
+  });
+
+  return response;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -174,6 +233,14 @@ serve(async (req) => {
         });
       }
       response = await handlePublishingStrategy(post, platform, LOVABLE_API_KEY);
+    } else if (action === "topic-explanation") {
+      if (!topic) {
+        return new Response(JSON.stringify({ error: "topic is required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      response = await handleTopicExplanation(topic, LOVABLE_API_KEY);
     } else {
       // Default: generate versions
       if (!topic) {

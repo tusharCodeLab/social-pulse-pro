@@ -86,6 +86,12 @@ interface PublishingStrategy {
   pro_tips: string[];
 }
 
+interface TopicExplanation {
+  introduction: string;
+  key_points: { heading: string; detail: string }[];
+  conclusion: string;
+}
+
 export default function InstagramContentStudio() {
   const [step, setStep] = useState(1);
   const [selectedTopic, setSelectedTopic] = useState<TrendingTopic | null>(null);
@@ -96,6 +102,8 @@ export default function InstagramContentStudio() {
   const [customTopic, setCustomTopic] = useState('');
   const [strategy, setStrategy] = useState<PublishingStrategy | null>(null);
   const [loadingStrategy, setLoadingStrategy] = useState(false);
+  const [topicExplanation, setTopicExplanation] = useState<TopicExplanation | null>(null);
+  const [loadingExplanation, setLoadingExplanation] = useState(false);
   const [contentIdeas, setContentIdeas] = useState<ContentIdeasResult | null>(null);
   const [loadingIdeas, setLoadingIdeas] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -120,12 +128,35 @@ export default function InstagramContentStudio() {
     },
   });
 
-  // Auto-fetch publishing strategy when entering step 3
+  // Auto-fetch publishing strategy and topic explanation when entering step 3
   useEffect(() => {
     if (step === 3 && selectedVersion && !strategy && !loadingStrategy) {
       fetchPublishingStrategy();
     }
+    if (step === 3 && selectedTopic && !topicExplanation && !loadingExplanation) {
+      fetchTopicExplanation();
+    }
   }, [step]);
+
+  const fetchTopicExplanation = async () => {
+    if (!selectedTopic) return;
+    setLoadingExplanation(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-content-studio', {
+        body: {
+          action: 'topic-explanation',
+          topic: selectedTopic.title,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setTopicExplanation(data as TopicExplanation);
+    } catch (e: any) {
+      toast({ title: 'Explanation generation failed', description: e.message, variant: 'destructive' });
+    } finally {
+      setLoadingExplanation(false);
+    }
+  };
 
   const fetchPublishingStrategy = async () => {
     if (!selectedVersion) return;
@@ -256,6 +287,7 @@ export default function InstagramContentStudio() {
     setVersions([]);
     setSelectedVersion(null);
     setStrategy(null);
+    setTopicExplanation(null);
   };
 
   const copyToClipboard = (text: string, label: string) => {
@@ -523,11 +555,56 @@ export default function InstagramContentStudio() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <h3 className="font-semibold text-foreground">{selectedVersion?.title}</h3>
-                {selectedTopic?.description && (
-                  <p className="text-sm text-muted-foreground bg-muted/30 rounded-lg p-3 -mt-1">
-                    {selectedTopic.description}
-                  </p>
+                <h3 className="font-semibold text-foreground text-lg">{selectedVersion?.title}</h3>
+                
+                {/* Topic Deep-Dive Explanation */}
+                {loadingExplanation && (
+                  <div className="flex items-center gap-2 py-4">
+                    <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}>
+                      <Lightbulb className="h-4 w-4 text-primary" />
+                    </motion.div>
+                    <span className="text-sm text-muted-foreground">Generating topic explanation...</span>
+                  </div>
+                )}
+                {topicExplanation && (
+                  <div className="bg-muted/30 border border-border/50 rounded-xl p-4 space-y-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Lightbulb className="h-4 w-4 text-primary" />
+                      <span className="text-xs font-semibold text-primary uppercase tracking-wider">Topic Deep-Dive</span>
+                    </div>
+                    
+                    {/* Introduction */}
+                    <p className="text-sm text-foreground/90 leading-relaxed">
+                      {topicExplanation.introduction}
+                    </p>
+                    
+                    {/* Key Points */}
+                    <div className="space-y-2.5 pl-1">
+                      {topicExplanation.key_points.map((point, i) => (
+                        <div key={i} className="flex gap-3">
+                          <div className="flex-shrink-0 mt-0.5">
+                            <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center">
+                              <span className="text-[10px] font-bold text-primary">{i + 1}</span>
+                            </div>
+                          </div>
+                          <div>
+                            <span className="text-sm font-semibold text-foreground">{point.heading}: </span>
+                            <span className="text-sm text-muted-foreground leading-relaxed">{point.detail}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {/* Conclusion */}
+                    <div className="border-t border-border/40 pt-3 mt-1">
+                      <div className="flex items-start gap-2">
+                        <Star className="h-3.5 w-3.5 text-primary mt-0.5 flex-shrink-0" />
+                        <p className="text-sm text-foreground/80 leading-relaxed italic">
+                          {topicExplanation.conclusion}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 )}
                 
                 <div>
