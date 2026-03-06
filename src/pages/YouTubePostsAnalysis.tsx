@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useYouTubeVideos } from '@/hooks/useYouTubeData';
 import {
-  ResponsiveContainer, BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell,
+  ResponsiveContainer, BarChart, Bar, AreaChart, Area, ComposedChart, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, ReferenceLine,
 } from 'recharts';
 import { format } from 'date-fns';
 
@@ -70,17 +70,22 @@ export default function YouTubePostsAnalysis() {
     return Object.entries(types).map(([name, value]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), value }));
   }, [videos]);
 
-  const durationData = useMemo(() => {
-    return videos
-      .filter(v => v.published_at && (v as any).duration_seconds != null)
+  const viewsPerVideo = useMemo(() => {
+    const sorted = videos
+      .filter(v => v.published_at)
       .sort((a, b) => new Date(a.published_at!).getTime() - new Date(b.published_at!).getTime())
       .map(v => ({
         date: format(new Date(v.published_at!), 'MMM d'),
-        title: (v.content || 'Untitled').slice(0, 30),
-        seconds: (v as any).duration_seconds as number,
-        label: `${Math.floor(((v as any).duration_seconds as number) / 60)}:${String(((v as any).duration_seconds as number) % 60).padStart(2, '0')}`,
+        title: (v.content || 'Untitled').slice(0, 35),
+        views: v.reach || 0,
       }));
+    return sorted;
   }, [videos]);
+
+  const avgViews = useMemo(() => {
+    if (viewsPerVideo.length === 0) return 0;
+    return Math.round(viewsPerVideo.reduce((s, v) => s + v.views, 0) / viewsPerVideo.length);
+  }, [viewsPerVideo]);
 
   const uploadFreq = useMemo(() => {
     const weeks: Record<string, number> = {};
@@ -216,33 +221,30 @@ export default function YouTubePostsAnalysis() {
         </div>
       </ChartCard>
 
-      {/* Average View Duration */}
+      {/* Views Per Video with Average */}
       <div className="mt-6">
-        <ChartCard title="Video Duration" subtitle="Length of each video (MM:SS)" delay={0.45}>
+        <ChartCard title="Views Per Video" subtitle={`Average: ${formatNum(avgViews)} views`} delay={0.45}>
           <div className="h-[280px]">
-            {durationData.length > 0 ? (
+            {viewsPerVideo.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={durationData}>
+                <ComposedChart data={viewsPerVideo}>
                   <defs>
-                    <linearGradient id="durationGrad" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient id="viewsGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="hsl(38,92%,50%)" stopOpacity={0.3} />
                       <stop offset="95%" stopColor="hsl(38,92%,50%)" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(222,30%,15%)" />
                   <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="hsl(215,20%,50%)" />
-                  <YAxis
-                    tick={{ fontSize: 10 }}
-                    stroke="hsl(215,20%,50%)"
-                    tickFormatter={(v: number) => `${Math.floor(v / 60)}:${String(v % 60).padStart(2, '0')}`}
-                  />
+                  <YAxis tick={{ fontSize: 10 }} stroke="hsl(215,20%,50%)" tickFormatter={(v: number) => formatNum(v)} />
                   <Tooltip
                     contentStyle={tooltipStyle}
-                    formatter={(value: number) => [`${Math.floor(value / 60)}:${String(value % 60).padStart(2, '0')}`, 'Duration']}
-                    labelFormatter={(label: string, payload: any[]) => payload?.[0]?.payload?.title || label}
+                    formatter={(value: number) => [formatNum(value), 'Views']}
+                    labelFormatter={(_: string, payload: any[]) => payload?.[0]?.payload?.title || _}
                   />
-                  <Area type="monotone" dataKey="seconds" stroke="hsl(38,92%,50%)" fill="url(#durationGrad)" name="Duration" />
-                </AreaChart>
+                  <Bar dataKey="views" fill="hsl(38,92%,50%)" fillOpacity={0.7} radius={[4, 4, 0, 0]} name="Views" />
+                  <ReferenceLine y={avgViews} stroke="hsl(0,80%,50%)" strokeDasharray="6 3" strokeWidth={2} label={{ value: `Avg: ${formatNum(avgViews)}`, position: 'right', fill: 'hsl(0,80%,50%)', fontSize: 11 }} />
+                </ComposedChart>
               </ResponsiveContainer>
             ) : emptyState}
           </div>
