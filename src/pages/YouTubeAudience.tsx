@@ -7,7 +7,7 @@ import { EnhancedMetricCard } from '@/components/dashboard/EnhancedMetricCard';
 import { ChartCard } from '@/components/dashboard/ChartCard';
 import { Badge } from '@/components/ui/badge';
 import { useYouTubeAccount, useYouTubeAudienceMetrics, useYouTubeVideos } from '@/hooks/useYouTubeData';
-import { ResponsiveContainer, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { format, subDays, isAfter } from 'date-fns';
 
 const tooltipStyle = {
@@ -59,10 +59,6 @@ export default function YouTubeAudience() {
     subscribers: m.followers_count || 0,
   }));
 
-  const growthVelocity = metrics.map(m => ({
-    date: format(new Date(m.date), 'MMM d'),
-    newFollowers: m.new_followers || 0,
-  }));
 
   // Milestone calculation
   const currentFollowers = account?.followers_count || 0;
@@ -106,45 +102,27 @@ export default function YouTubeAudience() {
         </motion.div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <ChartCard title="Subscriber Growth" subtitle="Subscriber count snapshots" delay={0.3}>
-          <div className="h-[300px]">
-            {chartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData}>
-                  <defs>
-                    <linearGradient id="ytSubGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(0,80%,50%)" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="hsl(0,80%,50%)" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(222,30%,15%)" />
-                  <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="hsl(215,20%,50%)" />
-                  <YAxis tick={{ fontSize: 10 }} stroke="hsl(215,20%,50%)" />
-                  <Tooltip contentStyle={tooltipStyle} />
-                  <Area type="monotone" dataKey="subscribers" stroke="hsl(0,80%,50%)" fill="url(#ytSubGrad)" strokeWidth={2} />
-                </AreaChart>
-              </ResponsiveContainer>
-            ) : emptyState}
-          </div>
-        </ChartCard>
-
-        <ChartCard title="Growth Velocity" subtitle="Daily new subscribers" delay={0.35}>
-          <div className="h-[300px]">
-            {growthVelocity.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={growthVelocity}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(222,30%,15%)" />
-                  <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="hsl(215,20%,50%)" />
-                  <YAxis tick={{ fontSize: 10 }} stroke="hsl(215,20%,50%)" allowDecimals={false} />
-                  <Tooltip contentStyle={tooltipStyle} />
-                  <Bar dataKey="newFollowers" fill="hsl(142,71%,45%)" radius={[4, 4, 0, 0]} name="New Subscribers" />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : emptyState}
-          </div>
-        </ChartCard>
-      </div>
+      <ChartCard title="Subscriber Growth" subtitle="Subscriber count snapshots" delay={0.3}>
+        <div className="h-[300px]">
+          {chartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData}>
+                <defs>
+                  <linearGradient id="ytSubGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(0,80%,50%)" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="hsl(0,80%,50%)" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(222,30%,15%)" />
+                <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="hsl(215,20%,50%)" />
+                <YAxis tick={{ fontSize: 10 }} stroke="hsl(215,20%,50%)" />
+                <Tooltip contentStyle={tooltipStyle} />
+                <Area type="monotone" dataKey="subscribers" stroke="hsl(0,80%,50%)" fill="url(#ytSubGrad)" strokeWidth={2} />
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : emptyState}
+        </div>
+      </ChartCard>
     </>
   );
 }
