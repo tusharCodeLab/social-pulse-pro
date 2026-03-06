@@ -1,13 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, ArrowRight, ArrowLeft, Check, Calendar as CalendarIcon, Clock, Loader2, TrendingUp, Hash, FileText, Wand2, Search, PenLine } from 'lucide-react';
-import { format } from 'date-fns';
+import { Sparkles, ArrowRight, ArrowLeft, Check, Clock, Loader2, TrendingUp, Hash, FileText, Wand2, Search, PenLine, Copy, RotateCcw, Target, BarChart3, Users, Lightbulb, Award } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -31,7 +28,29 @@ interface TrendingTopic {
   trend_type: string;
 }
 
-const RECOMMENDED_HOURS = [9, 12, 15, 18, 20];
+interface BestTime {
+  rank: number;
+  day: string;
+  time: string;
+  reasoning: string;
+}
+
+interface EngagementForecast {
+  likes_min: number;
+  likes_max: number;
+  comments_min: number;
+  comments_max: number;
+  reach_min: number;
+  reach_max: number;
+  explanation: string;
+}
+
+interface PublishingStrategy {
+  best_times: BestTime[];
+  engagement_forecast: EngagementForecast;
+  audience_insights: string[];
+  pro_tips: string[];
+}
 
 export default function InstagramContentStudio() {
   const [step, setStep] = useState(1);
@@ -40,10 +59,9 @@ export default function InstagramContentStudio() {
   const [selectedVersion, setSelectedVersion] = useState<PostVersion | null>(null);
   const [generating, setGenerating] = useState(false);
   const [discovering, setDiscovering] = useState(false);
-  const [scheduledDate, setScheduledDate] = useState<Date>();
-  const [scheduledHour, setScheduledHour] = useState<number | null>(null);
-  const [saving, setSaving] = useState(false);
   const [customTopic, setCustomTopic] = useState('');
+  const [strategy, setStrategy] = useState<PublishingStrategy | null>(null);
+  const [loadingStrategy, setLoadingStrategy] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -63,20 +81,37 @@ export default function InstagramContentStudio() {
     },
   });
 
-  // Fetch best posting times
-  const { data: bestTimes = [] } = useQuery({
-    queryKey: ['best-posting-times', 'instagram'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('best_posting_times')
-        .select('*')
-        .eq('platform', 'instagram')
-        .order('engagement_score', { ascending: false });
+  // Auto-fetch publishing strategy when entering step 3
+  useEffect(() => {
+    if (step === 3 && selectedVersion && !strategy && !loadingStrategy) {
+      fetchPublishingStrategy();
+    }
+  }, [step]);
+
+  const fetchPublishingStrategy = async () => {
+    if (!selectedVersion) return;
+    setLoadingStrategy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-content-studio', {
+        body: {
+          action: 'publishing-strategy',
+          platform: 'instagram',
+          post: {
+            title: selectedVersion.title,
+            caption: selectedVersion.caption,
+            hashtags: selectedVersion.hashtags,
+          },
+        },
+      });
       if (error) throw error;
-      return data;
-    },
-    enabled: step === 3,
-  });
+      if (data?.error) throw new Error(data.error);
+      setStrategy(data as PublishingStrategy);
+    } catch (e: any) {
+      toast({ title: 'Strategy generation failed', description: e.message, variant: 'destructive' });
+    } finally {
+      setLoadingStrategy(false);
+    }
+  };
 
   // Discover trending topics via AI
   const handleDiscoverTopics = async () => {
@@ -133,47 +168,22 @@ export default function InstagramContentStudio() {
 
   const handleVersionSelect = (version: PostVersion) => {
     setSelectedVersion(version);
+    setStrategy(null);
     setStep(3);
   };
 
-  const handleSchedule = async () => {
-    if (!selectedVersion || !scheduledDate || scheduledHour === null || !user) return;
-    setSaving(true);
-
-    try {
-      const { error } = await supabase.from('content_calendar').insert({
-        user_id: user.id,
-        title: selectedVersion.title,
-        caption: selectedVersion.caption,
-        hashtags: selectedVersion.hashtags,
-        platform: 'instagram',
-        scheduled_date: format(scheduledDate, 'yyyy-MM-dd'),
-        scheduled_time: `${String(scheduledHour).padStart(2, '0')}:00`,
-        content_type: 'post',
-        status: 'scheduled',
-        is_ai_generated: true,
-        ai_reasoning: selectedVersion.script,
-      });
-
-      if (error) throw error;
-
-      toast({ title: 'Post scheduled!', description: `Scheduled for ${format(scheduledDate, 'PPP')} at ${scheduledHour}:00` });
-      setStep(1);
-      setSelectedTopic(null);
-      setVersions([]);
-      setSelectedVersion(null);
-      setScheduledDate(undefined);
-      setScheduledHour(null);
-    } catch (e: any) {
-      toast({ title: 'Scheduling failed', description: e.message, variant: 'destructive' });
-    } finally {
-      setSaving(false);
-    }
+  const handleStartOver = () => {
+    setStep(1);
+    setSelectedTopic(null);
+    setVersions([]);
+    setSelectedVersion(null);
+    setStrategy(null);
   };
 
-  const recommendedHours = bestTimes.length > 0
-    ? bestTimes.slice(0, 5).map(t => t.hour_of_day)
-    : RECOMMENDED_HOURS;
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: `${label} copied!`, description: 'Copied to clipboard' });
+  };
 
   return (
     <div className="space-y-6">
@@ -186,7 +196,6 @@ export default function InstagramContentStudio() {
           </h1>
           <p className="text-muted-foreground mt-1">AI-powered post creation from trending topics</p>
         </div>
-        {/* Step indicator */}
         <div className="flex items-center gap-2">
           {[1, 2, 3].map(s => (
             <div key={s} className="flex items-center gap-1.5">
@@ -213,7 +222,6 @@ export default function InstagramContentStudio() {
             exit={{ opacity: 0, x: -20 }}
             className="space-y-6"
           >
-            {/* Custom topic input */}
             <Card className="border-primary/20 bg-primary/5">
               <CardContent className="p-5">
                 <div className="flex items-center gap-2 mb-3">
@@ -235,19 +243,12 @@ export default function InstagramContentStudio() {
               </CardContent>
             </Card>
 
-            {/* Discover + topics header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5 text-primary" />
                 <h2 className="text-lg font-semibold text-foreground">Or pick a Trending Topic</h2>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDiscoverTopics}
-                disabled={discovering}
-                className="gap-1.5"
-              >
+              <Button variant="outline" size="sm" onClick={handleDiscoverTopics} disabled={discovering} className="gap-1.5">
                 {discovering ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                 {discovering ? 'Analyzing...' : 'Discover Topics'}
               </Button>
@@ -381,7 +382,7 @@ export default function InstagramContentStudio() {
           </motion.div>
         )}
 
-        {/* STEP 3: Schedule */}
+        {/* STEP 3: AI Publishing Strategy */}
         {step === 3 && (
           <motion.div
             key="step3"
@@ -390,91 +391,192 @@ export default function InstagramContentStudio() {
             exit={{ opacity: 0, x: 20 }}
             className="space-y-6"
           >
-            <div className="flex items-center gap-2 mb-2">
-              <Button variant="ghost" size="sm" onClick={() => setStep(2)}>
-                <ArrowLeft className="h-4 w-4 mr-1" /> Back
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" onClick={() => setStep(2)}>
+                  <ArrowLeft className="h-4 w-4 mr-1" /> Back
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  Selected: <strong className="text-foreground">Version {selectedVersion?.id}</strong>
+                </span>
+              </div>
+              <Button variant="outline" size="sm" onClick={handleStartOver} className="gap-1.5">
+                <RotateCcw className="h-4 w-4" /> Start Over
               </Button>
-              <span className="text-sm text-muted-foreground">
-                Selected: <strong className="text-foreground">Version {selectedVersion?.id}</strong>
-              </span>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Post Preview</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <h3 className="font-semibold text-foreground">{selectedVersion?.title}</h3>
-                  <p className="text-sm text-foreground">{selectedVersion?.caption}</p>
-                  <div className="flex flex-wrap gap-1">
-                    {selectedVersion?.hashtags.map(tag => (
-                      <Badge key={tag} variant="secondary" className="text-xs">#{tag}</Badge>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <CalendarIcon className="h-4 w-4 text-primary" />
-                    Schedule Post
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-foreground mb-2 block">Pick a date</label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" className={cn('w-full justify-start', !scheduledDate && 'text-muted-foreground')}>
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {scheduledDate ? format(scheduledDate, 'PPP') : 'Select date'}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={scheduledDate}
-                          onSelect={setScheduledDate}
-                          disabled={(date) => date < new Date()}
-                          className="p-3 pointer-events-auto"
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium text-foreground mb-2 block">
-                      <Clock className="h-3.5 w-3.5 inline mr-1" />
-                      Recommended times
-                    </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {recommendedHours.map(hour => (
-                        <Button
-                          key={hour}
-                          variant={scheduledHour === hour ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => setScheduledHour(hour)}
-                          className="text-xs"
-                        >
-                          {hour}:00
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-
+            {/* Post Preview + Quick Actions */}
+            <Card className="border-primary/20">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-primary" />
+                  Your Post
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <h3 className="font-semibold text-foreground">{selectedVersion?.title}</h3>
+                <p className="text-sm text-foreground">{selectedVersion?.caption}</p>
+                <div className="flex flex-wrap gap-1">
+                  {selectedVersion?.hashtags.map(tag => (
+                    <Badge key={tag} variant="secondary" className="text-xs">#{tag}</Badge>
+                  ))}
+                </div>
+                <div className="flex gap-2 pt-2">
                   <Button
-                    className="w-full gap-2"
-                    disabled={!scheduledDate || scheduledHour === null || saving}
-                    onClick={handleSchedule}
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => copyToClipboard(selectedVersion?.caption || '', 'Caption')}
                   >
-                    {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                    Schedule Post
+                    <Copy className="h-3.5 w-3.5" /> Copy Caption
                   </Button>
-                </CardContent>
-              </Card>
-            </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => copyToClipboard(selectedVersion?.hashtags.map(t => '#' + t).join(' ') || '', 'Hashtags')}
+                  >
+                    <Hash className="h-3.5 w-3.5" /> Copy Hashtags
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Strategy Loading */}
+            {loadingStrategy && (
+              <div className="flex flex-col items-center justify-center py-16">
+                <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}>
+                  <Target className="h-10 w-10 text-primary" />
+                </motion.div>
+                <p className="text-foreground font-medium mt-4">Crafting your publishing strategy...</p>
+                <p className="text-sm text-muted-foreground mt-1">AI is analyzing optimal timing and engagement patterns</p>
+              </div>
+            )}
+
+            {/* Strategy Results */}
+            {strategy && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Best Times to Post */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-primary" />
+                      Best Times to Post
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {strategy.best_times.map((slot, i) => (
+                      <motion.div
+                        key={i}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.1 }}
+                        className="flex items-start gap-3 p-3 rounded-lg bg-muted/50"
+                      >
+                        <div className={cn(
+                          'w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0',
+                          i === 0 ? 'bg-primary text-primary-foreground' : 'bg-muted-foreground/20 text-muted-foreground'
+                        )}>
+                          {i === 0 ? <Award className="h-3.5 w-3.5" /> : i + 1}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-semibold text-sm text-foreground">{slot.day}</span>
+                            <Badge variant="outline" className="text-xs">{slot.time}</Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground">{slot.reasoning}</p>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </CardContent>
+                </Card>
+
+                {/* Engagement Forecast */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <BarChart3 className="h-4 w-4 text-primary" />
+                      Engagement Forecast
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="text-center p-3 rounded-lg bg-muted/50">
+                        <p className="text-xs text-muted-foreground mb-1">Likes</p>
+                        <p className="text-lg font-bold text-foreground">
+                          {strategy.engagement_forecast.likes_min.toLocaleString()}-{strategy.engagement_forecast.likes_max.toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="text-center p-3 rounded-lg bg-muted/50">
+                        <p className="text-xs text-muted-foreground mb-1">Comments</p>
+                        <p className="text-lg font-bold text-foreground">
+                          {strategy.engagement_forecast.comments_min.toLocaleString()}-{strategy.engagement_forecast.comments_max.toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="text-center p-3 rounded-lg bg-muted/50">
+                        <p className="text-xs text-muted-foreground mb-1">Reach</p>
+                        <p className="text-lg font-bold text-foreground">
+                          {strategy.engagement_forecast.reach_min.toLocaleString()}-{strategy.engagement_forecast.reach_max.toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground bg-muted/30 rounded-lg p-3">{strategy.engagement_forecast.explanation}</p>
+                  </CardContent>
+                </Card>
+
+                {/* Audience Insights */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Users className="h-4 w-4 text-primary" />
+                      Audience Insights
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-2.5">
+                      {strategy.audience_insights.map((insight, i) => (
+                        <motion.li
+                          key={i}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: i * 0.08 }}
+                          className="flex items-start gap-2.5 text-sm"
+                        >
+                          <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
+                          <span className="text-foreground">{insight}</span>
+                        </motion.li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+
+                {/* Pro Tips */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Lightbulb className="h-4 w-4 text-primary" />
+                      Pro Tips
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-2.5">
+                      {strategy.pro_tips.map((tip, i) => (
+                        <motion.li
+                          key={i}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: i * 0.08 }}
+                          className="flex items-start gap-2.5 text-sm"
+                        >
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 mt-0.5">{i + 1}</Badge>
+                          <span className="text-foreground">{tip}</span>
+                        </motion.li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
