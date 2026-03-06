@@ -211,6 +211,7 @@ export default function InstagramContentStudio() {
   };
 
 
+  const generateForTopic = async (topicTitle: string) => {
     setGenerating(true);
     setStep(2);
 
