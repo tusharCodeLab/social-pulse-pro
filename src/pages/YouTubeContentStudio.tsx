@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, ArrowRight, ArrowLeft, Check, Clock, Loader2, TrendingUp, Hash, FileText, Wand2, Search, PenLine, Copy, RotateCcw, Target, BarChart3, Users, Lightbulb, Award, Calendar, Zap, Star, Cpu, Heart, Film, Briefcase, Plane, UtensilsCrossed, Shirt, GraduationCap, Trophy, Leaf, Play, Smartphone, Clapperboard, Timer, Volume2 } from 'lucide-react';
+import { ExpandableSection } from '@/components/ui/expandable-section';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -618,7 +619,9 @@ export default function YouTubeContentStudio() {
                             <FileText className="h-3.5 w-3.5 text-muted-foreground" />
                             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Description</span>
                           </div>
-                          <p className="text-sm text-foreground bg-muted/50 rounded-lg p-3">{version.caption}</p>
+                          <ExpandableSection maxHeight={100}>
+                            <p className="text-sm text-foreground bg-muted/50 rounded-lg p-3">{version.caption}</p>
+                          </ExpandableSection>
                         </div>
                         <div>
                           <div className="flex items-center gap-1.5 mb-1.5">
@@ -638,7 +641,9 @@ export default function YouTubeContentStudio() {
                               {selectedFormat === 'video' ? 'Video Script' : 'Short Script'}
                             </span>
                           </div>
-                          <ScriptDisplay script={version.script} format={selectedFormat!} />
+                          <ExpandableSection maxHeight={200}>
+                            <ScriptDisplay script={version.script} format={selectedFormat!} />
+                          </ExpandableSection>
                         </div>
                       </CardContent>
                     </Card>
@@ -696,34 +701,36 @@ export default function YouTubeContentStudio() {
                   </div>
                 )}
                 {topicExplanation && (
-                  <div className="bg-muted/30 border border-border/50 rounded-xl p-4 space-y-3">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Lightbulb className="h-4 w-4 text-destructive" />
-                      <span className="text-xs font-semibold text-destructive uppercase tracking-wider">Topic Deep-Dive</span>
-                    </div>
-                    <p className="text-sm text-foreground/90 leading-relaxed">{topicExplanation.introduction}</p>
-                    <div className="space-y-2.5 pl-1">
-                      {topicExplanation.key_points.map((point, i) => (
-                        <div key={i} className="flex gap-3">
-                          <div className="flex-shrink-0 mt-0.5">
-                            <div className="h-5 w-5 rounded-full bg-destructive/10 flex items-center justify-center">
-                              <span className="text-[10px] font-bold text-destructive">{i + 1}</span>
+                  <ExpandableSection maxHeight={160}>
+                    <div className="bg-muted/30 border border-border/50 rounded-xl p-4 space-y-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Lightbulb className="h-4 w-4 text-destructive" />
+                        <span className="text-xs font-semibold text-destructive uppercase tracking-wider">Topic Deep-Dive</span>
+                      </div>
+                      <p className="text-sm text-foreground/90 leading-relaxed">{topicExplanation.introduction}</p>
+                      <div className="space-y-2.5 pl-1">
+                        {topicExplanation.key_points.map((point, i) => (
+                          <div key={i} className="flex gap-3">
+                            <div className="flex-shrink-0 mt-0.5">
+                              <div className="h-5 w-5 rounded-full bg-destructive/10 flex items-center justify-center">
+                                <span className="text-[10px] font-bold text-destructive">{i + 1}</span>
+                              </div>
+                            </div>
+                            <div>
+                              <span className="text-sm font-semibold text-foreground">{point.heading}: </span>
+                              <span className="text-sm text-muted-foreground leading-relaxed">{point.detail}</span>
                             </div>
                           </div>
-                          <div>
-                            <span className="text-sm font-semibold text-foreground">{point.heading}: </span>
-                            <span className="text-sm text-muted-foreground leading-relaxed">{point.detail}</span>
-                          </div>
+                        ))}
+                      </div>
+                      <div className="border-t border-border/40 pt-3 mt-1">
+                        <div className="flex items-start gap-2">
+                          <Star className="h-3.5 w-3.5 text-destructive mt-0.5 flex-shrink-0" />
+                          <p className="text-sm text-foreground/80 leading-relaxed italic">{topicExplanation.conclusion}</p>
                         </div>
-                      ))}
-                    </div>
-                    <div className="border-t border-border/40 pt-3 mt-1">
-                      <div className="flex items-start gap-2">
-                        <Star className="h-3.5 w-3.5 text-destructive mt-0.5 flex-shrink-0" />
-                        <p className="text-sm text-foreground/80 leading-relaxed italic">{topicExplanation.conclusion}</p>
                       </div>
                     </div>
-                  </div>
+                  </ExpandableSection>
                 )}
 
                 <div>
@@ -731,7 +738,9 @@ export default function YouTubeContentStudio() {
                     <FileText className="h-3.5 w-3.5 text-muted-foreground" />
                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Description</span>
                   </div>
-                  <p className="text-sm text-foreground bg-muted/50 rounded-lg p-3">{selectedVersion?.caption}</p>
+                  <ExpandableSection maxHeight={100}>
+                    <p className="text-sm text-foreground bg-muted/50 rounded-lg p-3">{selectedVersion?.caption}</p>
+                  </ExpandableSection>
                 </div>
 
                 <div>
@@ -753,7 +762,9 @@ export default function YouTubeContentStudio() {
                       {selectedFormat === 'video' ? 'Full Video Script' : 'Short Script'}
                     </span>
                   </div>
-                  <ScriptDisplay script={selectedVersion?.script || ''} format={selectedFormat!} />
+                  <ExpandableSection maxHeight={200}>
+                    <ScriptDisplay script={selectedVersion?.script || ''} format={selectedFormat!} />
+                  </ExpandableSection>
                 </div>
 
                 <div className="flex gap-2 pt-2">
