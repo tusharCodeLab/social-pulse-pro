@@ -493,7 +493,9 @@ export default function InstagramContentStudio() {
                             <FileText className="h-3.5 w-3.5 text-muted-foreground" />
                             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Caption</span>
                           </div>
-                          <p className="text-sm text-foreground bg-muted/50 rounded-lg p-3">{version.caption}</p>
+                          <ExpandableSection maxHeight={100}>
+                            <p className="text-sm text-foreground bg-muted/50 rounded-lg p-3">{version.caption}</p>
+                          </ExpandableSection>
                         </div>
                         <div>
                           <div className="flex items-center gap-1.5 mb-1.5">
