@@ -105,7 +105,7 @@ export default function InstagramOverview() {
       </motion.div>
 
       {/* Enhanced Metrics */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
         <EnhancedMetricCard label="Followers" value={formatNum(igAccount?.followers_count || 0)} icon={Users} color="hsl(340,82%,52%)" delay={0.05} />
         <EnhancedMetricCard label="Total Likes" value={formatNum(totals.totalLikes)} icon={ThumbsUp} color="hsl(var(--primary))" delay={0.1} sparkData={postsTrend.slice(-7).map(p => p.likes)} />
         <EnhancedMetricCard label="Total Comments" value={formatNum(totals.totalComments)} icon={MessageCircle} color="hsl(262,83%,58%)" delay={0.15} sparkData={postsTrend.slice(-7).map(p => p.comments)} />
