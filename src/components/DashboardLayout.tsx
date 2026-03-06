@@ -4,7 +4,6 @@ import { Menu, TrendingUp } from 'lucide-react';
 import { AppSidebar } from './navigation/AppSidebar';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 
 export function DashboardLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
