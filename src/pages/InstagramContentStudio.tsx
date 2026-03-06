@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, ArrowRight, ArrowLeft, Check, Clock, Loader2, TrendingUp, Hash, FileText, Wand2, Search, PenLine, Copy, RotateCcw, Target, BarChart3, Users, Lightbulb, Award, Calendar, Zap, Star, Cpu, Heart, Film, Briefcase, Plane, UtensilsCrossed, Shirt, GraduationCap, Trophy, Leaf } from 'lucide-react';
+import { ExpandableText } from '@/components/ui/expandable-text';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -492,7 +493,9 @@ export default function InstagramContentStudio() {
                             <FileText className="h-3.5 w-3.5 text-muted-foreground" />
                             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Caption</span>
                           </div>
-                          <p className="text-sm text-foreground bg-muted/50 rounded-lg p-3">{version.caption}</p>
+                          <ExpandableText maxHeight={80}>
+                            <p className="text-sm text-foreground bg-muted/50 rounded-lg p-3">{version.caption}</p>
+                          </ExpandableText>
                         </div>
                         <div>
                           <div className="flex items-center gap-1.5 mb-1.5">
@@ -510,9 +513,11 @@ export default function InstagramContentStudio() {
                             <FileText className="h-3.5 w-3.5 text-muted-foreground" />
                             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Script</span>
                           </div>
-                          <div className="text-sm text-muted-foreground bg-muted/30 rounded-lg p-3 whitespace-pre-line">
-                            {version.script}
-                          </div>
+                          <ExpandableText maxHeight={150}>
+                            <div className="text-sm text-muted-foreground bg-muted/30 rounded-lg p-3 whitespace-pre-line">
+                              {version.script}
+                            </div>
+                          </ExpandableText>
                         </div>
                       </CardContent>
                     </Card>
@@ -572,38 +577,30 @@ export default function InstagramContentStudio() {
                       <Lightbulb className="h-4 w-4 text-primary" />
                       <span className="text-xs font-semibold text-primary uppercase tracking-wider">Topic Deep-Dive</span>
                     </div>
-                    
-                    {/* Introduction */}
-                    <p className="text-sm text-foreground/90 leading-relaxed">
-                      {topicExplanation.introduction}
-                    </p>
-                    
-                    {/* Key Points */}
-                    <div className="space-y-2.5 pl-1">
-                      {topicExplanation.key_points.map((point, i) => (
-                        <div key={i} className="flex gap-3">
-                          <div className="flex-shrink-0 mt-0.5">
-                            <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center">
-                              <span className="text-[10px] font-bold text-primary">{i + 1}</span>
+                    <ExpandableText maxHeight={160}>
+                      <p className="text-sm text-foreground/90 leading-relaxed">{topicExplanation.introduction}</p>
+                      <div className="space-y-2.5 pl-1 mt-3">
+                        {topicExplanation.key_points.map((point, i) => (
+                          <div key={i} className="flex gap-3">
+                            <div className="flex-shrink-0 mt-0.5">
+                              <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center">
+                                <span className="text-[10px] font-bold text-primary">{i + 1}</span>
+                              </div>
+                            </div>
+                            <div>
+                              <span className="text-sm font-semibold text-foreground">{point.heading}: </span>
+                              <span className="text-sm text-muted-foreground leading-relaxed">{point.detail}</span>
                             </div>
                           </div>
-                          <div>
-                            <span className="text-sm font-semibold text-foreground">{point.heading}: </span>
-                            <span className="text-sm text-muted-foreground leading-relaxed">{point.detail}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    
-                    {/* Conclusion */}
-                    <div className="border-t border-border/40 pt-3 mt-1">
-                      <div className="flex items-start gap-2">
-                        <Star className="h-3.5 w-3.5 text-primary mt-0.5 flex-shrink-0" />
-                        <p className="text-sm text-foreground/80 leading-relaxed italic">
-                          {topicExplanation.conclusion}
-                        </p>
+                        ))}
                       </div>
-                    </div>
+                      <div className="border-t border-border/40 pt-3 mt-3">
+                        <div className="flex items-start gap-2">
+                          <Star className="h-3.5 w-3.5 text-primary mt-0.5 flex-shrink-0" />
+                          <p className="text-sm text-foreground/80 leading-relaxed italic">{topicExplanation.conclusion}</p>
+                        </div>
+                      </div>
+                    </ExpandableText>
                   </div>
                 )}
                 
@@ -612,7 +609,9 @@ export default function InstagramContentStudio() {
                     <FileText className="h-3.5 w-3.5 text-muted-foreground" />
                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Caption</span>
                   </div>
-                  <p className="text-sm text-foreground bg-muted/50 rounded-lg p-3">{selectedVersion?.caption}</p>
+                  <ExpandableText maxHeight={80}>
+                    <p className="text-sm text-foreground bg-muted/50 rounded-lg p-3">{selectedVersion?.caption}</p>
+                  </ExpandableText>
                 </div>
 
                 <div>
@@ -632,9 +631,11 @@ export default function InstagramContentStudio() {
                     <FileText className="h-3.5 w-3.5 text-muted-foreground" />
                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Script</span>
                   </div>
-                  <div className="text-sm text-foreground bg-muted/50 rounded-lg p-3 whitespace-pre-line max-h-48 overflow-y-auto">
-                    {selectedVersion?.script}
-                  </div>
+                  <ExpandableText maxHeight={150}>
+                    <div className="text-sm text-foreground bg-muted/50 rounded-lg p-3 whitespace-pre-line">
+                      {selectedVersion?.script}
+                    </div>
+                  </ExpandableText>
                 </div>
 
                 <div className="flex gap-2 pt-2">
