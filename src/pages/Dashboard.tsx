@@ -243,7 +243,7 @@ export default function Dashboard() {
           className="lg:col-span-2 rounded-xl border border-border bg-card p-5"
           style={{ boxShadow: 'var(--shadow-card)' }}
         >
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
             <div className="flex items-center gap-2.5">
               <div className="p-2 rounded-lg bg-primary/10 border border-primary/20">
                 <TrendingUp className="h-4 w-4 text-primary" />
