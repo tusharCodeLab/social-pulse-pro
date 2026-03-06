@@ -276,7 +276,7 @@ export default function Dashboard() {
               </div>
             ))}
           </div>
-          <div className="h-[300px]">
+          <div className="h-[220px] md:h-[300px]">
             {filteredTrends.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={filteredTrends} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
