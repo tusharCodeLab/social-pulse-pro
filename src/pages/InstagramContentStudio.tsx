@@ -369,7 +369,7 @@ export default function InstagramContentStudio() {
                             <FileText className="h-3.5 w-3.5 text-muted-foreground" />
                             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Script</span>
                           </div>
-                          <div className="text-sm text-muted-foreground bg-muted/30 rounded-lg p-3 whitespace-pre-line max-h-40 overflow-y-auto">
+                          <div className="text-sm text-muted-foreground bg-muted/30 rounded-lg p-3 whitespace-pre-line">
                             {version.script}
                           </div>
                         </div>
