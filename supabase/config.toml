@@ -47,3 +47,6 @@ verify_jwt = false
 
 [functions.ai-content-studio]
 verify_jwt = false
+
+[functions.ai-trending-topics]
+verify_jwt = false
