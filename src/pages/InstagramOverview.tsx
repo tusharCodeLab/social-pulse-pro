@@ -141,7 +141,7 @@ export default function InstagramOverview() {
                 </Select>
               </div>
               <p className="text-[10px] text-muted-foreground mb-4">Impressions per post over time</p>
-              <div className="h-[240px]">
+              <div className="h-[180px] sm:h-[240px]">
                 {filteredViewsTrend.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={filteredViewsTrend}>
