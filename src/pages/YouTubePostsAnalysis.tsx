@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useYouTubeVideos } from '@/hooks/useYouTubeData';
 import {
-  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell,
+  ResponsiveContainer, BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell,
 } from 'recharts';
 import { format } from 'date-fns';
 
@@ -68,6 +68,18 @@ export default function YouTubePostsAnalysis() {
       types[type] = (types[type] || 0) + 1;
     });
     return Object.entries(types).map(([name, value]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), value }));
+  }, [videos]);
+
+  const durationData = useMemo(() => {
+    return videos
+      .filter(v => v.published_at && (v as any).duration_seconds != null)
+      .sort((a, b) => new Date(a.published_at!).getTime() - new Date(b.published_at!).getTime())
+      .map(v => ({
+        date: format(new Date(v.published_at!), 'MMM d'),
+        title: (v.content || 'Untitled').slice(0, 30),
+        seconds: (v as any).duration_seconds as number,
+        label: `${Math.floor(((v as any).duration_seconds as number) / 60)}:${String(((v as any).duration_seconds as number) % 60).padStart(2, '0')}`,
+      }));
   }, [videos]);
 
   const uploadFreq = useMemo(() => {
@@ -204,9 +216,42 @@ export default function YouTubePostsAnalysis() {
         </div>
       </ChartCard>
 
+      {/* Average View Duration */}
+      <div className="mt-6">
+        <ChartCard title="Video Duration" subtitle="Length of each video (MM:SS)" delay={0.45}>
+          <div className="h-[280px]">
+            {durationData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={durationData}>
+                  <defs>
+                    <linearGradient id="durationGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(38,92%,50%)" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="hsl(38,92%,50%)" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(222,30%,15%)" />
+                  <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="hsl(215,20%,50%)" />
+                  <YAxis
+                    tick={{ fontSize: 10 }}
+                    stroke="hsl(215,20%,50%)"
+                    tickFormatter={(v: number) => `${Math.floor(v / 60)}:${String(v % 60).padStart(2, '0')}`}
+                  />
+                  <Tooltip
+                    contentStyle={tooltipStyle}
+                    formatter={(value: number) => [`${Math.floor(value / 60)}:${String(value % 60).padStart(2, '0')}`, 'Duration']}
+                    labelFormatter={(label: string, payload: any[]) => payload?.[0]?.payload?.title || label}
+                  />
+                  <Area type="monotone" dataKey="seconds" stroke="hsl(38,92%,50%)" fill="url(#durationGrad)" name="Duration" />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : emptyState}
+          </div>
+        </ChartCard>
+      </div>
+
       {/* Upload Frequency */}
       <div className="mt-6">
-        <ChartCard title="Upload Frequency" subtitle="Videos published per week" delay={0.45}>
+        <ChartCard title="Upload Frequency" subtitle="Videos published per week" delay={0.5}>
           <div className="h-[250px]">
             {uploadFreq.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">

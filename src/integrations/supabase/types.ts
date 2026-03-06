@@ -329,6 +329,7 @@ export type Database = {
           comments_count: number | null
           content: string | null
           created_at: string | null
+          duration_seconds: number | null
           engagement_rate: number | null
           external_post_id: string | null
           id: string
@@ -348,6 +349,7 @@ export type Database = {
           comments_count?: number | null
           content?: string | null
           created_at?: string | null
+          duration_seconds?: number | null
           engagement_rate?: number | null
           external_post_id?: string | null
           id?: string
@@ -367,6 +369,7 @@ export type Database = {
           comments_count?: number | null
           content?: string | null
           created_at?: string | null
+          duration_seconds?: number | null
           engagement_rate?: number | null
           external_post_id?: string | null
           id?: string

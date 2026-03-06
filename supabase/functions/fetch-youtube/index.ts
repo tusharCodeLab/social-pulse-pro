@@ -216,6 +216,14 @@ serve(async (req) => {
 
     console.log(`[YouTube] Fetched ${videosData.length} videos`);
 
+    // Helper: parse ISO 8601 duration (e.g. PT4M13S) to seconds
+    const parseDuration = (iso: string | undefined): number | null => {
+      if (!iso) return null;
+      const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+      if (!m) return null;
+      return (parseInt(m[1] || "0") * 3600) + (parseInt(m[2] || "0") * 60) + parseInt(m[3] || "0");
+    };
+
     // Step 5: Upsert posts
     const postsToUpsert = videosData.map((v: any) => ({
       user_id: userId,
@@ -236,6 +244,7 @@ serve(async (req) => {
             100
           : 0,
       social_account_id: socialAccount?.id || null,
+      duration_seconds: parseDuration(v.contentDetails?.duration),
       updated_at: new Date().toISOString(),
     }));
 
