@@ -6,7 +6,6 @@ import {
   FileText,
   Users,
   Heart,
-  Activity,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -18,7 +17,6 @@ import {
   Plus,
   Sun,
   Moon,
-  Clock,
 } from 'lucide-react';
 import { InstagramIcon, YouTubeIcon, FacebookIcon } from '@/components/icons/PlatformIcons';
 import { SidebarNavLink } from './SidebarNavLink';
@@ -38,6 +36,11 @@ interface PlatformGroup {
   label: string;
   color: string;
   items: NavItem[];
+}
+
+interface AppSidebarProps {
+  variant?: 'fixed' | 'sheet';
+  onNavigate?: () => void;
 }
 
 const overviewItems: NavItem[] = [
@@ -85,19 +88,20 @@ const platformGroups: PlatformGroup[] = [
   },
 ];
 
-const aiToolsItems: NavItem[] = [];
-
 const accountItems: NavItem[] = [
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];
 
-export function AppSidebar() {
+export function AppSidebar({ variant = 'fixed', onNavigate }: AppSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [expandedPlatforms, setExpandedPlatforms] = useState<Record<string, boolean>>({ instagram: true, youtube: true, facebook: true });
   const { signOut, user } = useAuth();
   const { theme, setTheme } = useSettingsStore();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // In sheet mode, never collapse
+  const isCollapsed = variant === 'sheet' ? false : collapsed;
 
   const handleSignOut = async () => {
     await signOut();
@@ -111,14 +115,20 @@ export function AppSidebar() {
   const isPlatformActive = (group: PlatformGroup) =>
     group.items.some(item => location.pathname === item.to);
 
+  const handleNavClick = () => {
+    onNavigate?.();
+  };
+
   return (
     <motion.aside
       initial={false}
-      animate={{ width: collapsed ? 72 : 280 }}
+      animate={{ width: isCollapsed ? 72 : 280 }}
       transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
       className={cn(
-        'fixed left-0 top-0 h-screen bg-sidebar border-r border-sidebar-border',
-        'flex flex-col z-50 backdrop-blur-xl'
+        'h-screen bg-sidebar border-r border-sidebar-border',
+        'flex flex-col z-50 backdrop-blur-xl',
+        variant === 'fixed' && 'fixed left-0 top-0',
+        variant === 'sheet' && 'w-full'
       )}
     >
       <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent pointer-events-none" />
@@ -136,7 +146,7 @@ export function AppSidebar() {
             <div className="absolute inset-0 rounded-xl bg-primary/20 blur-xl" />
           </motion.div>
           <AnimatePresence mode="wait">
-            {!collapsed && (
+            {!isCollapsed && (
               <motion.div
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -153,7 +163,7 @@ export function AppSidebar() {
 
       {/* AI Badge */}
       <AnimatePresence mode="wait">
-        {!collapsed && (
+        {!isCollapsed && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
@@ -183,30 +193,32 @@ export function AppSidebar() {
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-5 overflow-y-auto">
         {/* GENERAL OVERVIEW */}
-        <SidebarSection label="General Overview" collapsed={collapsed}>
+        <SidebarSection label="General Overview" collapsed={isCollapsed}>
           {overviewItems.map(item => (
-            <SidebarNavLink key={item.to} to={item.to} icon={item.icon} label={item.label} collapsed={collapsed} />
+            <div key={item.to} onClick={handleNavClick}>
+              <SidebarNavLink to={item.to} icon={item.icon} label={item.label} collapsed={isCollapsed} />
+            </div>
           ))}
         </SidebarSection>
 
         {/* PLATFORM BREAKDOWN */}
-        <SidebarSection label="Platform Breakdown" collapsed={collapsed}>
+        <SidebarSection label="Platform Breakdown" collapsed={isCollapsed}>
           {platformGroups.map(group => (
             <div key={group.key}>
               {/* Platform header */}
               <motion.button
-                whileHover={{ x: collapsed ? 0 : 4 }}
+                whileHover={{ x: isCollapsed ? 0 : 4 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => !collapsed && togglePlatform(group.key)}
+                onClick={() => !isCollapsed && togglePlatform(group.key)}
                 className={cn(
                   'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200',
                   'text-sidebar-foreground hover:text-foreground hover:bg-sidebar-accent',
                   isPlatformActive(group) && 'text-foreground',
-                  collapsed && 'justify-center'
+                  isCollapsed && 'justify-center'
                 )}
               >
                 <group.icon className={cn('h-5 w-5 flex-shrink-0', group.color)} />
-                {!collapsed && (
+                {!isCollapsed && (
                   <>
                     <span className="text-sm font-semibold flex-1 text-left">{group.label}</span>
                     <motion.div
@@ -221,7 +233,7 @@ export function AppSidebar() {
 
               {/* Sub-items */}
               <AnimatePresence initial={false}>
-                {!collapsed && expandedPlatforms[group.key] && (
+                {!isCollapsed && expandedPlatforms[group.key] && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
@@ -231,7 +243,9 @@ export function AppSidebar() {
                   >
                     <div className="pl-4 mt-0.5 space-y-0.5 border-l-2 border-border/40 ml-5">
                       {group.items.map(item => (
-                        <SidebarNavLink key={item.to} to={item.to} icon={item.icon} label={item.label} collapsed={collapsed} />
+                        <div key={item.to} onClick={handleNavClick}>
+                          <SidebarNavLink to={item.to} icon={item.icon} label={item.label} collapsed={isCollapsed} />
+                        </div>
                       ))}
                     </div>
                   </motion.div>
@@ -241,21 +255,22 @@ export function AppSidebar() {
           ))}
 
           {/* + Other Platforms */}
-          <SidebarNavLink
-            to="/settings"
-            icon={Plus}
-            label="Other Platforms"
-            collapsed={collapsed}
-          />
+          <div onClick={handleNavClick}>
+            <SidebarNavLink
+              to="/settings"
+              icon={Plus}
+              label="Other Platforms"
+              collapsed={isCollapsed}
+            />
+          </div>
         </SidebarSection>
 
-
-
-
         {/* ACCOUNT */}
-        <SidebarSection label="Account" collapsed={collapsed}>
+        <SidebarSection label="Account" collapsed={isCollapsed}>
           {accountItems.map(item => (
-            <SidebarNavLink key={item.to} to={item.to} icon={item.icon} label={item.label} collapsed={collapsed} />
+            <div key={item.to} onClick={handleNavClick}>
+              <SidebarNavLink to={item.to} icon={item.icon} label={item.label} collapsed={isCollapsed} />
+            </div>
           ))}
         </SidebarSection>
       </nav>
@@ -263,7 +278,7 @@ export function AppSidebar() {
       {/* User & Logout */}
       <div className="relative p-4 border-t border-sidebar-border space-y-2">
         <AnimatePresence mode="wait">
-          {!collapsed && user && (
+          {!isCollapsed && user && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
@@ -292,11 +307,11 @@ export function AppSidebar() {
             'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl',
             'text-muted-foreground hover:text-foreground hover:bg-sidebar-accent',
             'transition-all duration-200',
-            collapsed && 'justify-center'
+            isCollapsed && 'justify-center'
           )}
         >
           {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-          {!collapsed && <span className="text-sm font-medium">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>}
+          {!isCollapsed && <span className="text-sm font-medium">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>}
         </motion.button>
 
         <motion.button
@@ -307,30 +322,33 @@ export function AppSidebar() {
             'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl',
             'text-muted-foreground hover:text-destructive hover:bg-destructive/10',
             'transition-all duration-200',
-            collapsed && 'justify-center'
+            isCollapsed && 'justify-center'
           )}
         >
           <LogOut className="h-5 w-5" />
-          {!collapsed && <span className="text-sm font-medium">Sign Out</span>}
+          {!isCollapsed && <span className="text-sm font-medium">Sign Out</span>}
         </motion.button>
 
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => setCollapsed(!collapsed)}
-          className={cn(
-            'w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl',
-            'text-muted-foreground hover:text-foreground hover:bg-sidebar-accent',
-            'transition-all duration-200 border border-transparent hover:border-border'
-          )}
-        >
-          {collapsed ? <ChevronRight className="h-5 w-5" /> : (
-            <>
-              <ChevronLeft className="h-5 w-5" />
-              <span className="text-sm font-medium">Collapse</span>
-            </>
-          )}
-        </motion.button>
+        {/* Collapse toggle - only in fixed mode */}
+        {variant === 'fixed' && (
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setCollapsed(!collapsed)}
+            className={cn(
+              'w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl',
+              'text-muted-foreground hover:text-foreground hover:bg-sidebar-accent',
+              'transition-all duration-200 border border-transparent hover:border-border'
+            )}
+          >
+            {collapsed ? <ChevronRight className="h-5 w-5" /> : (
+              <>
+                <ChevronLeft className="h-5 w-5" />
+                <span className="text-sm font-medium">Collapse</span>
+              </>
+            )}
+          </motion.button>
+        )}
       </div>
     </motion.aside>
   );
