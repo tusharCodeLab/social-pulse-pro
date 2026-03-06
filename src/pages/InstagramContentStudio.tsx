@@ -406,55 +406,6 @@ export default function InstagramContentStudio() {
               </Card>
             )}
 
-            {/* Existing Trending Topics as secondary */}
-            <div className="flex items-center justify-between mt-4">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-muted-foreground" />
-                <h2 className="text-base font-medium text-muted-foreground">Or pick from Detected Trends</h2>
-              </div>
-              <Button variant="ghost" size="sm" onClick={handleDiscoverTopics} disabled={discovering} className="gap-1.5 text-muted-foreground">
-                {discovering ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                {discovering ? 'Analyzing...' : 'Discover'}
-              </Button>
-            </div>
-
-            {loadingTopics ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : topics.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">No trends detected yet. Click "Discover" to analyze your data.</p>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {topics.slice(0, 6).map(topic => (
-                  <motion.div key={topic.id} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                    <Card
-                      className="cursor-pointer hover:border-primary/50 transition-all hover:shadow-md"
-                      onClick={() => handleTopicSelect(topic)}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between mb-2">
-                          <Badge variant="outline" className="text-xs capitalize">{topic.trend_type}</Badge>
-                          <Badge className={cn(
-                            'text-xs',
-                            topic.direction === 'up' ? 'bg-chart-sentiment-positive/10 text-chart-sentiment-positive border-chart-sentiment-positive/20' :
-                            'bg-chart-sentiment-negative/10 text-chart-sentiment-negative border-chart-sentiment-negative/20'
-                          )}>
-                            {topic.direction === 'up' ? '↑' : '↓'} {topic.confidence_score ? `${Math.round(topic.confidence_score * 100)}%` : 'N/A'}
-                          </Badge>
-                        </div>
-                        <h3 className="font-semibold text-foreground mb-1 text-sm line-clamp-2">{topic.title}</h3>
-                        <p className="text-xs text-muted-foreground line-clamp-2">{topic.description}</p>
-                        <div className="flex items-center gap-1 mt-3 text-xs text-primary">
-                          <Wand2 className="h-3 w-3" />
-                          <span>Click to generate posts</span>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                ))}
-              </div>
-            )}
           </motion.div>
         )}
 
