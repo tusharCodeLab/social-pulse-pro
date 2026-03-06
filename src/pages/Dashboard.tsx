@@ -16,10 +16,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import {
-  useDashboardSummaryApi, useSentimentStatsApi,
+  useDashboardSummaryApi, useSentimentStatsApi, useSocialAccountsApi,
 } from '@/hooks/useSocialApi';
 import { usePlatformComparison, useReachTrends, useTopContentByReach, useCrossPlatformInsights } from '@/hooks/useCrossPlatformData';
-import { useSettingsStore } from '@/stores/settingsStore';
 import { cn } from '@/lib/utils';
 
 import { EnhancedMetricCard } from '@/components/dashboard/EnhancedMetricCard';
@@ -109,7 +108,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { connectedPlatforms } = useSettingsStore();
+  const { data: connectedAccounts } = useSocialAccountsApi();
 
   const { data: summary, isLoading } = useDashboardSummaryApi();
   const { data: sentiment } = useSentimentStatsApi();
@@ -167,7 +166,7 @@ export default function Dashboard() {
           {/* Connected platforms badge */}
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border/60 text-[10px]">
             <Wifi className="h-3 w-3 text-chart-sentiment-positive" />
-            <span className="text-muted-foreground">{connectedPlatforms.length || 0} connected</span>
+            <span className="text-muted-foreground">{connectedAccounts?.filter(a => a.isConnected).length || 0} connected</span>
           </div>
           {/* Sentiment mini-donut */}
           {sentiment && sentiment.total > 0 && (
