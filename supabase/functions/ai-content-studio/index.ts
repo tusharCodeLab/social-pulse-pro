@@ -9,9 +9,38 @@ const corsHeaders = {
 async function handleGenerateVersions(topic: string, platform: string, apiKey: string, format?: string) {
   let formatInstructions = '';
   if (platform === 'youtube' && format === 'short') {
-    formatInstructions = `\n\nIMPORTANT: This is for a YouTube SHORT (≤60 seconds, vertical video). Generate punchy, hook-driven scripts optimized for short-form vertical content. Scripts should be concise (under 150 words), start with an attention-grabbing hook in the first 2 seconds, and end with a clear call-to-action. Captions should be optimized for YouTube Shorts discovery.`;
+    formatInstructions = `\n\nIMPORTANT: This is for a YouTube SHORT (≤60 seconds, vertical video).
+
+SCRIPT FORMAT REQUIREMENTS:
+- Write the script in clearly labeled sections using this exact structure:
+  🎣 HOOK (0-3 sec): An irresistible opening line that stops the scroll. Must create instant curiosity or shock.
+  📖 BODY (3-45 sec): The main content broken into 2-3 fast-paced points. Each point should be 1-2 sentences. Use conversational, energetic language. Include visual/action cues in [brackets] like [show product close-up] or [cut to screen recording].
+  💥 CLIMAX (45-55 sec): The key takeaway, reveal, or most impactful moment.
+  📢 CTA (55-60 sec): A clear, specific call-to-action (subscribe, comment, try it).
+
+- Total script should be 180-250 words — substantial enough to fill 60 seconds when spoken naturally.
+- Write in first person, direct-to-camera style.
+- Include delivery notes in (parentheses) like (speak fast here) or (pause for effect).
+- Captions should be optimized for YouTube Shorts discovery with keywords.`;
   } else if (platform === 'youtube' && format === 'video') {
-    formatInstructions = `\n\nIMPORTANT: This is for a full-length YouTube VIDEO. Generate comprehensive scripts with a clear intro hook (first 30 seconds), structured body sections, and a strong outro with call-to-action. Scripts should be 300-500 words, designed for 8-15 minute videos. Include suggested timestamps/chapters. Captions should be optimized for YouTube search and suggested videos.`;
+    formatInstructions = `\n\nIMPORTANT: This is for a full-length YouTube VIDEO (8-15 minutes).
+
+SCRIPT FORMAT REQUIREMENTS:
+- Write the script in clearly labeled sections using this exact structure:
+  🎬 INTRO (0:00-0:30): A powerful hook that presents the problem/question, followed by a brief channel intro. Must hook viewers in the first 10 seconds.
+  📋 OVERVIEW (0:30-1:00): Brief roadmap of what the video covers. "In this video, you'll learn..."
+  📌 SECTION 1 - [Title] (1:00-3:00): First main point with detailed explanation, examples, or demonstrations. Include [visual cues] for B-roll or screen recordings.
+  📌 SECTION 2 - [Title] (3:00-6:00): Second main point, deeper dive with real-world applications or case studies.
+  📌 SECTION 3 - [Title] (6:00-9:00): Third main point, advanced insights or lesser-known aspects.
+  💡 BONUS TIP (9:00-10:00): An unexpected extra value point that rewards viewers for watching.
+  🔄 RECAP (10:00-11:00): Quick summary of all key points covered.
+  📢 OUTRO (11:00-12:00): Strong CTA (like, subscribe, comment prompt with a specific question), plus tease of next video.
+
+- Total script should be 600-900 words — comprehensive and detailed.
+- Write in first person, direct-to-camera style with natural transitions between sections.
+- Include delivery/production notes in (parentheses) and visual directions in [brackets].
+- Include suggested chapter timestamps.
+- Captions should be SEO-optimized for YouTube search and suggested videos.`;
   }
 
   const prompt = `You are a social media content strategist specializing in ${platform}. Given the trending topic below, generate exactly 2 post versions (A and B) for ${platform}.
@@ -22,7 +51,7 @@ For each version provide:
 - title: A compelling post title (max 60 chars)
 - caption: An engaging caption (150-300 chars) with emojis
 - hashtags: Array of 5-8 relevant hashtags (without #)
-- script: A detailed script/body text that could be used as content${formatInstructions}
+- script: A detailed, production-ready script following the format instructions below${formatInstructions}
 
 Version A should be more professional/educational.
 Version B should be more casual/entertaining.`;
