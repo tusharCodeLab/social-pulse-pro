@@ -55,7 +55,7 @@ const platformGroups: PlatformGroup[] = [
       { to: '/posts', icon: FileText, label: 'Posts Analysis' },
       { to: '/audience', icon: Users, label: 'Audience Insights' },
       { to: '/sentiment', icon: Heart, label: 'Sentiment' },
-      { to: '/trends', icon: Activity, label: 'Trend Intelligence' },
+      { to: '/instagram-content-studio', icon: Sparkles, label: 'Content Studio' },
       { to: '/instagram-best-time', icon: Clock, label: 'Best Time to Post' },
     ],
   },
