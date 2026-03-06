@@ -369,9 +369,9 @@ export default function InstagramContentStudio() {
                             <FileText className="h-3.5 w-3.5 text-muted-foreground" />
                             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Script</span>
                           </div>
-                          <p className="text-sm text-muted-foreground bg-muted/30 rounded-lg p-3 whitespace-pre-line line-clamp-6">
+                          <div className="text-sm text-muted-foreground bg-muted/30 rounded-lg p-3 whitespace-pre-line max-h-40 overflow-y-auto">
                             {version.script}
-                          </p>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
@@ -413,30 +413,51 @@ export default function InstagramContentStudio() {
                   Your Post
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-4">
                 <h3 className="font-semibold text-foreground">{selectedVersion?.title}</h3>
-                <p className="text-sm text-foreground">{selectedVersion?.caption}</p>
-                <div className="flex flex-wrap gap-1">
-                  {selectedVersion?.hashtags.map(tag => (
-                    <Badge key={tag} variant="secondary" className="text-xs">#{tag}</Badge>
-                  ))}
+                
+                <div>
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Caption</span>
+                  </div>
+                  <p className="text-sm text-foreground bg-muted/50 rounded-lg p-3">{selectedVersion?.caption}</p>
                 </div>
+
+                <div>
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <Hash className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Hashtags</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedVersion?.hashtags.map(tag => (
+                      <Badge key={tag} variant="secondary" className="text-xs">#{tag}</Badge>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Script</span>
+                  </div>
+                  <div className="text-sm text-foreground bg-muted/50 rounded-lg p-3 whitespace-pre-line max-h-48 overflow-y-auto">
+                    {selectedVersion?.script}
+                  </div>
+                </div>
+
                 <div className="flex gap-2 pt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-1.5"
-                    onClick={() => copyToClipboard(selectedVersion?.caption || '', 'Caption')}
-                  >
+                  <Button variant="outline" size="sm" className="gap-1.5"
+                    onClick={() => copyToClipboard(selectedVersion?.caption || '', 'Caption')}>
                     <Copy className="h-3.5 w-3.5" /> Copy Caption
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-1.5"
-                    onClick={() => copyToClipboard(selectedVersion?.hashtags.map(t => '#' + t).join(' ') || '', 'Hashtags')}
-                  >
+                  <Button variant="outline" size="sm" className="gap-1.5"
+                    onClick={() => copyToClipboard(selectedVersion?.hashtags.map(t => '#' + t).join(' ') || '', 'Hashtags')}>
                     <Hash className="h-3.5 w-3.5" /> Copy Hashtags
+                  </Button>
+                  <Button variant="outline" size="sm" className="gap-1.5"
+                    onClick={() => copyToClipboard(selectedVersion?.script || '', 'Script')}>
+                    <Copy className="h-3.5 w-3.5" /> Copy Script
                   </Button>
                 </div>
               </CardContent>
